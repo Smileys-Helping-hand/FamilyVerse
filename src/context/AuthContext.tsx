@@ -29,8 +29,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    if (!auth || !db) return;
-    
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setLoading(true);
       setUser(user);
@@ -67,6 +65,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (initialLoad) setInitialLoad(false);
           }
         } else {
+          // This might happen briefly during sign up
           setUserProfile(null);
           setFamily(null);
           setLoading(false);
@@ -83,9 +82,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribeAuth();
-  }, [initialLoad, db]);
+  }, [initialLoad]);
 
-  if (initialLoad || !auth || !db) {
+  if (initialLoad) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
           <div className="flex flex-col items-center space-y-4">

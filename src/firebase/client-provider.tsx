@@ -1,14 +1,22 @@
 'use client';
 
 import { AuthProvider } from '@/context/AuthContext';
+import { initializeFirebase } from '.';
+import { FirebaseProvider } from './provider';
 
 export function FirebaseClientProvider({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // The AuthProvider now handles the Firebase initialization and provides it
-  // to the rest of the application. We are keeping this component for
-  // structural consistency, in case we need to add more client-side providers.
-  return <AuthProvider>{children}</AuthProvider>;
+  const { app, auth, firestore } = initializeFirebase();
+
+  if (!app || !auth || !firestore) {
+    return null;
+  }
+  return (
+    <FirebaseProvider app={app} auth={auth} firestore={firestore}>
+      <AuthProvider>{children}</AuthProvider>
+    </FirebaseProvider>
+  );
 }

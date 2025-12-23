@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { auth, firestore as db } from '@/firebase';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import type { UserProfile, Family } from '@/types';
 import { Leaf } from 'lucide-react';
 
@@ -22,6 +22,8 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const auth = useFirebaseAuth();
+  const db = useFirestore();
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [family, setFamily] = useState<Family | null>(null);
@@ -29,6 +31,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
+    if (!auth || !db) return;
+    
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setLoading(true);
       setUser(user);
@@ -65,10 +69,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             if (initialLoad) setInitialLoad(false);
           }
         } else {
-          // This can happen briefly when a user is created but their profile doc isn't ready yet.
-          // We will wait for the profile to be created. If it doesn't exist after a short while,
-          // then we can consider it a "not found" state.
-          // For now, we'll just set profile to null and stop loading.
           setUserProfile(null);
           setFamily(null);
           setLoading(false);
@@ -85,9 +85,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribeAuth();
-  }, [initialLoad]);
+  }, [initialLoad, auth, db]);
 
-  if (initialLoad) {
+  if (initialLoad || !auth || !db) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
           <div className="flex flex-col items-center space-y-4">

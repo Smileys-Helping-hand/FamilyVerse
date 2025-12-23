@@ -1,4 +1,3 @@
-import { firestore as db } from '@/firebase';
 import {
   collection,
   doc,
@@ -10,12 +9,13 @@ import {
   where,
   getDocs,
   writeBatch,
+  Firestore,
 } from 'firebase/firestore';
 import { generateJoinCode } from '../utils';
 import type { UserProfile } from '@/types';
 
 // Function to create a new family
-export async function createFamily(familyName: string, user: UserProfile) {
+export async function createFamily(db: Firestore, familyName: string, user: UserProfile) {
   if (!user?.uid) throw new Error('User not authenticated.');
 
   // 1. Create a new family document
@@ -69,7 +69,7 @@ export async function createFamily(familyName: string, user: UserProfile) {
 }
 
 // Function to join an existing family
-export async function joinFamily(joinCode: string, user: UserProfile) {
+export async function joinFamily(db: Firestore, joinCode: string, user: UserProfile) {
     if (!user?.uid) throw new Error('User not authenticated.');
 
     // 1. Find family with the join code

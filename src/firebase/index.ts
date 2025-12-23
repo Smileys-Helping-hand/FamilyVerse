@@ -7,26 +7,18 @@ import { getStorage, type FirebaseStorage } from 'firebase/storage';
 import { firebaseConfig } from './config';
 export * from './provider';
 
-// Initialize Firebase
-let app: FirebaseApp;
-let auth: Auth;
-let firestore: Firestore;
-let storage: FirebaseStorage;
-
-
-function initializeFirebase() {
+// This function initializes and returns all the necessary Firebase services.
+export function initializeFirebase() {
+    let app: FirebaseApp;
     if (getApps().length === 0) {
         app = initializeApp(firebaseConfig);
     } else {
         app = getApp();
     }
     
-    auth = getAuth(app);
-    firestore = getFirestore(app);
-    storage = getStorage(app);
+    const auth = getAuth(app);
+    const firestore = getFirestore(app);
+    const storage = getStorage(app);
 
   return { app, auth, firestore, storage };
 }
-
-export { initializeFirebase, app, auth, firestore, storage };
-export * from './client-provider';

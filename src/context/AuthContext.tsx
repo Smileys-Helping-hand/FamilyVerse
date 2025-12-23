@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, onSnapshot } from 'firebase/firestore';
-import { auth, firestore as db } from '@/firebase';
+import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
 import type { UserProfile, Family } from '@/types';
 import { Leaf } from 'lucide-react';
 
@@ -22,6 +22,8 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const auth = useFirebaseAuth();
+  const db = useFirestore();
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [family, setFamily] = useState<Family | null>(null);
@@ -29,6 +31,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
+    if (!auth || !db) return;
+    
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
       setLoading(true);
       setUser(user);
@@ -82,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
 
     return () => unsubscribeAuth();
-  }, [initialLoad]);
+  }, [initialLoad, auth, db]);
 
   if (initialLoad) {
     return (

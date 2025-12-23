@@ -12,8 +12,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Loader2, CalendarIcon } from 'lucide-react';
-import { useAuth } from '@/context/AuthContext';
-import { firestore as db, storage } from '@/firebase';
+import { useAuth as useAuthContext } from '@/context/AuthContext';
+import { useFirestore, useFirebase } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '@/lib/utils';
@@ -37,7 +37,9 @@ interface MemberFormProps {
 export function MemberForm({ setDialogOpen }: MemberFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  const { userProfile, family } = useAuth();
+  const { userProfile, family } = useAuthContext();
+  const db = useFirestore();
+  const { storage } = useFirebase();
   const [familyMembers, setFamilyMembers] = useState<Option[]>([]);
 
   useEffect(() => {
@@ -52,7 +54,7 @@ export function MemberForm({ setDialogOpen }: MemberFormProps) {
       setFamilyMembers(members);
     };
     fetchMembers();
-  }, [family?.id]);
+  }, [family?.id, db]);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -65,7 +67,7 @@ export function MemberForm({ setDialogOpen }: MemberFormProps) {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!userProfile || !family) return;
+    if (!userProfile || !family || !storage) return;
     setIsLoading(true);
     try {
       const batch = writeBatch(db);

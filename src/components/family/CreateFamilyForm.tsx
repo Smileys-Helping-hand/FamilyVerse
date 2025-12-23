@@ -19,12 +19,14 @@ import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { createFamily } from '@/lib/firebase/firestore';
+import { useFirestore } from '@/firebase';
 
 const formSchema = z.object({
   familyName: z.string().min(2, { message: 'Family name must be at least 2 characters.' }),
 });
 
 export function CreateFamilyForm() {
+  const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -48,7 +50,7 @@ export function CreateFamilyForm() {
     }
     setIsLoading(true);
     try {
-      await createFamily(values.familyName, userProfile);
+      await createFamily(db, values.familyName, userProfile);
       toast({
         title: 'Family Created!',
         description: `The "${values.familyName}" family is ready.`,

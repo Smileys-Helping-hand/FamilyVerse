@@ -1,7 +1,7 @@
 "use client";
 
-import { useAuth } from "@/context/AuthContext";
-import { firestore as db } from "@/firebase";
+import { useAuth as useAuthContext } from "@/context/AuthContext";
+import { useFirestore } from "@/firebase";
 import { collection, onSnapshot, query, orderBy } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import type { FamilyMember } from "@/types";
@@ -10,7 +10,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Users2 } from "lucide-react";
 
 export function FamilyTree() {
-  const { family } = useAuth();
+  const { family } = useAuthContext();
+  const db = useFirestore();
   const [members, setMembers] = useState<FamilyMember[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -35,7 +36,7 @@ export function FamilyTree() {
     });
 
     return () => unsubscribe();
-  }, [family?.id]);
+  }, [family?.id, db]);
 
   if (loading) {
     return (

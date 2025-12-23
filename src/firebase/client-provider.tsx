@@ -1,8 +1,7 @@
 'use client';
 
 import { AuthProvider } from '@/context/AuthContext';
-import { initializeFirebase } from '.';
-import { FirebaseProvider } from './provider';
+import { initializeFirebase, FirebaseProvider } from '.';
 
 export function FirebaseClientProvider({
   children,
@@ -15,7 +14,7 @@ export function FirebaseClientProvider({
     return null;
   }
   return (
-    <FirebaseProvider app={app} auth={auth} firestore={firestore}>
+    <FirebaseProvider value={{ app, auth, firestore }}>
       <AuthProvider>{children}</AuthProvider>
     </FirebaseProvider>
   );

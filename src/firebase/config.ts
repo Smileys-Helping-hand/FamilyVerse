@@ -1,8 +1,9 @@
+// Your web app's Firebase configuration
 export const firebaseConfig = {
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+  apiKey: "AIzaSyCawT7-BHdMCJLNqiStnR2ws0yC-Q-n2hU",
+  authDomain: "studio-9932200602-d49c4.firebaseapp.com",
+  projectId: "studio-9932200602-d49c4",
+  storageBucket: "studio-9932200602-d49c4.appspot.com",
+  messagingSenderId: "991742206746",
+  appId: "1:991742206746:web:41c3abf4e4f41c80d002a3"
 };

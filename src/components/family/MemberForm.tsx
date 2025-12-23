@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useState, useEffect } from 'react';
 import { Loader2, CalendarIcon } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { db, storage } from '@/lib/firebase/config';
+import { firestore as db, storage } from '@/firebase';
 import { addDoc, collection, serverTimestamp, query, getDocs, writeBatch, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { cn } from '@/lib/utils';

@@ -2,8 +2,8 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, getDoc, onSnapshot } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase/config';
+import { doc, onSnapshot } from 'firebase/firestore';
+import { auth, firestore as db } from '@/firebase';
 import type { UserProfile, Family } from '@/types';
 import { Leaf } from 'lucide-react';
 
@@ -26,6 +26,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [family, setFamily] = useState<Family | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
@@ -36,6 +37,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUserProfile(null);
         setFamily(null);
         setLoading(false);
+        if (initialLoad) setInitialLoad(false);
         return;
       }
       
@@ -54,25 +56,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
                 setFamily(null);
               }
               setLoading(false);
+              if (initialLoad) setInitialLoad(false);
             });
             return () => unsubscribeFamily();
           } else {
             setFamily(null);
             setLoading(false);
+            if (initialLoad) setInitialLoad(false);
           }
         } else {
+          // This can happen briefly when a user is created but their profile doc isn't ready yet.
+          // We will wait for the profile to be created. If it doesn't exist after a short while,
+          // then we can consider it a "not found" state.
+          // For now, we'll just set profile to null and stop loading.
           setUserProfile(null);
           setFamily(null);
           setLoading(false);
+          if (initialLoad) setInitialLoad(false);
         }
+      }, () => {
+        // Firestore error
+        setUserProfile(null);
+        setFamily(null);
+        setLoading(false);
+        if (initialLoad) setInitialLoad(false);
       });
       return () => unsubscribeUser();
     });
 
     return () => unsubscribeAuth();
-  }, []);
+  }, [initialLoad]);
 
-  if (loading && !user && !userProfile) { // Show loader only on initial app load
+  if (initialLoad) {
     return (
       <div className="flex items-center justify-center h-screen bg-background">
           <div className="flex flex-col items-center space-y-4">
@@ -85,7 +100,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <AuthContext.Provider value={{ user, userProfile, family, loading }}>
-      {!loading || (user && userProfile) ? children : null}
+      {children}
     </AuthContext.Provider>
   );
 };

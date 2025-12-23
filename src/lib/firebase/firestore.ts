@@ -1,4 +1,4 @@
-import { db } from './config';
+import { firestore as db } from '@/firebase';
 import {
   collection,
   doc,

@@ -44,8 +44,7 @@ export function BettingOverlay({
       const audio = new Audio('/sounds/cash-register.mp3');
       audio.volume = 0.5;
       audio.play().catch(() => {
-        // Fallback if audio fails
-        console.log('🎰 Cash register sound!');
+        // Audio playback failed, continue silently
       });
     }
   };

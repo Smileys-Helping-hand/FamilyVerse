@@ -32,15 +32,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!auth) return;
     
-    console.log('AuthContext: Setting up auth listener');
-    
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
-      console.log('AuthContext: onAuthStateChanged fired, user:', user ? user.uid : 'null');
       setLoading(true);
       setUser(user);
 
       if (!user) {
-        console.log('AuthContext: No user, clearing profile and family');
         setUserProfile(null);
         setFamily(null);
         setLoading(false);
@@ -49,10 +45,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       try {
-        console.log('AuthContext: Fetching user from PostgreSQL:', user.uid);
         // Get or create user in PostgreSQL
         const dbUser = await getOrCreateUserAction(user.uid, user.email || '', user.displayName || undefined);
-        console.log('AuthContext: User from DB:', dbUser);
         
         // Convert to UserProfile type
         const profile: UserProfile = {
@@ -68,7 +62,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         // If user has a family, fetch family data
         if (dbUser.familyId) {
-          console.log('AuthContext: Fetching family:', dbUser.familyId);
           const familyData = await getFamilyByIdAction(dbUser.familyId);
           if (familyData) {
             setFamily({
@@ -87,14 +80,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
         if (initialLoad) setInitialLoad(false);
       } catch (error) {
-        console.error('AuthContext: Error fetching user data:', error);
-        // If there's a database error and we have a Firebase user session,
-        // sign them out to break the loop
-        console.log('AuthContext: Signing out user due to database error');
+        console.error('Error fetching user data:', error);
+        // If there's a database error, sign them out
         try {
           await signOut(auth);
         } catch (signOutError) {
-          console.error('AuthContext: Error signing out:', signOutError);
+          console.error('Error signing out:', signOutError);
         }
         setUserProfile(null);
         setFamily(null);

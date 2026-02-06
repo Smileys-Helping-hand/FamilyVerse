@@ -161,7 +161,7 @@ export function EnhancedGameSession({ game, onExit }: GameSessionProps) {
         }, 200);
       }
     } catch (error) {
-      console.log('Audio playback not available');
+      // Audio playback not available, continue silently
     }
   }, [soundEnabled]);
 

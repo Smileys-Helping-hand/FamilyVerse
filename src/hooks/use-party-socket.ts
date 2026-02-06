@@ -16,11 +16,10 @@ export function usePartySocket(channelName: string) {
       
       subscribedChannel.bind('pusher:subscription_succeeded', () => {
         setIsConnected(true);
-        console.log(`✅ Connected to ${channelName}`);
       });
       
       subscribedChannel.bind('pusher:subscription_error', (error: any) => {
-        console.error(`❌ Failed to connect to ${channelName}:`, error);
+        console.error('Failed to connect:', error);
       });
       
       setChannel(subscribedChannel);

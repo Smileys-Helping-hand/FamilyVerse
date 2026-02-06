@@ -31,7 +31,7 @@ export function AudioWelcomeScreen({ onEnter }: AudioWelcomeScreenProps) {
     try {
       playSound('/sounds/whoosh.mp3', 0.3);
     } catch (error) {
-      console.log('Whoosh sound not available');
+      // Whoosh sound not available, continue silently
     }
 
     // Wait for animation then proceed

@@ -34,10 +34,8 @@ export async function triggerPartyEvent(
       data: data as any,
       triggeredBy: triggeredBy || null,
     });
-    
-    console.log(`📡 Pusher event triggered: ${channel}/${event}`);
   } catch (error) {
-    console.error('❌ Failed to trigger Pusher event:', error);
+    console.error('Pusher trigger failed:', error);
     throw error;
   }
 }

@@ -27,10 +27,9 @@ export const initializeAudio = () => {
       playPromise
         .then(() => {
           audioInitialized = true;
-          console.log('🔊 Audio context initialized');
         })
-        .catch((error) => {
-          console.log('Audio initialization failed (this is normal on some browsers):', error);
+        .catch(() => {
+          // Audio initialization failed, continue without audio
         });
     }
 
@@ -38,12 +37,10 @@ export const initializeAudio = () => {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (AudioContext) {
       const ctx = new AudioContext();
-      ctx.resume().then(() => {
-        console.log('🎵 Web Audio API context initialized');
-      });
+      ctx.resume();
     }
   } catch (error) {
-    console.error('Failed to initialize audio:', error);
+    // Audio initialization failed, continue without audio
   }
 };
 
@@ -56,11 +53,11 @@ export const playSound = (soundPath: string, volume: number = 0.5) => {
   try {
     const audio = new Audio(soundPath);
     audio.volume = volume;
-    audio.play().catch((error) => {
-      console.log('Sound playback failed:', error);
+    audio.play().catch(() => {
+      // Sound playback failed, continue silently
     });
   } catch (error) {
-    console.error('Failed to play sound:', error);
+    // Failed to play sound, continue silently
   }
 };
 

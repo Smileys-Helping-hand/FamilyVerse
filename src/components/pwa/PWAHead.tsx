@@ -8,24 +8,23 @@ import { useEffect } from 'react';
  */
 export function PWAHead() {
   useEffect(() => {
-    // Register service worker
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+    // Register service worker only in production with valid SSL
+    if (typeof window !== 'undefined' && 
+        'serviceWorker' in navigator && 
+        window.location.protocol === 'https:') {
       navigator.serviceWorker
         .register('/sw.js')
         .then((registration) => {
-          console.log('✅ Service Worker registered:', registration.scope);
-          
-          // Check for updates
+          // Service worker registered successfully
           registration.update();
         })
         .catch((error) => {
-          console.error('❌ Service Worker registration failed:', error);
+          // Silently fail if SSL issues or registration problems
+          // The app works fine without service worker
+          if (process.env.NODE_ENV === 'development') {
+            console.error('Service Worker registration failed:', error);
+          }
         });
-    }
-
-    // Log PWA status
-    if (window.matchMedia('(display-mode: standalone)').matches) {
-      console.log('📱 Running as installed PWA');
     }
   }, []);
 

@@ -72,10 +72,6 @@ export function PWAInstallPrompt() {
 
     // Wait for the user to respond
     const { outcome } = await deferredPrompt.userChoice;
-    
-    if (outcome === 'accepted') {
-      console.log('User accepted the install prompt');
-    }
 
     // Clear the deferred prompt
     setDeferredPrompt(null);
@@ -152,15 +148,14 @@ export function PWAInstallPrompt() {
  * Registers the service worker for PWA functionality
  */
 export function registerServiceWorker() {
-  if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+  if (typeof window !== 'undefined' && 
+      'serviceWorker' in navigator && 
+      window.location.protocol === 'https:') {
     window.addEventListener('load', () => {
       navigator.serviceWorker
         .register('/sw.js')
-        .then((registration) => {
-          console.log('SW registered:', registration);
-        })
-        .catch((error) => {
-          console.log('SW registration failed:', error);
+        .catch(() => {
+          // Service worker registration failed, app continues to work
         });
     });
   }

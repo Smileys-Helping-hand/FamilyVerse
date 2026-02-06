@@ -2,6 +2,7 @@
 
 import { db } from '@/lib/db';
 import { 
+  parties,
   partyUsers, 
   partyGames, 
   simRaceEntries, 
@@ -20,9 +21,100 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 
 // ============================================
-// AUTHENTICATION & ONBOARDING
+// AUTHENTICATION & ONBOARDING - SECURITY FIXED
 // ============================================
 
+/**
+ * CRITICAL: Check if code is a Party Join Code or Admin PIN
+ * This is the entry point that routes to guest onboarding or admin login
+ */
+export async function checkCodeAction(code: string) {
+  try {
+    // Step 1: Check if it's a Party Join Code (PUBLIC)
+    const [party] = await db.select().from(parties).where(eq(parties.joinCode, code));
+    
+    if (party) {
+      return { 
+        success: true, 
+        type: 'party', 
+        partyId: party.id,
+        partyName: party.name
+      };
+    }
+    
+    // Step 2: Check if it's an Admin PIN (SECRET)
+    const [user] = await db.select().from(partyUsers).where(eq(partyUsers.pinCode, code));
+    
+    if (user && user.role === 'admin') {
+      // Set cookie for admin session
+      const cookieStore = await cookies();
+      cookieStore.set('party_user_id', user.id, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 1 week
+      });
+      
+      return { 
+        success: true, 
+        type: 'admin',
+        userId: user.id,
+        userName: user.name
+      };
+    }
+    
+    // Invalid code
+    return { success: false, error: 'Invalid code' };
+  } catch (error) {
+    console.error('Error checking code:', error);
+    return { success: false, error: 'Failed to check code' };
+  }
+}
+
+/**
+ * Create a new guest user (called from onboarding page)
+ */
+export async function createGuestUserAction(name: string, avatarUrl: string | null, partyId: string) {
+  try {
+    // Create guest user (no PIN, auto-approved)
+    const [user] = await db.insert(partyUsers).values({
+      name,
+      avatarUrl,
+      role: 'guest',
+      status: 'approved',
+      partyId,
+      walletBalance: 1000,
+      pinCode: null, // Guests don't have PINs
+    }).returning();
+    
+    // Set cookie for guest session
+    const cookieStore = await cookies();
+    cookieStore.set('party_user_id', user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 1 day for guests
+    });
+    
+    // Notify admin via Pusher
+    await triggerPartyEvent('party-lobby', 'guest-joined', {
+      userId: user.id,
+      name: user.name,
+      partyId,
+      timestamp: new Date().toISOString(),
+    });
+    
+    return { success: true, user };
+  } catch (error) {
+    console.error('Error creating guest:', error);
+    return { success: false, error: 'Failed to create guest user' };
+  }
+}
+
+/**
+ * DEPRECATED: Old join party action (kept for backwards compatibility)
+ * Use checkCodeAction -> createGuestUserAction flow instead
+ */
 export async function joinPartyAction(name: string, partyCode?: string) {
   try {
     // Generate a unique 4-digit PIN
@@ -31,10 +123,10 @@ export async function joinPartyAction(name: string, partyCode?: string) {
     // Create party user with pending status
     const [user] = await db.insert(partyUsers).values({
       name,
-      pinCode,
+      pinCode: pinCode.toString(),
       walletBalance: 1000,
       status: 'pending',
-      partyCode: partyCode || null,
+      partyId: null,
     }).returning();
     
     // Set cookie for auto-login
@@ -61,7 +153,7 @@ export async function joinPartyAction(name: string, partyCode?: string) {
   }
 }
 
-export async function loginWithPinAction(pinCode: number) {
+export async function loginWithPinAction(pinCode: string) {
   try {
     const [user] = await db.select().from(partyUsers).where(eq(partyUsers.pinCode, pinCode));
     

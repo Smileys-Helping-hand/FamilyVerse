@@ -3,75 +3,68 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PartyPopper, LogIn, Upload } from 'lucide-react';
-import { joinPartyAction, loginWithPinAction, getCurrentPartyUserAction } from '@/app/actions/party-logic';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { PartyPopper, LogIn, KeyRound, Shield } from 'lucide-react';
+import { checkCodeAction, getCurrentPartyUserAction } from '@/app/actions/party-logic';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { initializeAudio } from '@/lib/audio-utils';
 import { AudioWelcomeScreen, useAudioWelcome } from '@/components/party/AudioWelcomeScreen';
 
 export default function PartyJoinPage() {
-  const [name, setName] = useState('');
-  const [pin, setPin] = useState('');
+  const [code, setCode] = useState('');
+  const [adminPin, setAdminPin] = useState('');
   const [loading, setLoading] = useState(false);
   const [checking, setChecking] = useState(true);
-  const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
   const { showWelcome, handleEnter } = useAudioWelcome();
 
   // Check for QR code parameter
-  const partyCode = searchParams.get('code');
-  const quickJoin = partyCode !== null;
+  const qrCode = searchParams.get('code');
 
   // Check if already logged in
   useEffect(() => {
     const checkExistingUser = async () => {
       const user = await getCurrentPartyUserAction();
       if (user) {
-        router.push('/party/dashboard');
+        // Redirect based on role
+        if (user.role === 'admin') {
+          router.push('/admin/dashboard');
+        } else {
+          router.push('/party/dashboard');
+        }
       } else {
         setChecking(false);
+        // Auto-fill from QR code
+        if (qrCode) {
+          setCode(qrCode);
+        }
       }
     };
     checkExistingUser();
-  }, [router]);
-
-  // Handle avatar upload
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setAvatarFile(file);
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setAvatarPreview(reader.result as string);
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  }, [router, qrCode]);
 
   if (checking) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 flex items-center justify-center">
         <div className="text-white text-xl">Loading...</div>
       </div>
     );
   }
 
-  const handleJoin = async () => {
+  const handleCheckCode = async () => {
     // Initialize audio on first user interaction
     initializeAudio();
 
-    if (!name.trim()) {
+    if (!code.trim()) {
       toast({
-        title: '❌ Name Required',
-        description: 'Please enter your name',
+        title: '❌ Code Required',
+        description: 'Please enter a party code',
         variant: 'destructive',
       });
       return;
@@ -79,43 +72,38 @@ export default function PartyJoinPage() {
 
     setLoading(true);
 
-    const result = await joinPartyAction(name.trim(), partyCode || undefined);
+    const result = await checkCodeAction(code.trim());
 
-    if (result.success && result.user) {
-      if (result.status === 'pending') {
+    if (result.success) {
+      if (result.type === 'party') {
+        // Redirect to guest onboarding
+        router.push(`/party/guest-onboarding?partyId=${result.partyId}&partyName=${encodeURIComponent(result.partyName || 'the Party')}`);
+      } else if (result.type === 'admin') {
+        // Admin logged in, redirect to admin dashboard
         toast({
-          title: '⏳ Awaiting Approval',
-          description: `Your PIN: ${result.pinCode} - Host will approve you shortly`,
-          duration: 10000,
+          title: '🎯 Welcome Back, Boss!',
+          description: `Hi ${result.userName}`,
         });
-      } else {
-        toast({
-          title: '🎉 Welcome to the Party!',
-          description: `Your PIN: ${result.pinCode}`,
-        });
+        router.push('/admin/dashboard');
       }
-      router.push('/party/dashboard');
     } else {
       toast({
-        title: '❌ Join Failed',
-        description: result.error,
+        title: '❌ Invalid Code',
+        description: result.error || 'Code not recognized',
         variant: 'destructive',
       });
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
-  const handleLogin = async () => {
-    // Initialize audio on first user interaction
+  const handleAdminLogin = async () => {
+    // Initialize audio
     initializeAudio();
-    
-    const pinNumber = parseInt(pin);
-    
-    if (isNaN(pinNumber) || pin.length !== 4) {
+
+    if (!adminPin.trim()) {
       toast({
-        title: '❌ Invalid PIN',
-        description: 'PIN must be 4 digits',
+        title: '❌ PIN Required',
+        description: 'Please enter your admin PIN',
         variant: 'destructive',
       });
       return;
@@ -123,23 +111,22 @@ export default function PartyJoinPage() {
 
     setLoading(true);
 
-    const result = await loginWithPinAction(pinNumber);
+    const result = await checkCodeAction(adminPin.trim());
 
-    if (result.success && result.user) {
+    if (result.success && result.type === 'admin') {
       toast({
-        title: '✅ Welcome Back!',
-        description: `Hi ${result.user.name}`,
+        title: '🎯 Admin Access Granted',
+        description: `Welcome ${result.userName}`,
       });
-      router.push('/party/dashboard');
+      router.push('/admin/dashboard');
     } else {
       toast({
-        title: '❌ Login Failed',
-        description: result.error,
+        title: '❌ Invalid Admin PIN',
+        description: 'Access denied',
         variant: 'destructive',
       });
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
@@ -150,187 +137,187 @@ export default function PartyJoinPage() {
       </AnimatePresence>
 
       {/* Main Join Page */}
-      <div className="min-h-screen bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 flex items-center justify-center p-4">
-      <motion.div
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: 'spring', stiffness: 200 }}
-        className="w-full max-w-md"
-      >
-        <div className="text-center mb-8">
-          <motion.div
-            animate={{ rotate: [0, 10, -10, 0] }}
-            transition={{ duration: 2, repeat: Infinity }}
-            className="inline-block text-8xl mb-4"
-          >
-            🎮
-          </motion.div>
-          <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">
-            Party OS
-          </h1>
-          <p className="text-white/90 text-lg">
-            {partyCode ? `Welcome to ${partyCode}!` : 'LAN Party Command Center'}
-          </p>
-        </div>
+      <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ scale: 0.9, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ type: 'spring', stiffness: 200 }}
+          className="w-full max-w-md"
+        >
+          <div className="text-center mb-8">
+            <motion.div
+              animate={{ rotate: [0, 10, -10, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+              className="inline-block text-8xl mb-4"
+            >
+              🎮
+            </motion.div>
+            <h1 className="text-5xl font-bold text-white mb-2 drop-shadow-lg">
+              Party OS
+            </h1>
+            <p className="text-white/90 text-lg">
+              LAN Party Command Center
+            </p>
+          </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <PartyPopper className="w-5 h-5" />
-              {quickJoin ? 'Quick Join' : 'Join the Party!'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {quickJoin ? (
-              // Quick Join Flow (from QR code)
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="quickname">Your Name</Label>
+          {!showAdminLogin ? (
+            /* Guest Join Flow */
+            <Card className="border-4 border-white/20 shadow-2xl">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-2xl">
+                  <PartyPopper className="w-6 h-6 text-purple-600" />
+                  Join the Party!
+                </CardTitle>
+                <CardDescription className="text-base">
+                  Enter the party code to get started
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="code" className="text-lg font-semibold flex items-center gap-2">
+                    <KeyRound className="h-5 w-5 text-purple-600" />
+                    Party Code
+                  </Label>
                   <Input
-                    id="quickname"
-                    placeholder="Enter your name"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleJoin()}
+                    id="code"
+                    type="text"
+                    placeholder="Enter code (e.g., 1696)"
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    className="text-2xl h-16 text-center font-bold tracking-widest border-2 focus:border-purple-600 focus:ring-purple-600"
                     autoFocus
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleCheckCode();
+                      }
+                    }}
                   />
-                </div>
-
-                <div>
-                  <Label htmlFor="avatar">Profile Photo (Optional)</Label>
-                  <div className="flex items-center gap-3 mt-2">
-                    {avatarPreview ? (
-                      <div className="relative">
-                        <img
-                          src={avatarPreview}
-                          alt="Preview"
-                          className="w-20 h-20 rounded-full object-cover"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
-                          onClick={() => {
-                            setAvatarFile(null);
-                            setAvatarPreview(null);
-                          }}
-                        >
-                          ×
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center">
-                        <Upload className="w-8 h-8 text-muted-foreground" />
-                      </div>
-                    )}
-                    <label htmlFor="avatarInput" className="cursor-pointer">
-                      <Button variant="outline" type="button" asChild>
-                        <span>
-                          <Upload className="w-4 h-4 mr-2" />
-                          Upload Photo
-                        </span>
-                      </Button>
-                      <input
-                        id="avatarInput"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarChange}
-                      />
-                    </label>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-2">
-                    Take a selfie to appear on the leaderboard!
+                  <p className="text-sm text-muted-foreground text-center">
+                    Get the code from your host or scan a QR code
                   </p>
                 </div>
 
                 <Button
-                  onClick={handleJoin}
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700"
+                  onClick={handleCheckCode}
+                  disabled={loading || !code.trim()}
+                  className="w-full h-14 text-xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
                   size="lg"
                 >
-                  <PartyPopper className="w-5 h-5 mr-2" />
-                  {loading ? 'Joining...' : "Let's Go! 🚀"}
+                  {loading ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="mr-2"
+                      >
+                        ⚡
+                      </motion.div>
+                      Checking...
+                    </>
+                  ) : (
+                    <>
+                      <PartyPopper className="w-5 h-5 mr-2" />
+                      Let's Go! 🚀
+                    </>
+                  )}
                 </Button>
 
-                <p className="text-xs text-muted-foreground text-center">
-                  You'll receive a 4-digit PIN to rejoin later
-                </p>
-              </div>
-            ) : (
-              // Normal Flow (with tabs)
-              <Tabs defaultValue="join" className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
-                  <TabsTrigger value="join">New Guest</TabsTrigger>
-                  <TabsTrigger value="login">Returning</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="join" className="space-y-4">
-                  <div>
-                    <Label htmlFor="name">Your Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Enter your name"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleJoin()}
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleJoin}
-                    disabled={loading}
-                    className="w-full"
-                    size="lg"
+                {/* Host Login Link */}
+                <div className="pt-4 border-t">
+                  <button
+                    onClick={() => setShowAdminLogin(true)}
+                    className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2"
                   >
-                    <PartyPopper className="w-4 h-4 mr-2" />
-                    {loading ? 'Joining...' : 'Join Party'}
-                  </Button>
-
-                  <p className="text-xs text-muted-foreground text-center">
-                    You'll receive a 4-digit PIN to log back in later
+                    <Shield className="h-4 w-4" />
+                    Host Login
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            /* Admin Login Flow */
+            <Card className="border-4 border-orange-500/50 shadow-2xl bg-gradient-to-br from-orange-50 to-red-50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-2xl text-orange-700">
+                  <Shield className="w-6 h-6" />
+                  Host Login
+                </CardTitle>
+                <CardDescription className="text-base text-orange-600">
+                  Enter your private admin PIN
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="adminPin" className="text-lg font-semibold flex items-center gap-2 text-orange-700">
+                    <KeyRound className="h-5 w-5" />
+                    Admin PIN (SECRET)
+                  </Label>
+                  <Input
+                    id="adminPin"
+                    type="password"
+                    placeholder="Enter your secret PIN"
+                    value={adminPin}
+                    onChange={(e) => setAdminPin(e.target.value)}
+                    className="text-2xl h-16 text-center font-bold tracking-widest border-2 border-orange-300 focus:border-orange-600 focus:ring-orange-600"
+                    autoFocus
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleAdminLogin();
+                      }
+                    }}
+                  />
+                  <p className="text-sm text-orange-600 text-center font-medium">
+                    ⚠️ This is NOT the party join code
                   </p>
-                </TabsContent>
+                </div>
 
-                <TabsContent value="login" className="space-y-4">
-                  <div>
-                    <Label htmlFor="pin">4-Digit PIN</Label>
-                    <Input
-                      id="pin"
-                      type="number"
-                      placeholder="1234"
-                      maxLength={4}
-                      value={pin}
-                      onChange={(e) => setPin(e.target.value.slice(0, 4))}
-                      onKeyPress={(e) => e.key === 'Enter' && handleLogin()}
-                    />
-                  </div>
+                <Button
+                  onClick={handleAdminLogin}
+                  disabled={loading || !adminPin.trim()}
+                  className="w-full h-14 text-xl font-bold bg-gradient-to-r from-orange-600 to-red-600 hover:from-orange-700 hover:to-red-700"
+                  size="lg"
+                >
+                  {loading ? (
+                    <>
+                      <motion.div
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                        className="mr-2"
+                      >
+                        🔐
+                      </motion.div>
+                      Verifying...
+                    </>
+                  ) : (
+                    <>
+                      <LogIn className="w-5 h-5 mr-2" />
+                      Admin Login
+                    </>
+                  )}
+                </Button>
 
-                  <Button
-                    onClick={handleLogin}
-                    disabled={loading}
-                    className="w-full"
-                    size="lg"
+                {/* Back Link */}
+                <div className="pt-4 border-t border-orange-200">
+                  <button
+                    onClick={() => {
+                      setShowAdminLogin(false);
+                      setAdminPin('');
+                    }}
+                    className="w-full text-sm text-orange-600 hover:text-orange-700 transition-colors"
                   >
-                    <LogIn className="w-4 h-4 mr-2" />
-                    {loading ? 'Logging in...' : 'Login'}
-                  </Button>
+                    ← Back to Guest Join
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-                  <p className="text-xs text-muted-foreground text-center">
-                    Lost your PIN? Ask the host to look it up.
-                  </p>
-                </TabsContent>
-              </Tabs>
-            )}
-          </CardContent>
-        </Card>
-
-        <div className="mt-6 text-center text-white/80 text-sm">
-          <p>🏎️ Sim Racing • 🎭 Imposter Game • 💰 Betting</p>
-        </div>
-      </motion.div>
-    </div>
+          <div className="mt-6 text-center text-white/80 text-sm space-y-1">
+            <p>🏎️ Sim Racing • 🎭 Imposter Game • 💰 Betting</p>
+            <p className="text-xs text-white/60">Powered by Party OS</p>
+          </div>
+        </motion.div>
+      </div>
     </>
   );
 }

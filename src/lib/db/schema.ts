@@ -351,15 +351,28 @@ export const detectiveNotebook = pgTable('detective_notebook', {
 // MODULE 7: PARTY OPERATING SYSTEM
 // ============================================
 
+// Parties Table (Each party event has its own entry)
+export const parties = pgTable('parties', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(), // e.g., "Mohammed's Birthday Party"
+  hostId: uuid('host_id'), // Reference to the host user
+  joinCode: text('join_code').notNull().unique(), // Public join code (e.g., '1696')
+  startTime: timestamp('start_time'),
+  endTime: timestamp('end_time'),
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Party Users (Extended with wallet and PIN)
 export const partyUsers = pgTable('party_users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
-  pinCode: integer('pin_code').notNull().unique(), // 4-digit PIN for quick login
+  pinCode: text('pin_code').unique(), // SECRET PIN for admin/host login (e.g., 'admin-9999')
   avatarUrl: text('avatar_url'),
   walletBalance: integer('wallet_balance').notNull().default(1000), // Party currency
-  status: varchar('status', { length: 20 }).notNull().default('pending'), // 'pending', 'approved', 'rejected'
-  partyCode: text('party_code'), // The party code they used to join
+  role: varchar('role', { length: 20 }).notNull().default('guest'), // 'admin', 'host', 'guest'
+  status: varchar('status', { length: 20 }).notNull().default('approved'), // 'pending', 'approved', 'rejected'
+  partyId: uuid('party_id'), // Which party they joined
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 

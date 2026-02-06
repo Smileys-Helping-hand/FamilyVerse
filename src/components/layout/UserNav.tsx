@@ -1,6 +1,7 @@
 'use client';
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { StatusRingAvatar, useUserStatus } from "@/components/ui/status-ring-avatar"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -16,7 +17,8 @@ import { signOut } from 'firebase/auth';
 import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from "@/types";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, PartyPopper, Shield, Sparkles } from "lucide-react";
+import Link from 'next/link';
 
 interface UserNavProps {
     userProfile: UserProfile;
@@ -26,13 +28,18 @@ export function UserNav({ userProfile }: UserNavProps) {
     const auth = useAuth();
     const router = useRouter();
     const { toast } = useToast();
+    const status = useUserStatus();
     
     const handleLogout = async () => {
         try {
             await signOut(auth);
             router.push('/login');
+            toast({ 
+                title: "Sharp sharp! 👋", 
+                description: "Catch you later, china!" 
+            });
         } catch (error: any) {
-            toast({ variant: "destructive", title: "Logout failed", description: error.message });
+            toast({ variant: "destructive", title: "Eish! 😅", description: error.message });
         }
     }
 
@@ -44,11 +51,12 @@ export function UserNav({ userProfile }: UserNavProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-9 w-9">
-                    <AvatarImage src={undefined} alt={userProfile.name || 'User'} />
-                    <AvatarFallback>{getInitials(userProfile.name)}</AvatarFallback>
-                </Avatar>
+                <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+                    <StatusRingAvatar
+                        fallback={getInitials(userProfile.name)}
+                        status={status}
+                        size="md"
+                    />
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -62,10 +70,28 @@ export function UserNav({ userProfile }: UserNavProps) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuGroup>
+                    <Link href="/portal">
+                        <DropdownMenuItem>
+                            <Sparkles className="mr-2 h-4 w-4 text-orange-500" />
+                            <span className="font-semibold">The Portal ✨</span>
+                        </DropdownMenuItem>
+                    </Link>
                     <DropdownMenuItem disabled>
                         <User className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                     </DropdownMenuItem>
+                    <Link href="/party/join">
+                        <DropdownMenuItem>
+                            <PartyPopper className="mr-2 h-4 w-4" />
+                            <span>Party Games 🎮</span>
+                        </DropdownMenuItem>
+                    </Link>
+                    <Link href="/admin/control">
+                        <DropdownMenuItem>
+                            <Shield className="mr-2 h-4 w-4" />
+                            <span>Admin Control Panel</span>
+                        </DropdownMenuItem>
+                    </Link>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

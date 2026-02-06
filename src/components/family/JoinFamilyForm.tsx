@@ -18,15 +18,13 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { joinFamily } from '@/lib/firebase/firestore';
-import { useFirestore } from '@/firebase';
+import { joinFamilyAction } from '@/app/actions/users';
 
 const formSchema = z.object({
   joinCode: z.string().length(6, { message: 'Join code must be 6 characters.' }),
 });
 
 export function JoinFamilyForm() {
-  const db = useFirestore();
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -50,12 +48,13 @@ export function JoinFamilyForm() {
     }
     setIsLoading(true);
     try {
-      const { familyName } = await joinFamily(db, values.joinCode, userProfile);
+      const family = await joinFamilyAction(values.joinCode, userProfile.uid, userProfile.name || 'User');
       toast({
         title: 'Welcome to the family!',
-        description: `You have successfully joined the "${familyName}" family.`,
+        description: `You have successfully joined the "${family.name}" family.`,
       });
-      router.push('/dashboard');
+      // Reload the page to refresh the auth context
+      window.location.href = '/dashboard';
     } catch (error: any) {
       toast({
         variant: 'destructive',

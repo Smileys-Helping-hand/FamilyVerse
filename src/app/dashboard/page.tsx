@@ -4,9 +4,14 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Share2, Users, Copy } from 'lucide-react';
+import { ArrowRight, Share2, Users, Copy, Sparkles, Heart, Star, PartyPopper, Video, Gamepad2, Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
+import { cn } from '@/lib/utils';
+import { FamilyStats } from '@/components/dashboard/FamilyStats';
+import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { UpcomingEvents } from '@/components/dashboard/UpcomingEvents';
 
 export default function DashboardPage() {
     const { userProfile, family, loading } = useAuth();
@@ -39,69 +44,340 @@ export default function DashboardPage() {
     }
 
     return (
-        <div className="space-y-8">
-            <div className="space-y-2">
-                <h1 className="text-3xl font-bold tracking-tight">Welcome, {userProfile?.name}!</h1>
-                <p className="text-muted-foreground">
-                    You are a member of the <span className="font-semibold text-primary">{userProfile?.familyName}</span> family.
+        <div className="space-y-8 animate-in fade-in duration-700">
+            <div className="space-y-3 relative">
+                <div className="flex items-center gap-3">
+                    <h1 className={cn(
+                        "text-4xl font-bold tracking-tight",
+                        "bg-gradient-to-r from-orange-500 via-purple-500 to-pink-500",
+                        "bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]"
+                    )}>
+                        Howzit, {userProfile?.name}! 🤙
+                    </h1>
+                    <Sparkles className="h-8 w-8 text-orange-500 animate-pulse" />
+                </div>
+                <p className="text-lg text-muted-foreground flex items-center gap-2">
+                    Vibing with{' '}
+                    <span className="font-bold text-orange-500 flex items-center gap-1">
+                        <Heart className="h-4 w-4 text-purple-500 fill-purple-500 animate-pulse" />
+                        {userProfile?.familyName}
+                    </span>
+                    {' '}squad.
                 </p>
             </div>
-            
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="flex flex-col">
+
+            {/* Family Stats */}
+            <FamilyStats />
+
+            {/* THE PORTAL - Featured Card */}
+            <Card className={cn(
+                "relative overflow-hidden transition-all duration-300 hover:shadow-2xl",
+                "hover:-translate-y-2 border-4 border-purple-500/50",
+                "bg-gradient-to-br from-purple-950 via-purple-900 to-violet-950"
+            )}>
+                {/* Animated Background with Better Blending */}
+                <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                    <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-violet-600/30 rounded-full blur-[100px] animate-pulse" />
+                    <div className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-purple-600/35 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-indigo-600/25 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '1.5s' }} />
+                    
+                    {/* Gradient overlay for smoother blending */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-purple-950/60 via-transparent to-purple-950/40" />
+                </div>
+                
+                <div className="relative z-10">
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                           <Users className="h-6 w-6 text-primary" />
+                        <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <div className="p-4 rounded-2xl bg-gradient-to-br from-orange-500 via-purple-500 to-pink-500 shadow-2xl">
+                                    <Sparkles className="h-10 w-10 text-white" />
+                                </div>
+                                <div>
+                                    <CardTitle className="text-3xl text-white mb-1">
+                                        ✨ The Portal
+                                    </CardTitle>
+                                    <CardDescription className="text-lg text-purple-200">
+                                        Your gateway to all the lekker features
+                                    </CardDescription>
+                                </div>
+                            </div>
+                            <Link href="/portal">
+                                <Button size="lg" className={cn(
+                                    "bg-gradient-to-r from-orange-500 via-purple-500 to-pink-500",
+                                    "hover:shadow-2xl transition-all duration-300 hover:scale-110",
+                                    "text-lg font-bold shadow-orange-500/50",
+                                    "animate-pulse"
+                                )}>
+                                    Enter Portal
+                                    <Sparkles className="ml-2 h-5 w-5" />
+                                </Button>
+                            </Link>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="grid md:grid-cols-3 gap-4">
+                            <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-purple-500/30">
+                                <PartyPopper className="h-8 w-8 text-purple-400 mb-2" />
+                                <p className="text-white font-semibold">Party OS</p>
+                                <p className="text-sm text-purple-200">Sim Racing & Games</p>
+                            </div>
+                            <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-green-500/30">
+                                <Share2 className="h-8 w-8 text-green-400 mb-2" />
+                                <p className="text-white font-semibold">Flash Pay</p>
+                                <p className="text-sm text-green-200">Bill Splitter</p>
+                            </div>
+                            <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/30">
+                                <Star className="h-8 w-8 text-blue-400 mb-2" />
+                                <p className="text-white font-semibold">More Apps</p>
+                                <p className="text-sm text-blue-200">Coming Soon</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </div>
+            </Card>
+            
+            {/* Main Dashboard Cards */}
+            <div className="grid gap-6 lg:grid-cols-3">
+                <Card className={cn(
+                    "flex flex-col transition-all duration-300 hover:shadow-2xl",
+                    "hover:-translate-y-2 border-2 hover:border-primary/50",
+                    "bg-gradient-to-br from-card via-card to-primary/5"
+                )}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                           <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-secondary">
+                               <Users className="h-6 w-6 text-white" />
+                           </div>
                            Family Tree
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-base">
                             View and manage your interactive family tree.
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="flex-grow flex items-end">
-                        <Link href="/dashboard/tree" passHref>
-                           <Button>
-                                Go to Tree <ArrowRight className="ml-2 h-4 w-4" />
+                        <Link href="/dashboard/tree" passHref className="w-full">
+                           <Button className={cn(
+                               "w-full bg-gradient-to-r from-primary to-secondary",
+                               "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                               "text-base font-semibold group"
+                           )}>
+                                Go to Tree 
+                                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
                            </Button>
                         </Link>
                     </CardContent>
                 </Card>
 
-                 <Card>
+                 <Card className={cn(
+                    "transition-all duration-300 hover:shadow-2xl",
+                    "hover:-translate-y-2 border-2 hover:border-secondary/50",
+                    "bg-gradient-to-br from-card via-card to-secondary/5"
+                )}>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                           <Share2 className="h-6 w-6 text-primary" />
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                           <div className="p-2 rounded-xl bg-gradient-to-br from-secondary to-accent">
+                               <Share2 className="h-6 w-6 text-white" />
+                           </div>
                            Invite Members
                         </CardTitle>
-                        <CardDescription>
+                        <CardDescription className="text-base">
                             Share this code with family members so they can join.
                         </CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="flex items-center space-x-2">
-                            <div className="flex-1 rounded-md border border-dashed p-3 text-center font-mono text-lg tracking-widest bg-muted">
+                            <div className={cn(
+                                "flex-1 rounded-xl border-2 border-dashed border-primary/30 p-4",
+                                "text-center font-mono text-xl tracking-widest font-bold",
+                                "bg-gradient-to-r from-primary/10 to-secondary/10",
+                                "hover:shadow-lg transition-all duration-300"
+                            )}>
                                 {family?.joinCode || <Skeleton className="h-6 w-24 mx-auto" />}
                             </div>
-                            <Button variant="outline" size="icon" onClick={copyJoinCode} disabled={!family?.joinCode}>
+                            <Button 
+                                variant="outline" 
+                                size="icon" 
+                                onClick={copyJoinCode} 
+                                disabled={!family?.joinCode}
+                                className={cn(
+                                    "hover:bg-primary hover:text-primary-foreground",
+                                    "transition-all duration-300 hover:scale-110 hover:rotate-12",
+                                    "border-2"
+                                )}
+                            >
                                 <span className="sr-only">Copy</span>
-                                <Copy className="h-4 w-4" />
+                                <Copy className="h-5 w-5" />
                             </Button>
                         </div>
                     </CardContent>
                 </Card>
 
-                 <Card>
+                <Card className={cn(
+                    "transition-all duration-300 hover:shadow-2xl",
+                    "hover:-translate-y-2 border-2 hover:border-green-500/50",
+                    "bg-gradient-to-br from-card via-card to-green-100/20"
+                )}>
                     <CardHeader>
-                        <CardTitle>Activity Feed</CardTitle>
-                        <CardDescription>
-                            See the latest updates to your family tree.
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600">
+                                <Shield className="h-6 w-6 text-white" />
+                            </div>
+                            Parental Controls
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                            Manage screen time and content safety for children.
                         </CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <p className="text-sm text-muted-foreground">Coming soon...</p>
+                    <CardContent className="flex-grow flex items-end">
+                        <Link href="/dashboard/parental-controls" passHref className="w-full">
+                            <Button className={cn(
+                                "w-full bg-gradient-to-r from-green-500 to-emerald-600",
+                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "text-base font-semibold group"
+                            )}>
+                                Manage Controls
+                                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                            </Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+
+                {/* Party Games Card */}
+                <Card className={cn(
+                    "transition-all duration-300 hover:shadow-2xl",
+                    "hover:-translate-y-2 border-2 hover:border-purple-500/50",
+                    "bg-gradient-to-br from-card via-card to-purple-100/20"
+                )}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600">
+                                <PartyPopper className="h-6 w-6 text-white" />
+                            </div>
+                            Party Games 🎮
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                            Join live party games: Sim Racing, Betting, and Imposter!
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex items-end">
+                        <Link href="/party/join" passHref className="w-full">
+                            <Button className={cn(
+                                "w-full bg-gradient-to-r from-purple-500 to-pink-600",
+                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "text-base font-semibold group"
+                            )}>
+                                Join Party
+                                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                            </Button>
+                        </Link>
                     </CardContent>
                 </Card>
             </div>
+
+            {/* New Groups Card */}
+            <Card className={cn(
+                "transition-all duration-300 hover:shadow-2xl",
+                "hover:-translate-y-1 border-2 hover:border-blue-500/50",
+                "bg-gradient-to-br from-card via-card to-blue-100/20"
+            )}>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-xl">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600">
+                            <Users className="h-6 w-6 text-white" />
+                        </div>
+                        Groups
+                    </CardTitle>
+                    <CardDescription className="text-base">
+                        Create groups with friends for trips, events, and projects. Stay organized with checklists and recommendations.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex gap-3">
+                        <Link href="/dashboard/groups" className="flex-1">
+                            <Button className={cn(
+                                "w-full bg-gradient-to-r from-blue-500 to-cyan-600",
+                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "text-base font-semibold group"
+                            )}>
+                                View Groups
+                                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                            </Button>
+                        </Link>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Secondary Cards */}
+            <div className="grid gap-6 md:grid-cols-2">
+                <Card className={cn(
+                    "transition-all duration-300 hover:shadow-2xl",
+                    "hover:-translate-y-2 border-2 hover:border-pink-500/50",
+                    "bg-gradient-to-br from-card via-card to-pink-100/20"
+                )}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500">
+                                <Gamepad2 className="h-6 w-6 text-white" />
+                            </div>
+                            Fun & Games
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                            Play party games and activities with your family!
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex items-end">
+                        <Link href="/dashboard/games" passHref className="w-full">
+                            <Button className={cn(
+                                "w-full bg-gradient-to-r from-pink-500 to-rose-500",
+                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "text-base font-semibold group"
+                            )}>
+                                Play Games
+                                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                            </Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+
+                <Card className={cn(
+                    "transition-all duration-300 hover:shadow-2xl",
+                    "hover:-translate-y-2 border-2 hover:border-blue-500/50",
+                    "bg-gradient-to-br from-card via-card to-blue-100/20"
+                )}>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500">
+                                <Video className="h-6 w-6 text-white" />
+                            </div>
+                            Video Library
+                        </CardTitle>
+                        <CardDescription className="text-base">
+                            Watch fun family videos and educational content.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex-grow flex items-end">
+                        <Link href="/dashboard/videos" passHref className="w-full">
+                            <Button className={cn(
+                                "w-full bg-gradient-to-r from-blue-500 to-purple-500",
+                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "text-base font-semibold group"
+                            )}>
+                                Watch Videos
+                                <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                            </Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Activity and Events Section */}
+            <div className="grid gap-6 lg:grid-cols-2">
+                <ActivityFeed />
+                <UpcomingEvents />
+            </div>
+
+            {/* Quick Actions */}
+            <QuickActions />
         </div>
     );
 }

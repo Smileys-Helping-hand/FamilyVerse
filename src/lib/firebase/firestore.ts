@@ -16,7 +16,17 @@ import type { UserProfile } from '@/types';
 
 // Function to create a new family
 export async function createFamily(db: Firestore, familyName: string, user: UserProfile) {
-  if (!user?.uid) throw new Error('User not authenticated.');
+  console.log('createFamily called with:', { familyName, user });
+  
+  if (!user) {
+    console.error('createFamily: user is null or undefined');
+    throw new Error('User not authenticated.');
+  }
+  
+  if (!user.uid) {
+    console.error('createFamily: user.uid is missing', user);
+    throw new Error('User ID is missing.');
+  }
 
   // 1. Create a new family document
   const familyRef = await addDoc(collection(db, 'families'), {

@@ -16,6 +16,59 @@
 - Unique Invite System: Implement a logic to generate short, random 6-character "Join Codes" for families that map to the Family ID.
 - Activity Logging: A simple audit log in Firestore tracking who added or edited a member.
 
+## Parental Control Features:
+
+### Child Profile Management
+- **Add Child Profiles**: Parents can create profiles for their children with name, age, and birthdate information.
+- **Link to Family Tree**: Optional linking of child profiles to family tree members for integrated family management.
+- **Avatar Customization**: Personalize each child's profile with avatars.
+
+### Content Safety & Filtering
+- **Age-Appropriate Ratings**: Set content age ratings (All Ages 0-5, Kids 6-12, Teen 13-17, Mature 18+).
+- **Category Management**: Enable/disable content categories including:
+  - Educational (learning & skill development)
+  - Entertainment (age-appropriate shows & games)
+  - Creative (art, music, crafting)
+  - Social (family & friend interactions)
+  - News (current events for kids)
+  - Sports (physical activities)
+- **Keyword Blocking**: Automatically filter content containing specified inappropriate keywords.
+- **Approval System**: Require parent approval before children access new apps, websites, or content.
+- **Educational Priority**: Automatically promote and recommend educational content first.
+
+### Screen Time Management
+- **Daily & Weekly Limits**: Set maximum screen time with customizable limits (15 min to 8 hours daily).
+- **Allowed Hours**: Define when children can use devices during the day (e.g., 8:00 AM - 8:00 PM).
+- **Bedtime Mode**: Automatically restrict device access during sleep hours with customizable start/end times.
+- **Break Reminders**: Send regular reminders to take breaks from screens (configurable intervals).
+- **Device-Free Zones**: Designate physical areas where devices should not be used (bedroom, dining table, etc.).
+
+### Activity Monitoring & Reports
+- **Daily Activity Reports**: Track what children watch and interact with, including:
+  - Content viewed with duration, category, and educational status
+  - Social interactions (messages, posts, comments)
+  - Educational achievements and milestones
+  - Flagged inappropriate content attempts
+- **Screen Time Analytics**: Visual progress bars showing daily/weekly usage against limits.
+- **Educational Content Tracking**: Monitor percentage of educational vs. entertainment content consumed.
+- **Achievement System**: Celebrate children's progress with educational, creative, and social achievements.
+- **Alert System**: Three-tier alert system (low, medium, high severity) for:
+  - Screen time limit warnings
+  - Inappropriate content attempts
+  - Unusual activity patterns
+
+### Safety Features
+- **Real-time Notifications**: Instant alerts for parents when high-priority events occur.
+- **Weekly Summary Reports**: Automated weekly emails with comprehensive activity summaries.
+- **Content Flagging**: Automatic detection and flagging of potentially inappropriate interactions.
+- **Educational Recommendations**: AI-powered suggestions for age-appropriate educational content.
+
+### Parent Dashboard
+- **Overview Tab**: Quick view of all children with current screen time, limits, and status indicators.
+- **Settings Tab**: Comprehensive controls for content policies and screen time rules per child.
+- **Reports Tab**: Detailed activity reports with tabbed views for content, interactions, and achievements.
+- **Digital Wellness Tips**: Built-in guidance for promoting healthy device habits.
+
 ## Style Guidelines:
 
 - Use a 'Slate' or 'Neutral' color palette for a sophisticated, archival feel.

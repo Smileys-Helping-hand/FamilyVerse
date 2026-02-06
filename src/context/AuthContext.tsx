@@ -1,11 +1,11 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { onAuthStateChanged, User } from 'firebase/auth';
-import { doc, onSnapshot } from 'firebase/firestore';
-import { useAuth as useFirebaseAuth, useFirestore } from '@/firebase';
+import { onAuthStateChanged, signOut, User } from 'firebase/auth';
+import { useAuth as useFirebaseAuth } from '@/firebase';
 import type { UserProfile, Family } from '@/types';
 import { Leaf } from 'lucide-react';
+import { getOrCreateUserAction, getFamilyByIdAction } from '@/app/actions/users';
 
 interface AuthContextType {
   user: User | null;
@@ -23,7 +23,6 @@ const AuthContext = createContext<AuthContextType>({
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const auth = useFirebaseAuth();
-  const db = useFirestore();
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [family, setFamily] = useState<Family | null>(null);
@@ -31,13 +30,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    if (!auth || !db) return;
+    if (!auth) return;
     
-    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+    console.log('AuthContext: Setting up auth listener');
+    
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      console.log('AuthContext: onAuthStateChanged fired, user:', user ? user.uid : 'null');
       setLoading(true);
       setUser(user);
 
       if (!user) {
+        console.log('AuthContext: No user, clearing profile and family');
         setUserProfile(null);
         setFamily(null);
         setLoading(false);
@@ -45,48 +48,63 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       
-      const userDocRef = doc(db, 'users', user.uid);
-      const unsubscribeUser = onSnapshot(userDocRef, (userDoc) => {
-        if (userDoc.exists()) {
-          const profile = userDoc.data() as UserProfile;
-          setUserProfile(profile);
+      try {
+        console.log('AuthContext: Fetching user from PostgreSQL:', user.uid);
+        // Get or create user in PostgreSQL
+        const dbUser = await getOrCreateUserAction(user.uid, user.email || '', user.displayName || undefined);
+        console.log('AuthContext: User from DB:', dbUser);
+        
+        // Convert to UserProfile type
+        const profile: UserProfile = {
+          uid: dbUser.uid,
+          email: dbUser.email,
+          name: dbUser.name,
+          familyId: dbUser.familyId,
+          familyName: dbUser.familyName,
+          role: dbUser.role as 'admin' | 'member' | null,
+        };
+        
+        setUserProfile(profile);
 
-          if (profile.familyId) {
-            const familyDocRef = doc(db, 'families', profile.familyId);
-            const unsubscribeFamily = onSnapshot(familyDocRef, (familyDoc) => {
-              if (familyDoc.exists()) {
-                setFamily({ id: familyDoc.id, ...familyDoc.data() } as Family);
-              } else {
-                setFamily(null);
-              }
-              setLoading(false);
-              if (initialLoad) setInitialLoad(false);
+        // If user has a family, fetch family data
+        if (dbUser.familyId) {
+          console.log('AuthContext: Fetching family:', dbUser.familyId);
+          const familyData = await getFamilyByIdAction(dbUser.familyId);
+          if (familyData) {
+            setFamily({
+              id: familyData.id,
+              name: familyData.name,
+              joinCode: familyData.joinCode,
+              creatorId: familyData.creatorId,
             });
-            return () => unsubscribeFamily();
           } else {
             setFamily(null);
-            setLoading(false);
-            if (initialLoad) setInitialLoad(false);
           }
         } else {
-          // This might happen briefly during sign up
-          setUserProfile(null);
           setFamily(null);
-          setLoading(false);
-          if (initialLoad) setInitialLoad(false);
         }
-      }, () => {
-        // Firestore error
+        
+        setLoading(false);
+        if (initialLoad) setInitialLoad(false);
+      } catch (error) {
+        console.error('AuthContext: Error fetching user data:', error);
+        // If there's a database error and we have a Firebase user session,
+        // sign them out to break the loop
+        console.log('AuthContext: Signing out user due to database error');
+        try {
+          await signOut(auth);
+        } catch (signOutError) {
+          console.error('AuthContext: Error signing out:', signOutError);
+        }
         setUserProfile(null);
         setFamily(null);
         setLoading(false);
         if (initialLoad) setInitialLoad(false);
-      });
-      return () => unsubscribeUser();
+      }
     });
 
     return () => unsubscribeAuth();
-  }, [initialLoad, auth, db]);
+  }, [initialLoad, auth]);
 
   if (initialLoad) {
     return (

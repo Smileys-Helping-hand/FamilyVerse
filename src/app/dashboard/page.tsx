@@ -49,17 +49,18 @@ export default function DashboardPage() {
                 <div className="flex items-center gap-3">
                     <h1 className={cn(
                         "text-4xl font-bold tracking-tight",
-                        "bg-gradient-to-r from-orange-500 via-purple-500 to-pink-500",
-                        "bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]"
+                        "bg-gradient-to-r from-orange-400 via-purple-400 to-pink-400",
+                        "bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]",
+                        "drop-shadow-[0_0_30px_rgba(168,85,247,0.5)]"
                     )}>
                         Howzit, {userProfile?.name}! 🤙
                     </h1>
-                    <Sparkles className="h-8 w-8 text-orange-500 animate-pulse" />
+                    <Sparkles className="h-8 w-8 text-orange-400 animate-pulse drop-shadow-[0_0_10px_rgba(251,146,60,0.8)]" />
                 </div>
-                <p className="text-lg text-muted-foreground flex items-center gap-2">
+                <p className="text-lg text-purple-200/80 flex items-center gap-2">
                     Vibing with{' '}
-                    <span className="font-bold text-orange-500 flex items-center gap-1">
-                        <Heart className="h-4 w-4 text-purple-500 fill-purple-500 animate-pulse" />
+                    <span className="font-bold text-orange-400 flex items-center gap-1">
+                        <Heart className="h-4 w-4 text-purple-400 fill-purple-400 animate-pulse" />
                         {userProfile?.familyName}
                     </span>
                     {' '}squad.
@@ -157,8 +158,8 @@ export default function DashboardPage() {
                     <CardContent className="flex-grow flex items-end">
                         <Link href="/dashboard/tree" passHref className="w-full">
                            <Button className={cn(
-                               "w-full bg-gradient-to-r from-primary to-secondary",
-                               "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                               "w-full bg-gradient-to-r from-orange-500 to-pink-600",
+                               "hover:shadow-xl hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105",
                                "text-base font-semibold group"
                            )}>
                                 Go to Tree 
@@ -232,7 +233,7 @@ export default function DashboardPage() {
                         <Link href="/dashboard/parental-controls" passHref className="w-full">
                             <Button className={cn(
                                 "w-full bg-gradient-to-r from-green-500 to-emerald-600",
-                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "hover:shadow-xl hover:shadow-green-500/50 transition-all duration-300 hover:scale-105",
                                 "text-base font-semibold group"
                             )}>
                                 Manage Controls
@@ -244,18 +245,19 @@ export default function DashboardPage() {
 
                 {/* Party Games Card */}
                 <Card className={cn(
-                    "transition-all duration-300 hover:shadow-2xl",
-                    "hover:-translate-y-2 border-2 hover:border-purple-500/50",
-                    "bg-gradient-to-br from-card via-card to-purple-100/20"
+                    "transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20",
+                    "hover:-translate-y-2 border-2 border-purple-500/30 hover:border-purple-500/60",
+                    "bg-gradient-to-br from-purple-900/80 via-slate-900/80 to-purple-900/60",
+                    "backdrop-blur-sm"
                 )}>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600">
+                        <CardTitle className="flex items-center gap-2 text-xl text-white">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 shadow-lg shadow-purple-500/50">
                                 <PartyPopper className="h-6 w-6 text-white" />
                             </div>
                             Party Games 🎮
                         </CardTitle>
-                        <CardDescription className="text-base">
+                        <CardDescription className="text-base text-purple-200/70">
                             Join live party games: Sim Racing, Betting, and Imposter!
                         </CardDescription>
                     </CardHeader>
@@ -263,7 +265,7 @@ export default function DashboardPage() {
                         <Link href="/party/join" passHref className="w-full">
                             <Button className={cn(
                                 "w-full bg-gradient-to-r from-purple-500 to-pink-600",
-                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "hover:shadow-xl hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105",
                                 "text-base font-semibold group"
                             )}>
                                 Join Party
@@ -276,18 +278,19 @@ export default function DashboardPage() {
 
             {/* New Groups Card */}
             <Card className={cn(
-                "transition-all duration-300 hover:shadow-2xl",
-                "hover:-translate-y-1 border-2 hover:border-blue-500/50",
-                "bg-gradient-to-br from-card via-card to-blue-100/20"
+                "transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20",
+                "hover:-translate-y-1 border-2 border-blue-500/30 hover:border-blue-500/60",
+                "bg-gradient-to-br from-purple-900/80 via-slate-900/80 to-blue-900/40",
+                "backdrop-blur-sm"
             )}>
                 <CardHeader>
-                    <CardTitle className="flex items-center gap-2 text-xl">
-                        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600">
+                    <CardTitle className="flex items-center gap-2 text-xl text-white">
+                        <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/50">
                             <Users className="h-6 w-6 text-white" />
                         </div>
                         Groups
                     </CardTitle>
-                    <CardDescription className="text-base">
+                    <CardDescription className="text-base text-purple-200/70">
                         Create groups with friends for trips, events, and projects. Stay organized with checklists and recommendations.
                     </CardDescription>
                 </CardHeader>
@@ -296,7 +299,7 @@ export default function DashboardPage() {
                         <Link href="/dashboard/groups" className="flex-1">
                             <Button className={cn(
                                 "w-full bg-gradient-to-r from-blue-500 to-cyan-600",
-                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "hover:shadow-xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105",
                                 "text-base font-semibold group"
                             )}>
                                 View Groups
@@ -310,18 +313,19 @@ export default function DashboardPage() {
             {/* Secondary Cards */}
             <div className="grid gap-6 md:grid-cols-2">
                 <Card className={cn(
-                    "transition-all duration-300 hover:shadow-2xl",
-                    "hover:-translate-y-2 border-2 hover:border-pink-500/50",
-                    "bg-gradient-to-br from-card via-card to-pink-100/20"
+                    "transition-all duration-300 hover:shadow-2xl hover:shadow-pink-500/20",
+                    "hover:-translate-y-2 border-2 border-pink-500/30 hover:border-pink-500/60",
+                    "bg-gradient-to-br from-purple-900/80 via-slate-900/80 to-pink-900/40",
+                    "backdrop-blur-sm"
                 )}>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500">
+                        <CardTitle className="flex items-center gap-2 text-xl text-white">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-pink-500 to-rose-500 shadow-lg shadow-pink-500/50">
                                 <Gamepad2 className="h-6 w-6 text-white" />
                             </div>
                             Fun & Games
                         </CardTitle>
-                        <CardDescription className="text-base">
+                        <CardDescription className="text-base text-purple-200/70">
                             Play party games and activities with your family!
                         </CardDescription>
                     </CardHeader>
@@ -329,7 +333,7 @@ export default function DashboardPage() {
                         <Link href="/dashboard/games" passHref className="w-full">
                             <Button className={cn(
                                 "w-full bg-gradient-to-r from-pink-500 to-rose-500",
-                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "hover:shadow-xl hover:shadow-pink-500/50 transition-all duration-300 hover:scale-105",
                                 "text-base font-semibold group"
                             )}>
                                 Play Games
@@ -340,18 +344,19 @@ export default function DashboardPage() {
                 </Card>
 
                 <Card className={cn(
-                    "transition-all duration-300 hover:shadow-2xl",
-                    "hover:-translate-y-2 border-2 hover:border-blue-500/50",
-                    "bg-gradient-to-br from-card via-card to-blue-100/20"
+                    "transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20",
+                    "hover:-translate-y-2 border-2 border-blue-500/30 hover:border-blue-500/60",
+                    "bg-gradient-to-br from-purple-900/80 via-slate-900/80 to-blue-900/40",
+                    "backdrop-blur-sm"
                 )}>
                     <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500">
+                        <CardTitle className="flex items-center gap-2 text-xl text-white">
+                            <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-purple-500 shadow-lg shadow-blue-500/50">
                                 <Video className="h-6 w-6 text-white" />
                             </div>
                             Video Library
                         </CardTitle>
-                        <CardDescription className="text-base">
+                        <CardDescription className="text-base text-purple-200/70">
                             Watch fun family videos and educational content.
                         </CardDescription>
                     </CardHeader>
@@ -359,7 +364,7 @@ export default function DashboardPage() {
                         <Link href="/dashboard/videos" passHref className="w-full">
                             <Button className={cn(
                                 "w-full bg-gradient-to-r from-blue-500 to-purple-500",
-                                "hover:shadow-xl transition-all duration-300 hover:scale-105",
+                                "hover:shadow-xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105",
                                 "text-base font-semibold group"
                             )}>
                                 Watch Videos

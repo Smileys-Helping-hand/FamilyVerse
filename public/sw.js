@@ -125,4 +125,3 @@ function isStaticAsset(pathname) {
     pathname === '/favicon.svg'
   );
 }
-});

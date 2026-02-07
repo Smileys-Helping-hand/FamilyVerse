@@ -31,3 +31,31 @@ Place the following MP3 files in this directory:
 ## Browser Audio Context Initialization:
 
 Audio playback in browsers requires user interaction to initialize. The app handles this automatically on first button click (Join Party, Login, etc.).
+
+---
+
+## 🕵️ SPY GAME SOUNDS (NEW - REQUIRED)
+
+### alarm.mp3
+**Purpose:** 10-minute warning alert for spy game rounds  
+**Duration:** 3-5 seconds  
+**Tone:** Urgent but not jarring  
+**Download:** https://pixabay.com/sound-effects/search/alarm/
+
+### emergency.mp3  
+**Purpose:** Emergency meeting announcement
+**Duration:** 3-5 seconds
+**Tone:** Very urgent, dramatic
+**Download:** https://pixabay.com/sound-effects/search/emergency/
+
+### Quick Creation with Text-to-Speech (macOS):
+```bash
+say "Warning! Ten minutes remaining!" -o alarm.aiff
+say "Emergency Meeting!" -o emergency.aiff
+
+# Convert to MP3:
+ffmpeg -i alarm.aiff alarm.mp3
+ffmpeg -i emergency.aiff emergency.mp3
+```
+
+**Note:** Visual alerts will still work without audio files!

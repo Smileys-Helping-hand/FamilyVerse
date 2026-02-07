@@ -194,6 +194,67 @@ export async function getCurrentPartyUserAction() {
   }
 }
 
+/**
+ * Logout current user by clearing the session cookie
+ */
+export async function logoutAction() {
+  try {
+    const cookieStore = await cookies();
+    cookieStore.delete('party_user_id');
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error logging out:', error);
+    return { success: false, error: 'Failed to log out' };
+  }
+}
+
+/**
+ * Create a new party (Admin only)
+ */
+export async function createPartyAction(name: string) {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user || user.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
+    }
+    
+    // Generate random 4-digit join code
+    const joinCode = Math.floor(1000 + Math.random() * 9000).toString();
+    
+    // Create party
+    const [party] = await db.insert(parties).values({
+      name,
+      hostId: user.id,
+      joinCode,
+      isActive: true,
+    }).returning();
+    
+    return { success: true, party };
+  } catch (error) {
+    console.error('Error creating party:', error);
+    return { success: false, error: 'Failed to create party' };
+  }
+}
+
+/**
+ * Get all parties (Admin only)
+ */
+export async function getAllPartiesAction() {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user || user.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
+    }
+    
+    const allParties = await db.select().from(parties).orderBy(desc(parties.createdAt));
+    return { success: true, parties: allParties };
+  } catch (error) {
+    console.error('Error getting parties:', error);
+    return { success: false, error: 'Failed to get parties' };
+  }
+}
+
 // ============================================
 // SIM RACING LEADERBOARD
 // ============================================
@@ -657,18 +718,30 @@ export async function getUserBetsAction() {
 }
 
 // ============================================
-// IMPOSTER GAME
+// IMPOSTER GAME - AUTOMATED SPY GAME ENGINE
 // ============================================
 
-export async function startImposterRoundAction() {
+/**
+ * Start a new Imposter round with automatic timer
+ * @param durationMinutes - Round duration (default 45 minutes)
+ */
+export async function startImposterRoundAction(durationMinutes: number = 45) {
   try {
-    // Admin only - should add auth check
+    const user = await getCurrentPartyUserAction();
+    if (!user || user.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
+    }
     
-    // Get all party users
-    const users = await db.select().from(partyUsers);
+    // Get all active, approved party users (exclude admin)
+    const users = await db.select().from(partyUsers).where(
+      and(
+        eq(partyUsers.status, 'approved'),
+        eq(partyUsers.role, 'guest')
+      )
+    );
     
     if (users.length < 3) {
-      return { success: false, error: 'Need at least 3 players' };
+      return { success: false, error: 'Need at least 3 active players' };
     }
     
     // Select random imposter
@@ -684,11 +757,15 @@ export async function startImposterRoundAction() {
     
     if (!game) {
       [game] = await db.insert(partyGames).values({
-        title: 'Imposter Game',
+        title: 'Spy Game',
         type: 'IMPOSTER',
         status: 'OPEN',
       }).returning();
     }
+    
+    // Calculate end time
+    const startTime = new Date();
+    const endTime = new Date(startTime.getTime() + durationMinutes * 60 * 1000);
     
     // Generate words using AI with South African house party context
     let words;
@@ -762,23 +839,50 @@ Example output:
       words = fallbackPairs[Math.floor(Math.random() * fallbackPairs.length)];
     }
     
-    // Create round
+    // Create round with timer
     const [round] = await db.insert(partyImposterRounds).values({
       gameId: game.id,
       imposterId: imposter.id,
       secretWord: words.civilian_word,
       imposterHint: words.imposter_hint,
       status: 'ACTIVE',
+      startTime,
+      endTime,
+      durationMinutes,
+      warningSent: false,
     }).returning();
     
-    // Trigger Pusher event
+    // Trigger Pusher events
     await triggerPartyEvent('imposter-game', 'round-started', {
       roundId: round.id,
       playerCount: users.length,
+      imposterName: imposter.name, // For admin dashboard only
+      startTime: startTime.toISOString(),
+      endTime: endTime.toISOString(),
+      durationMinutes,
       timestamp: new Date().toISOString(),
     });
     
-    return { success: true, round, playerCount: users.length };
+    // Send role-specific data to each player
+    for (const player of users) {
+      const isImposter = player.id === imposter.id;
+      await triggerPartyEvent(`imposter-player-${player.id}`, 'role-assigned', {
+        roundId: round.id,
+        isImposter,
+        topic: isImposter ? words.imposter_hint : words.civilian_word,
+        role: isImposter ? 'IMPOSTER' : 'CIVILIAN',
+        timestamp: new Date().toISOString(),
+      });
+    }
+    
+    return { 
+      success: true, 
+      round: {
+        ...round,
+        imposterName: imposter.name,
+      }, 
+      playerCount: users.length 
+    };
   } catch (error) {
     console.error('Error starting imposter round:', error);
     return { success: false, error: 'Failed to start round' };
@@ -803,6 +907,12 @@ export async function getActiveImposterRoundAction() {
       return { success: false, error: 'No active round' };
     }
     
+    // Calculate time remaining
+    const now = Date.now();
+    const endTimeMs = round.endTime ? new Date(round.endTime).getTime() : now;
+    const timeRemainingMs = Math.max(0, endTimeMs - now);
+    const timeRemainingMinutes = Math.floor(timeRemainingMs / (1000 * 60));
+    
     // Return appropriate data based on role
     const isImposter = round.imposterId === user.id;
     
@@ -813,11 +923,143 @@ export async function getActiveImposterRoundAction() {
         isImposter,
         word: isImposter ? round.imposterHint : round.secretWord,
         status: round.status,
+        startTime: round.startTime,
+        endTime: round.endTime,
+        timeRemainingMs,
+        timeRemainingMinutes,
+        durationMinutes: round.durationMinutes,
+        warningSent: round.warningSent,
       },
     };
   } catch (error) {
     console.error('Error getting imposter round:', error);
     return { success: false, error: 'Failed to get round' };
+  }
+}
+
+/**
+ * Trigger 10-minute warning (can be manual or automatic)
+ */
+export async function triggerTenMinuteWarningAction(roundId: string) {
+  try {
+    // Update round status
+    await db.update(partyImposterRounds)
+      .set({ 
+        status: 'WARNING',
+        warningSent: true 
+      })
+      .where(eq(partyImposterRounds.id, roundId));
+    
+    // Trigger Pusher alert
+    await triggerPartyEvent('imposter-game', 'ten-minute-warning', {
+      roundId,
+      message: '⚠️ 10 MINUTES LEFT! FINISH YOUR TASKS!',
+      timestamp: new Date().toISOString(),
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error triggering warning:', error);
+    return { success: false, error: 'Failed to trigger warning' };
+  }
+}
+
+/**
+ * Force voting phase (manual override or automatic when timer ends)
+ */
+export async function forceVotingPhaseAction(roundId: string) {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user || user.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
+    }
+    
+    // Update round status
+    await db.update(partyImposterRounds)
+      .set({ status: 'VOTING' })
+      .where(eq(partyImposterRounds.id, roundId));
+    
+    // Trigger emergency meeting
+    await triggerPartyEvent('imposter-game', 'emergency-meeting', {
+      roundId,
+      message: '🚨 EMERGENCY MEETING! TIME TO VOTE!',
+      timestamp: new Date().toISOString(),
+    });
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error forcing voting:', error);
+    return { success: false, error: 'Failed to force voting' };
+  }
+}
+
+/**
+ * Get round status for admin dashboard
+ */
+export async function getAdminRoundStatusAction() {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user || user.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
+    }
+    
+    // Get active round with imposter details
+    const roundData = await db.select({
+      round: partyImposterRounds,
+      imposterName: partyUsers.name,
+      imposterAvatar: partyUsers.avatarUrl,
+    })
+    .from(partyImposterRounds)
+    .innerJoin(partyUsers, eq(partyImposterRounds.imposterId, partyUsers.id))
+    .where(eq(partyImposterRounds.status, 'ACTIVE'))
+    .orderBy(desc(partyImposterRounds.createdAt))
+    .limit(1);
+    
+    if (roundData.length === 0) {
+      return { success: false, error: 'No active round' };
+    }
+    
+    const { round, imposterName, imposterAvatar } = roundData[0];
+    
+    // Calculate time remaining
+    const now = Date.now();
+    const endTimeMs = round.endTime ? new Date(round.endTime).getTime() : now;
+    const timeRemainingMs = Math.max(0, endTimeMs - now);
+    const timeRemainingMinutes = Math.floor(timeRemainingMs / (1000 * 60));
+    
+    // Get all active players
+    const players = await db.select({
+      id: partyUsers.id,
+      name: partyUsers.name,
+      avatarUrl: partyUsers.avatarUrl,
+    })
+    .from(partyUsers)
+    .where(
+      and(
+        eq(partyUsers.status, 'approved'),
+        eq(partyUsers.role, 'guest')
+      )
+    );
+    
+    return {
+      success: true,
+      data: {
+        round: {
+          ...round,
+          timeRemainingMs,
+          timeRemainingMinutes,
+        },
+        imposter: {
+          id: round.imposterId,
+          name: imposterName,
+          avatarUrl: imposterAvatar,
+        },
+        players,
+      },
+    };
+  } catch (error) {
+    console.error('Error getting admin round status:', error);
+    return { success: false, error: 'Failed to get round status' };
   }
 }
 

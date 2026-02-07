@@ -420,11 +420,15 @@ export const bets = pgTable('bets', {
 export const partyImposterRounds = pgTable('party_imposter_rounds', {
   id: uuid('id').primaryKey().defaultRandom(),
   gameId: uuid('game_id').notNull().references(() => partyGames.id, { onDelete: 'cascade' }),
-  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'), // 'ACTIVE', 'VOTING', 'REVEALED'
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'), // 'ACTIVE', 'WARNING', 'VOTING', 'REVEALED'
   imposterId: uuid('imposter_id').notNull().references(() => partyUsers.id),
-  secretWord: text('secret_word').notNull(), // The word civilians see
-  imposterHint: text('imposter_hint').notNull(), // The hint imposter sees
+  secretWord: text('secret_word').notNull(), // The word civilians see ("Golf")
+  imposterHint: text('imposter_hint').notNull(), // The hint imposter sees ("Sport with a stick")
   round: integer('round').notNull().default(1),
+  startTime: timestamp('start_time').notNull().defaultNow(), // Round start time
+  endTime: timestamp('end_time'), // Calculated end time (startTime + duration)
+  durationMinutes: integer('duration_minutes').notNull().default(45), // Round duration (default 45 mins)
+  warningSent: boolean('warning_sent').notNull().default(false), // 10-minute warning triggered
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 

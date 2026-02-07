@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { gameSessions, gamePlayers, gameVotes } from '@/lib/db/schema';
 import { eq, and, sql } from 'drizzle-orm';
+import { logEvent } from './admin';
 
 /**
  * MODULE 3: Imposter Game Engine (Real-Time Werewolf-style game)
@@ -37,12 +38,21 @@ export async function createGameSession(params: CreateGameSessionParams) {
       })
       .returning();
 
+    // Log game creation
+    await logEvent(
+      'INFO',
+      'SpyGame',
+      `New game session created: ${secretTopic}`,
+      { sessionId: session.id, eventId, secretTopic }
+    );
+
     return {
       success: true,
       data: session,
     };
   } catch (error) {
     console.error('Error creating game session:', error);
+    await logEvent('ERROR', 'SpyGame', `Failed to create game session: ${error}`, { error: String(error) });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to create game session',
@@ -159,6 +169,18 @@ export async function startGame(sessionId: string) {
       })
       .where(eq(gameSessions.id, sessionId));
 
+    // Log game start event
+    await logEvent(
+      'INFO',
+      'SpyGame',
+      `Game started: ${session.secretTopic}`,
+      {
+        sessionId,
+        totalPlayers: players.length,
+        imposterCount: imposters.length,
+      }
+    );
+
     return {
       success: true,
       data: {
@@ -169,6 +191,7 @@ export async function startGame(sessionId: string) {
     };
   } catch (error) {
     console.error('Error starting game:', error);
+    await logEvent('ERROR', 'SpyGame', `Failed to start game: ${error}`, { error: String(error) });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to start game',
@@ -295,6 +318,14 @@ export async function castVote(
       WHERE session_id = ${sessionId} AND user_id = ${targetId}
     `);
 
+    // Log the vote
+    await logEvent(
+      'INFO',
+      'SpyGame',
+      `Vote cast in round ${session.round}`,
+      { sessionId, voterId, targetId, round: session.round }
+    );
+
     return { success: true };
   } catch (error) {
     console.error('Error casting vote:', error);
@@ -398,12 +429,36 @@ export async function eliminatePlayer(sessionId: string) {
         .update(gameSessions)
         .set({ status: 'ENDED', endedAt: new Date() })
         .where(eq(gameSessions.id, sessionId));
+      
+      // Log civilian victory
+      await logEvent(
+        'INFO',
+        'SpyGame',
+        `Game ended: Civilians win! Imposter ${eliminated.userName} eliminated.`,
+        { sessionId, winner: 'CIVILIANS', eliminatedImposter: eliminated.userName }
+      );
     } else if (civiliansAlive <= 1) {
       winner = 'IMPOSTER';
       await db
         .update(gameSessions)
         .set({ status: 'ENDED', endedAt: new Date() })
         .where(eq(gameSessions.id, sessionId));
+      
+      // Log imposter victory
+      await logEvent(
+        'INFO',
+        'SpyGame',
+        `Game ended: Imposter wins! Only ${civiliansAlive} civilians remain.`,
+        { sessionId, winner: 'IMPOSTER', civiliansRemaining: civiliansAlive }
+      );
+    } else {
+      // Log elimination
+      await logEvent(
+        'INFO',
+        'SpyGame',
+        `Player eliminated: ${eliminated.userName} (${eliminated.role})`,
+        { sessionId, eliminatedUser: eliminated.userName, eliminatedRole: eliminated.role }
+      );
     }
 
     return {

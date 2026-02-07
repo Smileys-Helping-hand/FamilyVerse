@@ -19,6 +19,7 @@ import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
+import { logEvent } from './admin';
 
 // ============================================
 // AUTHENTICATION & ONBOARDING - SECURITY FIXED
@@ -333,9 +334,18 @@ export async function submitLapTimeAction(timeString: string, carModel?: string,
       timestamp: new Date().toISOString(),
     }, user.id);
     
+    // Log the lap time submission
+    await logEvent(
+      'INFO',
+      'SimRacing',
+      `New lap time: ${timeString} by ${user.name}`,
+      { userId: user.id, userName: user.name, lapTimeMs: totalMs, carModel, track }
+    );
+    
     return { success: true, lapTimeMs: totalMs };
   } catch (error) {
     console.error('Error submitting lap time:', error);
+    await logEvent('ERROR', 'SimRacing', `Lap time submission failed: ${error}`, { error: String(error) });
     return { success: false, error: 'Failed to submit lap time' };
   }
 }

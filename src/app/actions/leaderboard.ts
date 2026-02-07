@@ -3,6 +3,7 @@
 import { db } from '@/lib/db';
 import { games, gameScores } from '@/lib/db/schema';
 import { eq, desc, sql, and } from 'drizzle-orm';
+import { logEvent } from './admin';
 
 /**
  * MODULE 2: Universal Leaderboard System
@@ -198,9 +199,18 @@ export async function submitGameScore(data: {
       .values(data)
       .returning();
 
+    // Log the score submission
+    await logEvent(
+      'INFO',
+      'Leaderboard',
+      `New score submitted: ${data.scoreValue}`,
+      { gameId: data.gameId, userId: data.userId, eventId: data.eventId, scoreValue: data.scoreValue }
+    );
+
     return { success: true, data: score };
   } catch (error) {
     console.error('Error submitting score:', error);
+    await logEvent('ERROR', 'Leaderboard', `Score submission failed: ${error}`, { error: String(error), ...data });
     return {
       success: false,
       error: error instanceof Error ? error.message : 'Failed to submit score',
@@ -250,15 +260,6 @@ export async function getAllGames() {
 }
 
 /**
- * Format time in milliseconds to readable format
+ * Note: Non-async utility functions moved to @/lib/utils/format.ts
+ * Use formatTime from there instead.
  */
-export function formatTime(ms: number): string {
-  const minutes = Math.floor(ms / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-  const milliseconds = ms % 1000;
-  
-  if (minutes > 0) {
-    return `${minutes}:${seconds.toString().padStart(2, '0')}.${milliseconds.toString().padStart(3, '0')}`;
-  }
-  return `${seconds}.${milliseconds.toString().padStart(3, '0')}s`;
-}

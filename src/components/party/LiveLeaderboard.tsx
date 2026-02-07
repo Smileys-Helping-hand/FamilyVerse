@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Award, Clock, Target } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { getGameLeaderboard, formatTime, type LeaderboardEntry } from '@/app/actions/leaderboard';
+import { getGameLeaderboard, type LeaderboardEntry } from '@/app/actions/leaderboard';
+import { formatTime } from '@/lib/utils/format';
 
 interface LiveLeaderboardProps {
   gameId: number;

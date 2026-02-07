@@ -1,15 +1,43 @@
+'use client';
+
 import Link from 'next/link';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
-import { redirect } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { Leaf } from 'lucide-react';
 
-export default async function AdminLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
-  const adminEmail = process.env.ADMIN_EMAIL || 'mraaziqp@gmail.com';
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'mraaziqp@gmail.com';
 
-  if (!session || session.user?.email !== adminEmail) {
-    redirect('/?error=access_denied');
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const { userProfile, loading } = useAuth();
+  const router = useRouter();
+  const [authorized, setAuthorized] = useState(false);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!userProfile) {
+      router.replace('/login?redirect=/admin');
+      return;
+    }
+    if (userProfile.email !== ADMIN_EMAIL && userProfile.role !== 'admin') {
+      router.replace('/?error=access_denied');
+      return;
+    }
+    setAuthorized(true);
+  }, [userProfile, loading, router]);
+
+  if (loading || !authorized) {
+    return (
+      <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+        <div className="flex flex-col items-center space-y-4">
+          <Leaf className="h-16 w-16 text-red-500 animate-pulse" />
+          <p className="text-gray-400">Verifying admin access...</p>
+        </div>
+      </div>
+    );
   }
+
+  const session = { user: { email: userProfile?.email } };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">

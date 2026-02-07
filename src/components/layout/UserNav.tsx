@@ -18,8 +18,9 @@ import { useRouter } from 'next/navigation';
 import { useToast } from '@/hooks/use-toast';
 import type { UserProfile } from "@/types";
 import { LogOut, User, PartyPopper, Shield, Sparkles } from "lucide-react";
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+
+const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'mraaziqp@gmail.com';
 
 interface UserNavProps {
     userProfile: UserProfile;
@@ -30,7 +31,6 @@ export function UserNav({ userProfile }: UserNavProps) {
     const router = useRouter();
     const { toast } = useToast();
     const status = useUserStatus();
-    const { data: session } = useSession();
     
     const handleLogout = async () => {
         try {
@@ -88,8 +88,8 @@ export function UserNav({ userProfile }: UserNavProps) {
                             <span>Party Games 🎮</span>
                         </DropdownMenuItem>
                     </Link>
-                    {(userProfile.role === 'admin' || userProfile.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) && (
-                        <Link href={(session?.user?.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL || userProfile.role === 'admin') ? '/admin' : '/admin/login'}>
+                    {(userProfile.role === 'admin' || userProfile.email === ADMIN_EMAIL) && (
+                        <Link href="/admin">
                             <DropdownMenuItem>
                                 <Shield className="mr-2 h-4 w-4" />
                                 <span>Admin Control Panel</span>

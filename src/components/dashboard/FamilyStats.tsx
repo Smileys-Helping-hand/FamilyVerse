@@ -71,10 +71,10 @@ export function FamilyStats() {
 
   if (loading) {
     return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         {[...Array(4)].map((_, i) => (
           <Card key={i} className="animate-pulse">
-            <CardContent className="p-6">
+            <CardContent className="p-4 sm:p-6">
               <div className="h-16 bg-muted rounded" />
             </CardContent>
           </Card>
@@ -84,7 +84,7 @@ export function FamilyStats() {
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
       {stats.map((stat, index) => {
         const Icon = stat.icon;
         return (
@@ -98,22 +98,22 @@ export function FamilyStats() {
             )}
             style={{ animationDelay: `${index * 100}ms` }}
           >
-            <CardContent className="p-6 relative">
+            <CardContent className="p-4 sm:p-6 relative">
               {/* Background decoration */}
               <div className={cn(
-                "absolute top-0 right-0 w-24 h-24 rounded-full blur-3xl opacity-20 transition-opacity",
+                "absolute top-0 right-0 w-16 sm:w-24 h-16 sm:h-24 rounded-full blur-3xl opacity-20 transition-opacity",
                 stat.bgColor,
                 "group-hover:opacity-30"
               )} />
               
               <div className="relative">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-2 sm:mb-3">
                   <div className={cn(
-                    "p-2 rounded-xl transition-transform duration-300",
+                    "p-1.5 sm:p-2 rounded-xl transition-transform duration-300",
                     "group-hover:scale-110 group-hover:rotate-6",
                     stat.bgColor
                   )}>
-                    <Icon className={cn("h-5 w-5", stat.color)} />
+                    <Icon className={cn("h-4 w-4 sm:h-5 sm:w-5", stat.color)} />
                   </div>
                   
                   {stat.trend && (
@@ -124,11 +124,11 @@ export function FamilyStats() {
                   )}
                 </div>
                 
-                <div className="space-y-1">
-                  <p className="text-2xl font-bold tracking-tight group-hover:scale-105 transition-transform inline-block">
+                <div className="space-y-0.5 sm:space-y-1">
+                  <p className="text-xl sm:text-2xl font-bold tracking-tight group-hover:scale-105 transition-transform inline-block">
                     {stat.value}
                   </p>
-                  <p className="text-sm text-muted-foreground font-medium">
+                  <p className="text-xs sm:text-sm text-muted-foreground font-medium">
                     {stat.label}
                   </p>
                 </div>

@@ -30,7 +30,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gradient-to-br from-purple-950 via-slate-900 to-purple-900">
+    <div className="flex min-h-screen flex-col bg-gradient-to-br from-purple-950 via-slate-900 to-purple-900 w-full max-w-[100vw] overflow-x-hidden">
       {/* Animated Background Effects */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-0 w-[500px] h-[500px] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" />
@@ -39,7 +39,7 @@ export default function DashboardLayout({
       </div>
       
       <Header />
-      <main className="flex-1 container py-8 relative z-10">{children}</main>
+      <main className="flex-1 container py-4 sm:py-8 px-4 relative z-10 max-w-full overflow-x-hidden">{children}</main>
     </div>
   );
 }

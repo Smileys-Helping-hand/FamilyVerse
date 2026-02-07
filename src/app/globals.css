@@ -53,6 +53,16 @@ button, a, [role="button"], input, select, textarea {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Hide scrollbar utility */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 @layer base {
   /* FamilyVerse - Cape Sunset Theme (Default - Dark Mode) */
   :root, [data-theme="family"] {

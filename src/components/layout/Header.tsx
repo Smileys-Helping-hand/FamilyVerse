@@ -17,8 +17,8 @@ export default function Header() {
     const pathname = usePathname();
     
     return (
-        <header className="sticky top-0 z-40 w-full border-b-2 border-primary/20 bg-card/80 backdrop-blur-xl shadow-lg">
-            <div className="container flex h-16 items-center">
+        <header className="sticky top-0 z-40 w-full border-b-2 border-primary/20 bg-card/80 backdrop-blur-xl shadow-lg overflow-x-hidden">
+            <div className="container flex h-16 items-center px-4">
                 <div className="mr-4 hidden md:flex">
                     <Link href="/dashboard" className="flex items-center space-x-2 group">
                         <div className="relative">
@@ -35,7 +35,7 @@ export default function Header() {
                     </Link>
                 </div>
 
-                <nav className="flex flex-1 items-center space-x-2 md:space-x-3">
+                <nav className="flex flex-1 items-center space-x-1.5 md:space-x-3 overflow-x-auto scrollbar-hide">
                     <Link href="/dashboard">
                         <Button 
                             variant={pathname === '/dashboard' ? 'default' : 'ghost'} 

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { User, Coins, Trophy, Gamepad2, TrendingUp, Home, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import { SimLeaderboard } from '@/components/party/SimLeaderboard';
 import { BettingSlip } from '@/components/party/BettingSlip';
 import { ImposterCard } from '@/components/party/ImposterCard';
@@ -23,6 +24,9 @@ interface PartyUser {
 }
 
 export default function PartyDashboardClient({ user }: { user: PartyUser }) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.email === 'mraaziqp@gmail.com';
+
   // Check if user is pending approval
   if (user.status === 'pending') {
     return (
@@ -97,11 +101,13 @@ export default function PartyDashboardClient({ user }: { user: PartyUser }) {
                 Back to Dashboard
               </Button>
             </Link>
-            <Link href="/admin/race-control">
-              <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                Admin Control
-              </Button>
-            </Link>
+            {isAdmin && (
+              <Link href="/admin">
+                <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                  🚨 Admin Control
+                </Button>
+              </Link>
+            )}
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">

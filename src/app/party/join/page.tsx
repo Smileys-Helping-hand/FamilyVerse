@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
-import { PartyPopper, LogIn, KeyRound, Shield } from 'lucide-react';
+import { PartyPopper, LogIn, KeyRound, Shield, ArrowLeft } from 'lucide-react';
 import { checkCodeAction, getCurrentPartyUserAction } from '@/app/actions/party-logic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -138,6 +139,16 @@ export default function PartyJoinPage() {
 
       {/* Main Join Page */}
       <div className="min-h-screen bg-gradient-to-br from-purple-600 via-pink-600 to-red-600 flex items-center justify-center p-4">
+        {/* Back to Dashboard Button */}
+        <div className="absolute top-4 left-4">
+          <Link href="/dashboard">
+            <button className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition backdrop-blur-sm border border-white/20">
+              <ArrowLeft className="w-4 h-4" />
+              <span>Back to Dashboard</span>
+            </button>
+          </Link>
+        </div>
+
         <motion.div
           initial={{ scale: 0.9, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}

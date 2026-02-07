@@ -13,7 +13,9 @@ export function AwehChatFAB() {
 
   const openAwehChat = () => {
     setShowBadge(false);
-    window.open('https://www.awehchat.co.za', '_blank', 'noopener,noreferrer');
+    // Prefer internal portal route so we can attempt embedding
+    // Open in a new tab to keep user in the app
+    window.open('/portal/awehchat', '_blank');
   };
 
   return (

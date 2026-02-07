@@ -10,6 +10,7 @@ import { usePathname } from 'next/navigation';
 import { ThemeSwitcher } from '../ui/theme-switcher';
 import { NotificationCenter } from '../ui/notification-center';
 import { cn } from '@/lib/utils';
+import { useSession, signIn, signOut } from 'next-auth/react';
 
 export default function Header() {
     const { userProfile, loading } = useAuth();
@@ -29,7 +30,7 @@ export default function Header() {
                             "bg-gradient-to-r from-orange-500 via-purple-500 to-pink-500",
                             "bg-clip-text text-transparent animate-gradient bg-[length:200%_auto]"
                         )}>
-                            Aweh Chat
+                            FamilyVerse
                         </span>
                     </Link>
                 </div>
@@ -113,10 +114,37 @@ export default function Header() {
                     <NotificationCenter />
                     <ThemeSwitcher />
                     <nav className="flex items-center space-x-1">
-                        {loading ? <Skeleton className="h-8 w-8 rounded-full" /> : userProfile && <UserNav userProfile={userProfile} />}
+                        {loading ? (
+                            <Skeleton className="h-8 w-8 rounded-full" />
+                        ) : (
+                            <>
+                                {userProfile && <UserNav userProfile={userProfile} />}
+                                <div className="ml-2">
+                                    <AdminAuthControls />
+                                </div>
+                            </>
+                        )}
                     </nav>
                 </div>
             </div>
         </header>
     )
+}
+
+function AdminAuthControls() {
+    const { data: session } = useSession();
+
+    if (session?.user?.email) {
+        return (
+            <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: '/' })}>
+                Sign out
+            </Button>
+        );
+    }
+
+    return (
+        <Button variant="ghost" size="sm" onClick={() => signIn('credentials')}>
+            Admin Sign-in
+        </Button>
+    );
 }

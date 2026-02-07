@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import {
   Sparkles,
   Trophy,
+  MessageCircle,
   Banknote,
   Calendar,
   ChevronRight,
@@ -39,6 +40,21 @@ const MINI_APPS = [
     badge: 'Live',
     badgeVariant: 'destructive' as const,
     features: ['🏎️ Sim Racing', '🎭 Imposter', '💰 Betting Pool', '📺 TV Mode'],
+    status: 'active',
+  },
+  {
+    id: 'awehchat',
+    name: 'AwehChat',
+    tagline: 'Real-time messaging',
+    description: 'Open the AwehChat messaging portal',
+    icon: MessageCircle,
+    gradient: 'from-indigo-500 via-purple-500 to-pink-500',
+    glowColor: 'shadow-indigo-500/50',
+    href: '/portal/awehchat',
+    external: false,
+    badge: 'Chat',
+    badgeVariant: 'default' as const,
+    features: ['💬 Real-time chat', '👥 Rooms', '🔔 Notifications'],
     status: 'active',
   },
   {
@@ -304,19 +320,37 @@ export default function PortalPage() {
                     
                     {/* Launch Button */}
                     {!isComingSoon ? (
-                      <Link href={app.href} className="block">
-                        <Button
-                          className={cn(
-                            'w-full bg-gradient-to-r text-white font-semibold',
-                            'hover:shadow-xl transition-all group/btn',
-                            app.gradient,
-                            app.glowColor
-                          )}
-                        >
-                          Launch App
-                          <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                        </Button>
-                      </Link>
+                      app.external ? (
+                        <a href={app.href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
+                          <Button
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              'w-full bg-gradient-to-r text-white font-semibold',
+                              'hover:shadow-xl transition-all group/btn',
+                              app.gradient,
+                              app.glowColor
+                            )}
+                          >
+                            Launch App
+                            <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                          </Button>
+                        </a>
+                      ) : (
+                        <Link href={app.href} className="block" onClick={(e: any) => e && e.stopPropagation()}>
+                          <Button
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              'w-full bg-gradient-to-r text-white font-semibold',
+                              'hover:shadow-xl transition-all group/btn',
+                              app.gradient,
+                              app.glowColor
+                            )}
+                          >
+                            Launch App
+                            <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                          </Button>
+                        </Link>
+                      )
                     ) : (
                       <Button
                         disabled

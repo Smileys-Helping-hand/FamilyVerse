@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 @layer base {
-  /* AWEH CHAT - Cape Sunset Theme (Default - Dark Mode) */
+  /* FamilyVerse - Cape Sunset Theme (Default - Dark Mode) */
   :root, [data-theme="family"] {
     --background: 270 30% 8%;
     --foreground: 0 0% 98%;

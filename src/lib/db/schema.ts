@@ -746,3 +746,35 @@ export type PartyImposterRound = typeof partyImposterRounds.$inferSelect;
 export type NewPartyImposterRound = typeof partyImposterRounds.$inferInsert;
 export type PartyEvent = typeof partyEvents.$inferSelect;
 export type NewPartyEvent = typeof partyEvents.$inferInsert;
+
+// ============================================
+// MODULE 8: SYSTEM ADMINISTRATION
+// ============================================
+
+// System logs for tracking events and errors
+export const systemLogs = pgTable('system_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  timestamp: timestamp('timestamp').notNull().defaultNow(),
+  level: varchar('level', { length: 10 }).notNull(), // 'INFO', 'WARN', 'ERROR'
+  source: varchar('source', { length: 50 }).notNull(), // 'SpyGame', 'Auth', 'RaceGame', etc.
+  message: text('message').notNull(),
+  metaData: jsonb('meta_data').$type<Record<string, any>>(),
+  userId: text('user_id'), // Optional: which user triggered this
+  ipAddress: varchar('ip_address', { length: 45 }), // IPv4 or IPv6
+});
+
+// Global settings that can be changed without redeploying
+export const globalSettings = pgTable('global_settings', {
+  key: varchar('key', { length: 50 }).primaryKey(),
+  value: text('value').notNull(),
+  description: text('description').notNull(),
+  category: varchar('category', { length: 20 }).notNull().default('general'), // 'game', 'economy', 'system'
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  updatedBy: text('updated_by'), // Email of admin who changed it
+});
+
+// Module 8 types
+export type SystemLog = typeof systemLogs.$inferSelect;
+export type NewSystemLog = typeof systemLogs.$inferInsert;
+export type GlobalSetting = typeof globalSettings.$inferSelect;
+export type NewGlobalSetting = typeof globalSettings.$inferInsert;

@@ -172,18 +172,18 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
   return (
     <div className={`min-h-screen text-white ${glitching ? 'glitch' : ''}`}>
       <RaceStartSequence />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#041425] via-[#0a2a3f] to-[#0b1130] aurora" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#040a18] via-[#081b2d] to-[#060a22] aurora" />
       <div
-        className="absolute inset-0 -z-10 opacity-60"
+        className="absolute inset-0 -z-10 opacity-45"
         style={{
           backgroundImage:
-            'radial-gradient(circle at 1px 1px, rgba(200,255,255,0.12) 1px, transparent 0), linear-gradient(120deg, rgba(40,200,255,0.25), transparent 55%)',
-          backgroundSize: '26px 26px, 100% 100%',
+            'radial-gradient(circle at 1px 1px, rgba(180,220,255,0.10) 1px, transparent 0), linear-gradient(120deg, rgba(40,160,220,0.20), transparent 55%)',
+          backgroundSize: '28px 28px, 100% 100%',
         }}
       />
-      <div className="absolute -z-10 -top-24 -left-24 h-64 w-64 rounded-full bg-cyan-500/20 blur-3xl float" />
-      <div className="absolute -z-10 top-1/4 -right-10 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl float-slow" />
-      <div className="absolute -z-10 bottom-0 left-1/3 h-80 w-80 rounded-full bg-teal-400/10 blur-3xl float" />
+      <div className="absolute -z-10 -top-24 -left-24 h-64 w-64 rounded-full bg-cyan-500/12 blur-3xl float" />
+      <div className="absolute -z-10 top-1/4 -right-10 h-72 w-72 rounded-full bg-blue-500/14 blur-3xl float-slow" />
+      <div className="absolute -z-10 bottom-0 left-1/3 h-80 w-80 rounded-full bg-teal-400/8 blur-3xl float" />
       <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col gap-6 relative">
         <div className="flex items-center justify-between">
           <Link href="/party/dashboard">
@@ -196,7 +196,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+          <Card className="border-cyan-300/25 bg-white/8 backdrop-blur">
             <CardContent className="pt-6 space-y-3">
               <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Live Status</div>
               <div className="flex items-center justify-between text-sm">
@@ -216,38 +216,38 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
             </CardContent>
           </Card>
 
-          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+          <Card className="border-cyan-300/25 bg-white/8 backdrop-blur">
             <CardContent className="pt-6 space-y-3">
               <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Quick Actions</div>
-              <Button onClick={handleCopyInvite} className="w-full" variant="secondary">
+              <Button onClick={handleCopyInvite} className="w-full h-11" variant="secondary">
                 Copy Invite Link
               </Button>
               <Link href="/party/tv">
-                <Button className="w-full" variant="secondary">
+                <Button className="w-full h-11" variant="secondary">
                   Open TV Mode
                 </Button>
               </Link>
               <Link href="/party/dashboard">
-                <Button className="w-full" variant="outline">
+                <Button className="w-full h-11" variant="outline">
                   Party Dashboard
                 </Button>
               </Link>
             </CardContent>
           </Card>
 
-          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+          <Card className="border-cyan-300/25 bg-white/8 backdrop-blur">
             <CardContent className="pt-6 space-y-3">
               <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Sound + Haptics</div>
               <Button
                 onClick={() => setSoundEnabled((prev) => !prev)}
-                className="w-full"
+                className="w-full h-11"
                 variant={soundEnabled ? 'default' : 'secondary'}
               >
                 {soundEnabled ? 'Sound On' : 'Sound Off'}
               </Button>
               <Button
                 onClick={() => setHapticsEnabled((prev) => !prev)}
-                className="w-full"
+                className="w-full h-11"
                 variant={hapticsEnabled ? 'default' : 'secondary'}
               >
                 {hapticsEnabled ? 'Haptics On' : 'Haptics Off'}

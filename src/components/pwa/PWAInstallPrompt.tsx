@@ -21,11 +21,20 @@ export function PWAInstallPrompt() {
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
+    registerServiceWorker();
+
+    const isStandalone =
+      window.matchMedia('(display-mode: standalone)').matches ||
+      (window.navigator as any).standalone;
+
     // Check if already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    if (isStandalone) {
       setIsInstalled(true);
       return;
     }
+
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    const isiOSDevice = /iphone|ipad|ipod/.test(userAgent);
 
     // Check if user has dismissed the prompt before
     const dismissed = localStorage.getItem('pwa-install-dismissed');
@@ -40,7 +49,7 @@ export function PWAInstallPrompt() {
       }
     }
 
-    // Listen for the beforeinstallprompt event
+    // Listen for the beforeinstallprompt event (Chrome/Edge/Android)
     const handler = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
@@ -58,6 +67,13 @@ export function PWAInstallPrompt() {
       setIsInstalled(true);
       setShowPrompt(false);
     });
+
+    // iOS Safari does not fire beforeinstallprompt, show a manual prompt
+    if (isiOSDevice) {
+      setTimeout(() => {
+        setShowPrompt(true);
+      }, 3000);
+    }
 
     return () => {
       window.removeEventListener('beforeinstallprompt', handler);
@@ -105,28 +121,47 @@ export function PWAInstallPrompt() {
               
               <div className="flex-1">
                 <h3 className="font-bold text-lg mb-1">Install PartyOS</h3>
-                <p className="text-sm text-white/90 mb-3">
-                  Add to your home screen for quick access and offline use!
-                </p>
-                
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleInstall}
-                    size="sm"
-                    className="bg-white text-purple-600 hover:bg-gray-100 font-bold"
-                  >
-                    <Download className="w-4 h-4 mr-1" />
-                    Install
-                  </Button>
-                  <Button
-                    onClick={handleDismiss}
-                    size="sm"
-                    variant="outline"
-                    className="border-white/30 text-white hover:bg-white/10"
-                  >
-                    Not Now
-                  </Button>
-                </div>
+                {deferredPrompt ? (
+                  <>
+                    <p className="text-sm text-white/90 mb-3">
+                      Add to your home screen for quick access and offline use!
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleInstall}
+                        size="sm"
+                        className="bg-white text-purple-600 hover:bg-gray-100 font-bold"
+                      >
+                        <Download className="w-4 h-4 mr-1" />
+                        Install
+                      </Button>
+                      <Button
+                        onClick={handleDismiss}
+                        size="sm"
+                        variant="outline"
+                        className="border-white/30 text-white hover:bg-white/10"
+                      >
+                        Not Now
+                      </Button>
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-sm text-white/90 mb-3">
+                      On iPhone, tap <strong>Share</strong> then <strong>Add to Home Screen</strong>.
+                    </p>
+                    <div className="flex gap-2">
+                      <Button
+                        onClick={handleDismiss}
+                        size="sm"
+                        variant="outline"
+                        className="border-white/30 text-white hover:bg-white/10"
+                      >
+                        Got it
+                      </Button>
+                    </div>
+                  </>
+                )}
               </div>
 
               <button

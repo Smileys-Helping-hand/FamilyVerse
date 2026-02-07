@@ -1,4 +1,3 @@
-import { redirect } from 'next/navigation';
 import { getCurrentPartyUserAction } from '@/app/actions/party-logic';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ConfigEditor } from '@/components/game-master/ConfigEditor';
@@ -16,16 +15,8 @@ import { Shield } from 'lucide-react';
 export default async function AdminDashboard() {
   // Check if user is authenticated and is admin
   const user = await getCurrentPartyUserAction();
-  
-  if (!user) {
-    // Not logged in, redirect to join page
-    redirect('/party/join');
-  }
-  
-  if (user.role !== 'admin') {
-    // Not an admin, redirect to guest dashboard
-    redirect('/party/dashboard');
-  }
+
+  const displayName = user?.name ?? 'Admin';
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
@@ -40,9 +31,9 @@ export default async function AdminDashboard() {
             <div className="flex items-center gap-4 text-white">
               <div className="text-right">
                 <p className="text-sm text-slate-300">Logged in as</p>
-                <p className="font-bold">{user.name}</p>
+                <p className="font-bold">{displayName}</p>
               </div>
-              <LogoutButton />
+              {user && <LogoutButton />}
             </div>
           </div>
           <p className="text-slate-300">Control the Blackout game experience</p>

@@ -8,7 +8,10 @@ import {
   Lightbulb, 
   Home,
   Volume2,
-  VolumeX 
+  VolumeX,
+  Flag,
+  FileText,
+  ListChecks
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -54,10 +57,29 @@ export default function SpyGameActive() {
   const [chaosEvent, setChaosEvent] = useState<string | null>(null);
   const [speedRoundActive, setSpeedRoundActive] = useState(false);
   const [inquisitorTarget, setInquisitorTarget] = useState<string | null>(null);
+  const [intelNotes, setIntelNotes] = useState("");
+  const [intelFlagInput, setIntelFlagInput] = useState("");
+  const [intelFlags, setIntelFlags] = useState<string[]>([]);
+  const [intelChecklist, setIntelChecklist] = useState<Record<string, boolean>>({});
 
   const alarmAudioRef = useRef<HTMLAudioElement | null>(null);
   const sirenAudioRef = useRef<HTMLAudioElement | null>(null);
   const chaosTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const intelChecklistItems = [
+    "Avoided eye contact",
+    "Over-explained a detail",
+    "Mirrored last speaker",
+    "Changed their story",
+    "Too specific too fast",
+  ];
+
+  const intelPrompts = [
+    "Hesitated on the word",
+    "Asked for repeats",
+    "Deflected with jokes",
+    "Followed the crowd",
+  ];
 
   // Load game config and start timer
   useEffect(() => {
@@ -87,6 +109,54 @@ export default function SpyGameActive() {
       startChaosMode();
     }
   }, [router]);
+
+  useEffect(() => {
+    if (!gameConfig || !gameData) {
+      return;
+    }
+
+    const baseKey = `spy-intel:${gameConfig.category}:${gameData.secretWord}`;
+    const savedNotes = localStorage.getItem(`${baseKey}:notes`);
+    const savedFlags = localStorage.getItem(`${baseKey}:flags`);
+    const savedChecklist = localStorage.getItem(`${baseKey}:checklist`);
+
+    if (savedNotes) {
+      setIntelNotes(savedNotes);
+    }
+
+    if (savedFlags) {
+      try {
+        const parsed = JSON.parse(savedFlags);
+        if (Array.isArray(parsed)) {
+          setIntelFlags(parsed);
+        }
+      } catch {
+        setIntelFlags([]);
+      }
+    }
+
+    if (savedChecklist) {
+      try {
+        const parsed = JSON.parse(savedChecklist);
+        if (parsed && typeof parsed === "object") {
+          setIntelChecklist(parsed);
+        }
+      } catch {
+        setIntelChecklist({});
+      }
+    }
+  }, [gameConfig, gameData]);
+
+  useEffect(() => {
+    if (!gameConfig || !gameData) {
+      return;
+    }
+
+    const baseKey = `spy-intel:${gameConfig.category}:${gameData.secretWord}`;
+    localStorage.setItem(`${baseKey}:notes`, intelNotes);
+    localStorage.setItem(`${baseKey}:flags`, JSON.stringify(intelFlags));
+    localStorage.setItem(`${baseKey}:checklist`, JSON.stringify(intelChecklist));
+  }, [gameConfig, gameData, intelNotes, intelFlags, intelChecklist]);
 
   // Timer countdown
   useEffect(() => {
@@ -184,6 +254,27 @@ export default function SpyGameActive() {
     }, 10000);
   };
 
+  const handleAddIntelFlag = () => {
+    const trimmed = intelFlagInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setIntelFlags((prev) => {
+      if (prev.includes(trimmed)) {
+        return prev;
+      }
+      return [...prev, trimmed];
+    });
+    setIntelFlagInput("");
+  };
+
+  const handleAddIntelPrompt = (prompt: string) => {
+    const trimmed = intelNotes.trim();
+    const next = trimmed.length > 0 ? `${trimmed}\n- ${prompt}` : `- ${prompt}`;
+    setIntelNotes(next);
+  };
+
   // Format time as MM:SS
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -274,6 +365,10 @@ export default function SpyGameActive() {
   const spyNames = gameData.assignments
     .filter((p) => p.isSpy)
     .map((p) => p.name);
+
+  const checkedIntelCount = intelChecklistItems.filter(
+    (item) => intelChecklist[item]
+  ).length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
@@ -445,6 +540,127 @@ export default function SpyGameActive() {
             If the game stalls, click "Send Hint" to help players along
           </p>
         </Card>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <Card className="bg-slate-800/60 border-purple-700 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2 text-white">
+                <Flag className="w-5 h-5 text-pink-400" />
+                <h3 className="text-lg font-semibold">Intel Board</h3>
+              </div>
+              <span className="text-xs text-slate-300">
+                Flags {intelFlags.length} • Checklist {checkedIntelCount}/{intelChecklistItems.length}
+              </span>
+            </div>
+
+            <p className="text-slate-400 text-sm mb-3">
+              Flag suspicious players and keep a short list to watch.
+            </p>
+            <div className="flex gap-2 mb-4">
+              <input
+                value={intelFlagInput}
+                onChange={(event) => setIntelFlagInput(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    handleAddIntelFlag();
+                  }
+                }}
+                placeholder="Add a suspect"
+                className="flex-1 rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-pink-400"
+              />
+              <Button
+                onClick={handleAddIntelFlag}
+                className="bg-pink-500 hover:bg-pink-600 text-white"
+              >
+                Flag
+              </Button>
+            </div>
+
+            {intelFlags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {intelFlags.map((name) => (
+                  <span
+                    key={name}
+                    className="flex items-center gap-2 rounded-full bg-pink-500/10 px-3 py-1 text-xs text-pink-100"
+                  >
+                    {name}
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setIntelFlags((prev) => prev.filter((entry) => entry !== name))
+                      }
+                      className="text-pink-200 hover:text-white"
+                    >
+                      Remove
+                    </button>
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">No suspects flagged yet.</p>
+            )}
+          </Card>
+
+          <Card className="bg-slate-800/60 border-slate-700 p-5">
+            <div className="flex items-center gap-2 text-white mb-3">
+              <FileText className="w-5 h-5 text-purple-300" />
+              <h3 className="text-lg font-semibold">Field Notes</h3>
+            </div>
+
+            <textarea
+              value={intelNotes}
+              onChange={(event) => setIntelNotes(event.target.value)}
+              placeholder="Write your suspicions, alibis, or tells..."
+              className="min-h-[140px] w-full rounded-md border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-purple-400"
+            />
+
+            <div className="mt-3 space-y-3">
+              <div>
+                <p className="text-xs text-slate-400 mb-2">Quick prompts</p>
+                <div className="flex flex-wrap gap-2">
+                  {intelPrompts.map((prompt) => (
+                    <Button
+                      key={prompt}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="border-slate-600 text-slate-200 hover:bg-slate-700"
+                      onClick={() => handleAddIntelPrompt(prompt)}
+                    >
+                      {prompt}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-xs text-slate-400 mb-2 flex items-center gap-2">
+                  <ListChecks className="w-4 h-4" />
+                  Behavior checklist
+                </p>
+                <div className="space-y-2">
+                  {intelChecklistItems.map((item) => (
+                    <label key={item} className="flex items-center gap-2 text-sm text-slate-200">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(intelChecklist[item])}
+                        onChange={() =>
+                          setIntelChecklist((prev) => ({
+                            ...prev,
+                            [item]: !prev[item],
+                          }))
+                        }
+                        className="h-4 w-4 rounded border-slate-600 bg-slate-900"
+                      />
+                      <span>{item}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </Card>
+        </div>
 
         {/* Game Info */}
         <div className="grid grid-cols-2 gap-4">

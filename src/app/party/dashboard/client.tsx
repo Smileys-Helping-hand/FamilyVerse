@@ -2,7 +2,18 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Coins, Trophy, Gamepad2, TrendingUp, ArrowLeft, Sparkles, Sword } from 'lucide-react';
+import {
+  User,
+  Coins,
+  Trophy,
+  Gamepad2,
+  TrendingUp,
+  ArrowLeft,
+  Sparkles,
+  Sword,
+  Flag,
+  FileText,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
@@ -47,7 +58,103 @@ export default function PartyDashboardClient({ user }: { user: PartyUser }) {
   const [walletLoading, setWalletLoading] = useState(false);
   const [walletSummary, setWalletSummary] = useState<any>(null);
   const [startingImposter, setStartingImposter] = useState(false);
+  const [imposterNotes, setImposterNotes] = useState('');
+  const [flagInput, setFlagInput] = useState('');
+  const [flaggedPlayers, setFlaggedPlayers] = useState<string[]>([]);
+  const [imposterChecklist, setImposterChecklist] = useState<Record<string, boolean>>({});
   const { toast } = useToast();
+
+  const intelChecklistItems = [
+    'Avoided eye contact',
+    'Over-explained a detail',
+    'Mirrored last speaker',
+    'Changed their story',
+    'Too specific too fast',
+  ];
+
+  const intelPrompts = [
+    'Hesitated on the word',
+    'Asked for repeats',
+    'Deflected with jokes',
+    'Followed the crowd',
+  ];
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    const notesKey = `imposter-notes:${user.id}`;
+    const flagsKey = `imposter-flags:${user.id}`;
+    const checklistKey = `imposter-checklist:${user.id}`;
+    const savedNotes = localStorage.getItem(notesKey);
+    const savedFlags = localStorage.getItem(flagsKey);
+    const savedChecklist = localStorage.getItem(checklistKey);
+
+    if (savedNotes) {
+      setImposterNotes(savedNotes);
+    }
+
+    if (savedFlags) {
+      try {
+        const parsed = JSON.parse(savedFlags);
+        if (Array.isArray(parsed)) {
+          setFlaggedPlayers(parsed);
+        }
+      } catch {
+        setFlaggedPlayers([]);
+      }
+    }
+
+    if (savedChecklist) {
+      try {
+        const parsed = JSON.parse(savedChecklist);
+        if (parsed && typeof parsed === 'object') {
+          setImposterChecklist(parsed);
+        }
+      } catch {
+        setImposterChecklist({});
+      }
+    }
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) {
+      return;
+    }
+
+    const notesKey = `imposter-notes:${user.id}`;
+    const flagsKey = `imposter-flags:${user.id}`;
+    const checklistKey = `imposter-checklist:${user.id}`;
+    localStorage.setItem(notesKey, imposterNotes);
+    localStorage.setItem(flagsKey, JSON.stringify(flaggedPlayers));
+    localStorage.setItem(checklistKey, JSON.stringify(imposterChecklist));
+  }, [user?.id, imposterNotes, flaggedPlayers, imposterChecklist]);
+
+  const handleAddFlag = () => {
+    const trimmed = flagInput.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    setFlaggedPlayers((prev) => {
+      if (prev.includes(trimmed)) {
+        return prev;
+      }
+      return [...prev, trimmed];
+    });
+    setFlagInput('');
+  };
+
+  const handleAddPrompt = (prompt: string) => {
+    const trimmed = imposterNotes.trim();
+    const next = trimmed.length > 0 ? `${trimmed}\n- ${prompt}` : `- ${prompt}`;
+    setImposterNotes(next);
+  };
+
+  const checkedCount = intelChecklistItems.filter(
+    (item) => imposterChecklist[item]
+  ).length;
 
   useEffect(() => {
     if (!walletOpen) {
@@ -400,6 +507,157 @@ export default function PartyDashboardClient({ user }: { user: PartyUser }) {
                 </Card>
               </Link>
             </motion.div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <Card className="border-2 border-fuchsia-500/40 bg-gradient-to-br from-fuchsia-950/60 to-slate-950">
+                <CardHeader>
+                  <CardTitle className="flex items-center justify-between text-white">
+                    <span className="flex items-center gap-2">
+                      <Gamepad2 className="w-5 h-5" />
+                      Imposter Game Dashboard
+                    </span>
+                    <Badge variant="secondary">🎭 Live</Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4 text-sm text-white/80">
+                  <p>
+                    Track the live round, check your role, and jump into the active session.
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">Flags: {flaggedPlayers.length}</Badge>
+                    <Badge variant="secondary">Notes: {imposterNotes.trim() ? 'Active' : 'Empty'}</Badge>
+                    <Badge variant="secondary">
+                      Checklist: {checkedCount}/{intelChecklistItems.length}
+                    </Badge>
+                  </div>
+                  <Link href="/party/spy-game/active">
+                    <Button className="w-full">Open Imposter Dashboard</Button>
+                  </Link>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Notes + Suspect Flags
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Private notes for this round</p>
+                    <textarea
+                      value={imposterNotes}
+                      onChange={(event) => setImposterNotes(event.target.value)}
+                      placeholder="Write your suspicions, alibis, or observations..."
+                      className="min-h-[140px] w-full rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Flag a suspect</p>
+                    <div className="flex gap-2">
+                      <input
+                        value={flagInput}
+                        onChange={(event) => setFlagInput(event.target.value)}
+                        onKeyDown={(event) => {
+                          if (event.key === 'Enter') {
+                            event.preventDefault();
+                            handleAddFlag();
+                          }
+                        }}
+                        placeholder="Add a name"
+                        className="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-fuchsia-500"
+                      />
+                      <Button onClick={handleAddFlag} className="shrink-0">
+                        <Flag className="mr-2 h-4 w-4" />
+                        Flag
+                      </Button>
+                    </div>
+                  </div>
+
+                  {flaggedPlayers.length > 0 ? (
+                    <div className="space-y-2">
+                      <p className="text-sm text-muted-foreground">Flagged suspects</p>
+                      <div className="flex flex-wrap gap-2">
+                        {flaggedPlayers.map((player) => (
+                          <span
+                            key={player}
+                            className="flex items-center gap-2 rounded-full bg-fuchsia-500/10 px-3 py-1 text-xs"
+                          >
+                            {player}
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="h-5 px-2 text-xs"
+                              onClick={() =>
+                                setFlaggedPlayers((prev) => prev.filter((name) => name !== player))
+                              }
+                            >
+                              Remove
+                            </Button>
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      No suspects flagged yet. Add a name to track who feels suspicious.
+                    </p>
+                  )}
+                </CardContent>
+              </Card>
+
+              <Card className="border border-fuchsia-500/20">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Intel Toolkit
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Quick prompts</p>
+                    <div className="flex flex-wrap gap-2">
+                      {intelPrompts.map((prompt) => (
+                        <Button
+                          key={prompt}
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleAddPrompt(prompt)}
+                        >
+                          {prompt}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <p className="text-sm text-muted-foreground">Behavior checklist</p>
+                    <div className="space-y-2">
+                      {intelChecklistItems.map((item) => (
+                        <label key={item} className="flex items-center gap-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={Boolean(imposterChecklist[item])}
+                            onChange={() =>
+                              setImposterChecklist((prev) => ({
+                                ...prev,
+                                [item]: !prev[item],
+                              }))
+                            }
+                            className="h-4 w-4 rounded border-muted"
+                          />
+                          <span>{item}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
 
             {isAdmin && (
               <Card className="border-dashed">

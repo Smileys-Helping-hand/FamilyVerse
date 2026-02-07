@@ -1,227 +1,209 @@
 'use client';
 
 import { useState, useRef } from 'react';
-import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { 
-  Printer, Download, Share2, Wifi, Link2, Trophy, 
-  Type, QrCode, Trash2,
-  Palette, Users,
-  Gamepad2, Plus
+  Printer, Download, Wifi, Users, Car, Gamepad2,
+  Scissors, RefreshCw, Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Slider } from '@/components/ui/slider';
-import { Switch } from '@/components/ui/switch';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 
 // =============================================================================
 // Types
 // =============================================================================
-type ElementType = 'qr' | 'text' | 'icon';
+type TemplateType = 'wifi' | 'party' | 'spy' | 'simrig';
 
-interface CanvasElement {
-  id: string;
-  type: ElementType;
-  content: string;
-  size: number;
-  x: number;
-  y: number;
+interface WifiData {
+  ssid: string;
+  password: string;
+}
+
+interface PartyData {
+  code: string;
+  baseUrl: string;
+}
+
+interface SpyData {
+  playerName: string;
+  playerId: string;
+  baseUrl: string;
+}
+
+interface SimRigData {
+  challengerName: string;
+  baseUrl: string;
 }
 
 // =============================================================================
-// QR Design Studio - WYSIWYG Editor for Thermal Labels
+// QR Design Studio - Template-Based Thermal Label Editor
 // =============================================================================
 export default function QRStudioPage() {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLDivElement>(null);
+  const batchCanvasRef = useRef<HTMLDivElement>(null);
+
+  // Template state
+  const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('wifi');
   
-  // Canvas state
-  const [elements, setElements] = useState<CanvasElement[]>([
-    { id: 'qr-1', type: 'qr', content: 'https://familyverse.app', size: 200, x: 92, y: 50 },
-    { id: 'text-1', type: 'text', content: 'SCAN ME', size: 24, x: 142, y: 280 },
-  ]);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [qrData, setQrData] = useState('https://familyverse.app');
-  const [inverted, setInverted] = useState(false);
-  const [qrSize, setQrSize] = useState(200);
-  
-  // Quick Action states
-  const [wifiSSID, setWifiSSID] = useState('');
-  const [wifiPassword, setWifiPassword] = useState('');
-  const wifiType = 'WPA';
-  
-  // Spy Game states
-  const [spyCardCount, setSpyCardCount] = useState(10);
-  const [baseUrl, setBaseUrl] = useState('https://alphatraders.co.za');
+  // Form data for each template
+  const [wifiData, setWifiData] = useState<WifiData>({ ssid: '', password: '' });
+  const [partyData, setPartyData] = useState<PartyData>({ code: 'PARTY2026', baseUrl: 'https://alphatraders.co.za' });
+  const [spyData, setSpyData] = useState<SpyData>({ playerName: 'Agent X', playerId: '001', baseUrl: 'https://alphatraders.co.za' });
+  const [simRigData, setSimRigData] = useState<SimRigData>({ challengerName: 'Uncle Mo', baseUrl: 'https://alphatraders.co.za' });
+
+  // Batch mode
+  const [batchPlayers, setBatchPlayers] = useState<string[]>(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6']);
+  const [showBatchPreview, setShowBatchPreview] = useState(false);
+  const [generating, setGenerating] = useState(false);
 
   // =============================================================================
-  // Element Management
+  // Generate QR Content based on template
   // =============================================================================
-  const addElement = (type: ElementType, content: string) => {
-    const newElement: CanvasElement = {
-      id: `${type}-${Date.now()}`,
-      type,
-      content,
-      size: type === 'qr' ? 150 : type === 'text' ? 20 : 40,
-      x: 142,
-      y: elements.length * 60 + 50,
-    };
-    setElements([...elements, newElement]);
-    setSelectedId(newElement.id);
-  };
-
-  const removeElement = (id: string) => {
-    setElements(elements.filter(el => el.id !== id));
-    if (selectedId === id) setSelectedId(null);
-  };
-
-  const updateElement = (id: string, updates: Partial<CanvasElement>) => {
-    setElements(elements.map(el => 
-      el.id === id ? { ...el, ...updates } : el
-    ));
-  };
-
-  const updateQRData = (data: string) => {
-    setQrData(data);
-    elements.forEach(el => {
-      if (el.type === 'qr') {
-        updateElement(el.id, { content: data });
-      }
-    });
-  };
-
-  // =============================================================================
-  // Quick Actions
-  // =============================================================================
-  const generateWifiQR = () => {
-    if (!wifiSSID) {
-      toast({ title: 'Enter WiFi name', variant: 'destructive' });
-      return;
+  const getQRContent = (): string => {
+    switch (selectedTemplate) {
+      case 'wifi':
+        return `WIFI:S:${wifiData.ssid};T:WPA;P:${wifiData.password};;`;
+      case 'party':
+        return `${partyData.baseUrl}/party/join?code=${partyData.code}`;
+      case 'spy':
+        return `${spyData.baseUrl}/spy/reveal/${spyData.playerId}`;
+      case 'simrig':
+        return `${simRigData.baseUrl}/party/leaderboard`;
+      default:
+        return 'https://familyverse.app';
     }
-    const wifiString = `WIFI:S:${wifiSSID};T:${wifiType};P:${wifiPassword};;`;
-    updateQRData(wifiString);
-    toast({ title: '📶 WiFi QR Generated!', description: 'Scan to auto-connect' });
-  };
-
-  const generateJoinPartyQR = () => {
-    const partyUrl = `${baseUrl}/party/join`;
-    updateQRData(partyUrl);
-    toast({ title: '🎉 Party Link Generated!' });
-  };
-
-  const generateLeaderboardQR = () => {
-    const leaderboardUrl = `${baseUrl}/party/leaderboard`;
-    updateQRData(leaderboardUrl);
-    toast({ title: '🏆 Leaderboard QR Generated!' });
   };
 
   // =============================================================================
-  // Spy Game Batch Generation
+  // Native Bridge - Direct Print via Share API
   // =============================================================================
-  const generateSpyCards = async () => {
-    toast({ title: '🕵️ Generating Spy Cards...', description: `Creating ${spyCardCount} unique cards` });
-    
-    const cards: string[] = [];
-    for (let i = 0; i < spyCardCount; i++) {
-      const token = btoa(`spy-${Date.now()}-${i}-${Math.random().toString(36).slice(2)}`);
-      const deepLink = `${baseUrl}/spy/reveal?token=${token}`;
-      cards.push(deepLink);
-    }
-    
-    // Set the first card as preview
-    updateQRData(cards[0]);
-    
-    toast({ 
-      title: '✅ Spy Cards Ready!', 
-      description: `${spyCardCount} unique QR codes generated.` 
-    });
-    
-    return cards;
-  };
+  const handlePrint = async () => {
+    if (!canvasRef.current) return;
 
-  // =============================================================================
-  // Print Engine
-  // =============================================================================
-  const captureCanvas = async (): Promise<Blob | null> => {
-    if (!canvasRef.current) return null;
-    
     try {
+      setGenerating(true);
+      toast({ title: '📸 Capturing sticker...', description: 'Please wait' });
+
       const canvas = await html2canvas(canvasRef.current, {
-        backgroundColor: inverted ? '#000000' : '#ffffff',
-        scale: 2,
+        backgroundColor: '#ffffff',
+        scale: 2, // High DPI
         useCORS: true,
+        logging: false,
       });
-      
-      return new Promise((resolve) => {
-        canvas.toBlob((blob) => resolve(blob), 'image/png', 1.0);
-      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toast({ title: 'Capture failed', variant: 'destructive' });
+          setGenerating(false);
+          return;
+        }
+
+        const file = new File([blob], 'sticker.png', { type: 'image/png' });
+
+        // Check if native sharing is supported (mobile)
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'Print Sticker',
+            });
+            toast({ title: '🖨️ Sent to Share Sheet!', description: 'Tap FunPrint to print' });
+          } catch (err) {
+            if ((err as Error).name !== 'AbortError') {
+              console.error('Share failed', err);
+              // Fallback to download
+              downloadBlob(blob, 'sticker.png');
+            }
+          }
+        } else {
+          // Desktop fallback: download file
+          downloadBlob(blob, 'sticker.png');
+          toast({ title: '📥 Downloaded!', description: 'Open in your printer app' });
+        }
+
+        setGenerating(false);
+      }, 'image/png', 1.0);
     } catch (error) {
-      console.error('Canvas capture failed:', error);
-      return null;
+      console.error('Print failed:', error);
+      toast({ title: 'Print failed', variant: 'destructive' });
+      setGenerating(false);
     }
   };
 
-  const downloadPNG = async () => {
-    const blob = await captureCanvas();
-    if (!blob) {
-      toast({ title: 'Export failed', variant: 'destructive' });
-      return;
-    }
-    
+  const downloadBlob = (blob: Blob, filename: string) => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `qr-sticker-${Date.now()}.png`;
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
-    
-    toast({ title: '📥 Downloaded!', description: 'PNG ready for printing' });
   };
 
-  const shareToPrinter = async () => {
-    const blob = await captureCanvas();
-    if (!blob) {
-      toast({ title: 'Export failed', variant: 'destructive' });
-      return;
-    }
+  // =============================================================================
+  // Batch Spy Card Factory
+  // =============================================================================
+  const generateBatchSpyCards = async () => {
+    if (!batchCanvasRef.current) return;
 
-    const file = new File([blob], 'qr-sticker.png', { type: 'image/png' });
-    
-    if (navigator.share && navigator.canShare({ files: [file] })) {
-      try {
-        await navigator.share({
-          files: [file],
-          title: 'QR Sticker',
-          text: 'Print this sticker!',
-        });
-        toast({ title: '🖨️ Sent to Share Sheet!', description: 'Select your printer app' });
-      } catch (error) {
-        if ((error as Error).name !== 'AbortError') {
-          toast({ title: 'Share failed', variant: 'destructive' });
+    try {
+      setGenerating(true);
+      toast({ title: '🕵️ Generating Spy Card Strip...', description: `${batchPlayers.length} cards` });
+
+      const canvas = await html2canvas(batchCanvasRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+
+      canvas.toBlob(async (blob) => {
+        if (!blob) {
+          toast({ title: 'Batch generation failed', variant: 'destructive' });
+          setGenerating(false);
+          return;
         }
-      }
-    } else {
-      downloadPNG();
+
+        const file = new File([blob], 'spy-cards-batch.png', { type: 'image/png' });
+
+        if (navigator.share && navigator.canShare({ files: [file] })) {
+          try {
+            await navigator.share({
+              files: [file],
+              title: 'Spy Cards Batch',
+            });
+            toast({ title: '🖨️ Batch Sent!', description: 'Print and cut along the lines' });
+          } catch (err) {
+            if ((err as Error).name !== 'AbortError') {
+              downloadBlob(blob, 'spy-cards-batch.png');
+            }
+          }
+        } else {
+          downloadBlob(blob, 'spy-cards-batch.png');
+          toast({ title: '📥 Batch Downloaded!', description: 'Print and cut along the lines' });
+        }
+
+        setGenerating(false);
+      }, 'image/png', 1.0);
+    } catch (error) {
+      console.error('Batch generation failed:', error);
+      toast({ title: 'Batch failed', variant: 'destructive' });
+      setGenerating(false);
     }
   };
 
-  // Icon Library
-  const icons = [
-    { emoji: '🕵️', label: 'Spy' },
-    { emoji: '🏎️', label: 'Car' },
-    { emoji: '👻', label: 'Ghost' },
-    { emoji: '🎮', label: 'Game' },
-    { emoji: '🏆', label: 'Trophy' },
-    { emoji: '📶', label: 'WiFi' },
-    { emoji: '🎉', label: 'Party' },
-    { emoji: '⭐', label: 'Star' },
-    { emoji: '🔥', label: 'Fire' },
-    { emoji: '💎', label: 'Diamond' },
+  // =============================================================================
+  // Template Configurations
+  // =============================================================================
+  const templates: { id: TemplateType; name: string; icon: React.ReactNode; color: string }[] = [
+    { id: 'wifi', name: 'WiFi Login', icon: <Wifi className="w-6 h-6" />, color: 'from-blue-500 to-cyan-500' },
+    { id: 'party', name: 'Party Join', icon: <Users className="w-6 h-6" />, color: 'from-green-500 to-emerald-500' },
+    { id: 'spy', name: 'Spy Role', icon: <Gamepad2 className="w-6 h-6" />, color: 'from-red-500 to-orange-500' },
+    { id: 'simrig', name: 'Sim Rig', icon: <Car className="w-6 h-6" />, color: 'from-purple-500 to-pink-500' },
   ];
 
   // =============================================================================
@@ -233,144 +215,60 @@ export default function QRStudioPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-white flex items-center gap-3">
-            <QrCode className="w-8 h-8 text-purple-400" />
+            <Printer className="w-8 h-8 text-purple-400" />
             QR Design Studio
           </h1>
-          <p className="text-gray-400 mt-1">WYSIWYG editor for thermal label printing</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={downloadPNG}>
-            <Download className="w-4 h-4 mr-2" />
-            Download PNG
-          </Button>
-          <Button onClick={shareToPrinter} className="bg-gradient-to-r from-purple-500 to-pink-500">
-            <Printer className="w-4 h-4 mr-2" />
-            Send to Printer
-          </Button>
+          <p className="text-gray-400 mt-1">58mm Thermal Label Designer • Direct to FunPrint</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* LEFT: The Canvas */}
-        <Card className="bg-black/40 border-purple-500/30">
-          <CardHeader>
-            <CardTitle className="text-white flex items-center gap-2">
-              <Palette className="w-5 h-5" />
-              Canvas (384px Thermal Width)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {/* Canvas Container */}
-            <div className="flex justify-center">
-              <div
-                ref={canvasRef}
-                className={`relative transition-colors ${inverted ? 'bg-black' : 'bg-white'}`}
-                style={{ width: 384, minHeight: 400, padding: 16 }}
-              >
-                {elements.map((element) => (
-                  <motion.div
-                    key={element.id}
-                    className={`absolute cursor-move ${selectedId === element.id ? 'ring-2 ring-purple-500 ring-offset-2' : ''}`}
-                    style={{ left: element.x, top: element.y }}
-                    drag
-                    dragMomentum={false}
-                    onDragEnd={(_, info) => {
-                      updateElement(element.id, {
-                        x: element.x + info.offset.x,
-                        y: element.y + info.offset.y,
-                      });
-                    }}
-                    onClick={() => setSelectedId(element.id)}
-                  >
-                    {element.type === 'qr' && (
-                      <QRCodeSVG
-                        value={element.content || ' '}
-                        size={qrSize}
-                        bgColor={inverted ? '#000000' : '#ffffff'}
-                        fgColor={inverted ? '#ffffff' : '#000000'}
-                        level="H"
-                        includeMargin={false}
-                      />
-                    )}
-                    {element.type === 'text' && (
-                      <p className={`font-bold ${inverted ? 'text-white' : 'text-black'}`} style={{ fontSize: element.size }}>
-                        {element.content}
-                      </p>
-                    )}
-                    {element.type === 'icon' && (
-                      <span style={{ fontSize: element.size }}>{element.content}</span>
-                    )}
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-
-            {/* Canvas Controls */}
-            <div className="mt-6 space-y-4">
-              <div className="flex items-center justify-between">
-                <Label className="text-gray-300">Inverted (White on Black)</Label>
-                <Switch checked={inverted} onCheckedChange={setInverted} />
-              </div>
-              
-              <div className="space-y-2">
-                <Label className="text-gray-300">QR Code Size: {qrSize}px</Label>
-                <Slider value={[qrSize]} onValueChange={([v]) => setQrSize(v)} min={100} max={350} step={10} />
-              </div>
-
-              {selectedId && (
-                <Button variant="destructive" size="sm" onClick={() => removeElement(selectedId)}>
-                  <Trash2 className="w-4 h-4 mr-1" />
-                  Delete Selected
-                </Button>
-              )}
-            </div>
-
-            {/* Add Elements */}
-            <div className="mt-6 border-t border-gray-700 pt-4">
-              <Label className="text-gray-300 mb-3 block">Add Elements</Label>
-              <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => addElement('qr', qrData)}>
-                  <QrCode className="w-4 h-4 mr-1" />
-                  QR Code
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => addElement('text', 'SCAN ME')}>
-                  <Type className="w-4 h-4 mr-1" />
-                  Text
-                </Button>
-                {icons.slice(0, 4).map((icon) => (
-                  <Button key={icon.emoji} size="sm" variant="ghost" onClick={() => addElement('icon', icon.emoji)} title={icon.label}>
-                    {icon.emoji}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* RIGHT: Data Source Tabs */}
+        {/* =================================================================== */}
+        {/* LEFT: Template Selector + Editor */}
+        {/* =================================================================== */}
         <div className="space-y-4">
-          <Tabs defaultValue="quick" className="w-full">
-            <TabsList className="grid grid-cols-3 w-full">
-              <TabsTrigger value="quick">⚡ Quick Actions</TabsTrigger>
-              <TabsTrigger value="spy">🕵️ Spy Cards</TabsTrigger>
-              <TabsTrigger value="custom">✏️ Custom</TabsTrigger>
-            </TabsList>
+          {/* Template Cards */}
+          <Card className="bg-black/40 border-purple-500/30">
+            <CardHeader>
+              <CardTitle className="text-white">⚡ Quick Templates</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                {templates.map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => setSelectedTemplate(t.id)}
+                    className={`p-4 rounded-lg border-2 transition-all ${
+                      selectedTemplate === t.id
+                        ? `bg-gradient-to-br ${t.color} border-white shadow-lg scale-105`
+                        : 'bg-black/30 border-gray-700 hover:border-gray-500'
+                    }`}
+                  >
+                    <div className={`${selectedTemplate === t.id ? 'text-white' : 'text-gray-400'}`}>
+                      {t.icon}
+                    </div>
+                    <p className={`mt-2 font-semibold ${selectedTemplate === t.id ? 'text-white' : 'text-gray-300'}`}>
+                      {t.name}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Quick Actions Tab */}
-            <TabsContent value="quick" className="space-y-4">
-              <Card className="bg-black/40 border-blue-500/30">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Wifi className="w-5 h-5 text-blue-400" />
-                    WiFi Login QR
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+          {/* Live Editor Form */}
+          <Card className="bg-black/40 border-gray-700">
+            <CardHeader>
+              <CardTitle className="text-white">Edit Content</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {selectedTemplate === 'wifi' && (
+                <>
                   <div>
-                    <Label>Network Name (SSID)</Label>
+                    <Label>WiFi Name (SSID)</Label>
                     <Input
-                      value={wifiSSID}
-                      onChange={(e) => setWifiSSID(e.target.value)}
+                      value={wifiData.ssid}
+                      onChange={(e) => setWifiData({ ...wifiData, ssid: e.target.value })}
                       placeholder="MyHomeWiFi"
                       className="bg-black/50"
                     />
@@ -378,168 +276,330 @@ export default function QRStudioPage() {
                   <div>
                     <Label>Password</Label>
                     <Input
-                      type="password"
-                      value={wifiPassword}
-                      onChange={(e) => setWifiPassword(e.target.value)}
+                      value={wifiData.password}
+                      onChange={(e) => setWifiData({ ...wifiData, password: e.target.value })}
                       placeholder="••••••••"
                       className="bg-black/50"
                     />
                   </div>
-                  <Button onClick={generateWifiQR} className="w-full">
-                    <Wifi className="w-4 h-4 mr-2" />
-                    Generate WiFi QR
-                  </Button>
-                </CardContent>
-              </Card>
+                </>
+              )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <Card className="bg-black/40 border-green-500/30 cursor-pointer hover:border-green-400 transition-colors" onClick={generateJoinPartyQR}>
-                  <CardContent className="p-4 text-center">
-                    <Link2 className="w-8 h-8 mx-auto mb-2 text-green-400" />
-                    <p className="font-semibold text-white">Join Party Link</p>
-                    <p className="text-xs text-gray-400">Party lobby URL</p>
-                  </CardContent>
-                </Card>
-                <Card className="bg-black/40 border-yellow-500/30 cursor-pointer hover:border-yellow-400 transition-colors" onClick={generateLeaderboardQR}>
-                  <CardContent className="p-4 text-center">
-                    <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
-                    <p className="font-semibold text-white">Leaderboard</p>
-                    <p className="text-xs text-gray-400">Sim Racing scores</p>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-
-            {/* Spy Game Cards Tab */}
-            <TabsContent value="spy" className="space-y-4">
-              <Card className="bg-black/40 border-red-500/30">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Users className="w-5 h-5 text-red-400" />
-                    Batch Spy Cards Generator
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              {selectedTemplate === 'party' && (
+                <>
                   <div>
-                    <Label>Number of Player Cards</Label>
-                    <div className="flex gap-2 mt-2">
-                      {[6, 8, 10, 12].map((n) => (
-                        <Button
-                          key={n}
-                          size="sm"
-                          variant={spyCardCount === n ? 'default' : 'outline'}
-                          onClick={() => setSpyCardCount(n)}
-                        >
-                          {n}
-                        </Button>
-                      ))}
-                    </div>
+                    <Label>Party Code</Label>
+                    <Input
+                      value={partyData.code}
+                      onChange={(e) => setPartyData({ ...partyData, code: e.target.value })}
+                      placeholder="PARTY2026"
+                      className="bg-black/50"
+                    />
                   </div>
                   <div>
                     <Label>Base URL</Label>
                     <Input
-                      value={baseUrl}
-                      onChange={(e) => setBaseUrl(e.target.value)}
-                      placeholder="https://yourapp.com"
+                      value={partyData.baseUrl}
+                      onChange={(e) => setPartyData({ ...partyData, baseUrl: e.target.value })}
                       className="bg-black/50"
                     />
                   </div>
-                  <Button onClick={generateSpyCards} className="w-full bg-gradient-to-r from-red-500 to-orange-500">
-                    <Gamepad2 className="w-4 h-4 mr-2" />
-                    Generate {spyCardCount} Spy Cards
-                  </Button>
-                  <p className="text-xs text-gray-400">
-                    Each card contains a unique deep link to the role reveal page.
-                  </p>
-                </CardContent>
-              </Card>
+                </>
+              )}
 
-              {/* Icon Palette */}
-              <Card className="bg-black/40 border-purple-500/30">
-                <CardHeader>
-                  <CardTitle className="text-white">Icon Library</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-5 gap-2">
-                    {icons.map((icon) => (
-                      <Button
-                        key={icon.emoji}
-                        variant="ghost"
-                        className="h-12 text-2xl hover:bg-purple-500/20"
-                        onClick={() => addElement('icon', icon.emoji)}
-                        title={icon.label}
-                      >
-                        {icon.emoji}
-                      </Button>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-
-            {/* Custom Tab */}
-            <TabsContent value="custom" className="space-y-4">
-              <Card className="bg-black/40 border-gray-500/30">
-                <CardHeader>
-                  <CardTitle className="text-white">Custom QR Data</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
+              {selectedTemplate === 'spy' && (
+                <>
                   <div>
-                    <Label>QR Code Content</Label>
+                    <Label>Player Name</Label>
                     <Input
-                      value={qrData}
-                      onChange={(e) => updateQRData(e.target.value)}
-                      placeholder="https://example.com or any text"
+                      value={spyData.playerName}
+                      onChange={(e) => setSpyData({ ...spyData, playerName: e.target.value })}
+                      placeholder="Agent X"
                       className="bg-black/50"
                     />
                   </div>
                   <div>
-                    <Label>Add Custom Text</Label>
-                    <div className="flex gap-2">
-                      <Input id="customText" placeholder="Your text here" className="bg-black/50" />
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          const input = document.getElementById('customText') as HTMLInputElement;
-                          if (input.value) {
-                            addElement('text', input.value);
-                            input.value = '';
-                          }
-                        }}
-                      >
-                        <Plus className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Label>Player ID</Label>
+                    <Input
+                      value={spyData.playerId}
+                      onChange={(e) => setSpyData({ ...spyData, playerId: e.target.value })}
+                      placeholder="001"
+                      className="bg-black/50"
+                    />
                   </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                </>
+              )}
 
-          {/* Export Actions */}
-          <Card className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border-purple-500/30">
-            <CardContent className="p-4">
-              <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
-                <Printer className="w-5 h-5" />
-                Print Engine
-              </h3>
-              <div className="grid grid-cols-2 gap-3">
-                <Button onClick={downloadPNG} variant="outline" className="w-full">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download PNG
+              {selectedTemplate === 'simrig' && (
+                <>
+                  <div>
+                    <Label>Challenger Name</Label>
+                    <Input
+                      value={simRigData.challengerName}
+                      onChange={(e) => setSimRigData({ ...simRigData, challengerName: e.target.value })}
+                      placeholder="Uncle Mo"
+                      className="bg-black/50"
+                    />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Batch Mode (Spy Only) */}
+          {selectedTemplate === 'spy' && (
+            <Card className="bg-red-900/20 border-red-500/30">
+              <CardHeader>
+                <CardTitle className="text-red-400 flex items-center gap-2">
+                  <Scissors className="w-5 h-5" />
+                  Batch Spy Card Factory
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label>Player Names (one per line)</Label>
+                  <textarea
+                    value={batchPlayers.join('\n')}
+                    onChange={(e) => setBatchPlayers(e.target.value.split('\n').filter(Boolean))}
+                    className="w-full h-32 bg-black/50 border border-gray-700 rounded-lg p-3 text-white text-sm"
+                    placeholder="Player 1&#10;Player 2&#10;Player 3"
+                  />
+                </div>
+                <Button
+                  onClick={() => setShowBatchPreview(!showBatchPreview)}
+                  variant="outline"
+                  className="w-full"
+                >
+                  {showBatchPreview ? 'Hide' : 'Preview'} Batch ({batchPlayers.length} cards)
                 </Button>
-                <Button onClick={shareToPrinter} className="w-full bg-gradient-to-r from-purple-500 to-pink-500">
-                  <Share2 className="w-4 h-4 mr-2" />
-                  Share to Printer
+                <Button
+                  onClick={generateBatchSpyCards}
+                  disabled={generating || batchPlayers.length === 0}
+                  className="w-full bg-gradient-to-r from-red-500 to-orange-500"
+                >
+                  <Printer className="w-4 h-4 mr-2" />
+                  {generating ? 'Generating...' : 'Generate & Print All Cards'}
                 </Button>
+                <p className="text-xs text-gray-400">
+                  Prints one long strip. Cut along the black lines.
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* =================================================================== */}
+        {/* RIGHT: Sticker Canvas Preview */}
+        {/* =================================================================== */}
+        <div className="space-y-4">
+          <Card className="bg-black/40 border-purple-500/30">
+            <CardHeader>
+              <CardTitle className="text-white flex items-center justify-between">
+                <span>📄 Sticker Preview</span>
+                <span className="text-xs text-gray-400 font-normal">384px (58mm @ 203dpi)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {/* Canvas Container with Cut Zone */}
+              <div className="flex justify-center">
+                <div className="border-2 border-dashed border-gray-500 p-2 bg-gray-800/50">
+                  <div
+                    ref={canvasRef}
+                    id="sticker-canvas"
+                    className="bg-white"
+                    style={{ width: 384, minHeight: 300, padding: 20 }}
+                  >
+                    {/* Template A: WiFi */}
+                    {selectedTemplate === 'wifi' && (
+                      <div className="text-center">
+                        <div className="flex justify-center mb-4">
+                          <QRCodeSVG
+                            value={getQRContent()}
+                            size={200}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                            level="H"
+                          />
+                        </div>
+                        <div className="text-black font-bold text-lg mb-2">📶 GET CONNECTED</div>
+                        <div className="text-black text-sm">
+                          <p><strong>SSID:</strong> {wifiData.ssid || 'Network Name'}</p>
+                          <p><strong>Pass:</strong> {wifiData.password ? '••••••••' : 'Password'}</p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Template B: Party Join */}
+                    {selectedTemplate === 'party' && (
+                      <div className="text-center">
+                        <div className="flex justify-center mb-4">
+                          <QRCodeSVG
+                            value={getQRContent()}
+                            size={250}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                            level="H"
+                          />
+                        </div>
+                        <div className="text-black font-black text-2xl tracking-wider">
+                          SCAN TO ENTER
+                        </div>
+                        <div className="text-black text-sm mt-2">
+                          Code: {partyData.code}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Template C: Spy Role */}
+                    {selectedTemplate === 'spy' && (
+                      <div className="text-center">
+                        <div className="bg-black text-white font-black text-xl py-2 -mx-5 -mt-5 mb-4">
+                          🔒 TOP SECRET 🔒
+                        </div>
+                        <div className="flex justify-center mb-4">
+                          <QRCodeSVG
+                            value={getQRContent()}
+                            size={180}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                            level="H"
+                          />
+                        </div>
+                        <div className="text-black font-bold text-lg">
+                          PLAYER: {spyData.playerName}
+                        </div>
+                        <div className="text-black text-xs mt-2">
+                          Scan to reveal your role
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Template D: Sim Rig */}
+                    {selectedTemplate === 'simrig' && (
+                      <div className="text-center">
+                        <div className="text-black font-black text-2xl mb-2">
+                          🏎️ FASTEST LAP?
+                        </div>
+                        <div className="flex justify-center mb-4">
+                          <QRCodeSVG
+                            value={getQRContent()}
+                            size={200}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                            level="H"
+                          />
+                        </div>
+                        <div className="border-t-2 border-black pt-2">
+                          <div className="text-black font-bold text-lg">
+                            BEAT {simRigData.challengerName.toUpperCase()}
+                          </div>
+                          <div className="text-black text-xs">
+                            Scan for Leaderboard
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
-              <p className="text-xs text-gray-400 mt-3">
-                💡 Tip: Use "Share to Printer" on mobile to send directly to your FunPrint app!
-              </p>
+
+              {/* Print Button - FAB Style */}
+              <div className="mt-6">
+                <Button
+                  onClick={handlePrint}
+                  disabled={generating}
+                  size="lg"
+                  className="w-full h-16 text-xl bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 shadow-lg hover:shadow-purple-500/50"
+                >
+                  <Printer className="w-6 h-6 mr-3" />
+                  {generating ? (
+                    <>
+                      <RefreshCw className="w-5 h-5 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : (
+                    '🖨️ SEND TO PRINTER'
+                  )}
+                </Button>
+                <p className="text-center text-xs text-gray-400 mt-2">
+                  Mobile: Opens Share Sheet → Tap FunPrint<br />
+                  Desktop: Downloads PNG file
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Quick Tips */}
+          <Card className="bg-gradient-to-r from-blue-900/30 to-purple-900/30 border-blue-500/30">
+            <CardContent className="p-4">
+              <h4 className="font-semibold text-white mb-2 flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-yellow-400" />
+                Sunday Party Workflow
+              </h4>
+              <ol className="text-sm text-gray-300 space-y-1 list-decimal list-inside">
+                <li>Select template (WiFi for fridge sticker)</li>
+                <li>Fill in details</li>
+                <li>Tap "Send to Printer"</li>
+                <li>Select FunPrint from share menu</li>
+                <li>Tap Print in FunPrint app</li>
+                <li>Stick it! 🎉</li>
+              </ol>
             </CardContent>
           </Card>
         </div>
       </div>
+
+      {/* =================================================================== */}
+      {/* Batch Preview (Hidden by default, used for capture) */}
+      {/* =================================================================== */}
+      {showBatchPreview && selectedTemplate === 'spy' && (
+        <Card className="bg-black/40 border-red-500/30">
+          <CardHeader>
+            <CardTitle className="text-white">Batch Preview (Scroll to see all)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex justify-center overflow-auto max-h-[600px]">
+              <div
+                ref={batchCanvasRef}
+                className="bg-white"
+                style={{ width: 384 }}
+              >
+                {batchPlayers.map((player, index) => (
+                  <div key={index}>
+                    {/* Card */}
+                    <div className="p-5 text-center" style={{ minHeight: 280 }}>
+                      <div className="bg-black text-white font-black text-xl py-2 -mx-5 mb-4">
+                        🔒 TOP SECRET 🔒
+                      </div>
+                      <div className="flex justify-center mb-4">
+                        <QRCodeSVG
+                          value={`${spyData.baseUrl}/spy/reveal/${btoa(`${player}-${index}`)}`}
+                          size={150}
+                          bgColor="#ffffff"
+                          fgColor="#000000"
+                          level="H"
+                        />
+                      </div>
+                      <div className="text-black font-bold text-lg">
+                        PLAYER: {player}
+                      </div>
+                      <div className="text-black text-xs mt-2">
+                        Scan to reveal your role
+                      </div>
+                    </div>
+                    {/* Cut Line (except for last card) */}
+                    {index < batchPlayers.length - 1 && (
+                      <div className="border-t-4 border-dashed border-black relative">
+                        <span className="absolute left-2 -top-3 bg-white px-1 text-black text-xs">✂️ CUT HERE</span>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

@@ -4,10 +4,18 @@ import type { NextRequest } from 'next/server';
 // =============================================================================
 // 🔒 THE IRON GATE - Military-Grade Admin Security
 // =============================================================================
-// Only mraaziqp@gmail.com gets the key. Everyone else gets the boot.
+// Add admins via ADMIN_EMAILS env var (comma-separated)
+// Default: mraaziqp@gmail.com
+// Example: ADMIN_EMAILS=mraaziqp@gmail.com,uncle@family.com,sister@family.com
 // =============================================================================
 
-const ALLOWED_ADMIN = 'mraaziqp@gmail.com';
+function getAllowedAdmins(): string[] {
+  const envAdmins = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL;
+  if (envAdmins) {
+    return envAdmins.split(',').map(email => email.trim().toLowerCase());
+  }
+  return ['mraaziqp@gmail.com'];
+}
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -16,9 +24,10 @@ export async function middleware(request: NextRequest) {
   if (pathname.startsWith('/admin')) {
     // Get the Firebase auth cookie (set by client-side auth)
     const authCookie = request.cookies.get('firebase-auth-email');
-    const currentUserEmail = authCookie?.value;
+    const currentUserEmail = authCookie?.value?.toLowerCase();
+    const allowedAdmins = getAllowedAdmins();
 
-    if (currentUserEmail !== ALLOWED_ADMIN) {
+    if (!currentUserEmail || !allowedAdmins.includes(currentUserEmail)) {
       // Log the unauthorized attempt
       console.warn(`🚨 IRON GATE: Unauthorized Admin Access Attempt by: ${currentUserEmail || 'Anonymous'}`);
       console.warn(`   Attempted path: ${pathname}`);

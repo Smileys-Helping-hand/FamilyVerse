@@ -130,19 +130,7 @@ export default function Header() {
 }
 
 function AdminAuthControls() {
-    const { data: session } = useSession();
-
-    if (session?.user?.email) {
-        return (
-            <Button variant="ghost" size="sm" onClick={() => signOut({ callbackUrl: '/' })}>
-                Sign out
-            </Button>
-        );
-    }
-
-    return (
-        <Button variant="ghost" size="sm" onClick={() => signIn('credentials')}>
-            Admin Sign-in
-        </Button>
-    );
+    // This component is no longer used - admin access is via Firebase Auth
+    // Keep for backwards compatibility but render nothing
+    return null;
 }

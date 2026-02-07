@@ -3,12 +3,25 @@
 import { db } from '@/lib/db';
 import { systemLogs, globalSettings } from '@/lib/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
-import { auth } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
-// Authorization helper
+// Helper to get allowed admin emails
+function getAllowedAdmins(): string[] {
+  const envAdmins = process.env.ADMIN_EMAILS || process.env.ADMIN_EMAIL;
+  if (envAdmins) {
+    return envAdmins.split(',').map(email => email.trim().toLowerCase());
+  }
+  return ['mraaziqp@gmail.com'];
+}
+
+// Authorization helper using Firebase auth cookie
 async function isAuthorizedAdmin() {
-  const session = await auth();
-  return session?.user?.email === (process.env.ADMIN_EMAIL || 'mraaziqp@gmail.com');
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get('firebase-auth-email');
+  const currentEmail = authCookie?.value?.toLowerCase();
+  
+  if (!currentEmail) return false;
+  return getAllowedAdmins().includes(currentEmail);
 }
 
 // ============================================

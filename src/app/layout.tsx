@@ -3,6 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthProvider } from '@/context/AuthContext';
+import Providers from '@/components/Providers';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { AwehChatFAB } from '@/components/party/AwehChatIntegration';
 import { PWAInstallPrompt } from '@/components/pwa/PWAInstallPrompt';
@@ -46,14 +47,16 @@ export default function RootLayout({
       </head>
       <body className="font-body antialiased" suppressHydrationWarning>
         <ThemeProvider>
-          <FirebaseClientProvider>
-            <AuthProvider>
-              {children}
-              <AwehChatFAB />
-              <PWAInstallPrompt />
-            </AuthProvider>
-            <Toaster />
-          </FirebaseClientProvider>
+          <Providers>
+            <FirebaseClientProvider>
+              <AuthProvider>
+                {children}
+                <AwehChatFAB />
+                <PWAInstallPrompt />
+              </AuthProvider>
+              <Toaster />
+            </FirebaseClientProvider>
+          </Providers>
         </ThemeProvider>
       </body>
     </html>

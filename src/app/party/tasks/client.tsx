@@ -40,6 +40,8 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
   const [commsJammed, setCommsJammed] = useState(false);
   const [sabotageOpen, setSabotageOpen] = useState(false);
   const [glitching, setGlitching] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [hapticsEnabled, setHapticsEnabled] = useState(true);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
   const [fakeTasks, setFakeTasks] = useState<TaskItem[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
@@ -146,33 +148,115 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
     setReporting(false);
   };
 
+  const handleCopyInvite = async () => {
+    try {
+      const inviteUrl = `${window.location.origin}/party/join`;
+      await navigator.clipboard.writeText(inviteUrl);
+      toast({ title: '🔗 Invite link copied', description: inviteUrl });
+    } catch (error) {
+      toast({
+        title: 'Copy failed',
+        description: 'Tap and hold the URL from the address bar instead.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const roleStyles =
     role === 'IMPOSTER'
-      ? 'bg-red-600/20 text-red-600 border-red-500/40'
+      ? 'bg-red-600/25 text-red-100 border-red-400/60'
       : role === 'CREWMATE'
-      ? 'bg-green-600/20 text-green-700 border-green-500/40'
-      : 'bg-slate-600/20 text-slate-200 border-slate-400/40';
+      ? 'bg-emerald-500/20 text-emerald-100 border-emerald-300/50'
+      : 'bg-slate-600/20 text-slate-100 border-slate-300/40';
 
   return (
     <div className={`min-h-screen text-white ${glitching ? 'glitch' : ''}`}>
       <RaceStartSequence />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0b0f2c] via-[#1b0f2a] to-[#0a1c3a]" />
-      <div className="absolute inset-0 -z-10 opacity-40" style={{
-        backgroundImage:
-          'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.08) 1px, transparent 0), linear-gradient(120deg, rgba(80,255,180,0.15), transparent 55%)',
-        backgroundSize: '22px 22px, 100% 100%',
-      }} />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#041425] via-[#0a2a3f] to-[#0b1130] aurora" />
+      <div
+        className="absolute inset-0 -z-10 opacity-60"
+        style={{
+          backgroundImage:
+            'radial-gradient(circle at 1px 1px, rgba(200,255,255,0.12) 1px, transparent 0), linear-gradient(120deg, rgba(40,200,255,0.25), transparent 55%)',
+          backgroundSize: '26px 26px, 100% 100%',
+        }}
+      />
+      <div className="absolute -z-10 -top-24 -left-24 h-64 w-64 rounded-full bg-cyan-500/20 blur-3xl float" />
+      <div className="absolute -z-10 top-1/4 -right-10 h-72 w-72 rounded-full bg-blue-500/20 blur-3xl float-slow" />
+      <div className="absolute -z-10 bottom-0 left-1/3 h-80 w-80 rounded-full bg-teal-400/10 blur-3xl float" />
       <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col gap-6 relative">
         <div className="flex items-center justify-between">
           <Link href="/party/dashboard">
-            <Button variant="ghost" size="sm" className="text-white hover:bg-white/10">
+            <Button variant="ghost" size="sm" className="text-white bg-white/10 hover:bg-white/20">
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Party
             </Button>
           </Link>
-          <Badge className="bg-white/10 text-white border-white/20">
-            Task Pad
-          </Badge>
+          <Badge className="bg-white/15 text-white border-white/30">Task Pad</Badge>
+        </div>
+
+        <div className="grid gap-4 md:grid-cols-3">
+          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+            <CardContent className="pt-6 space-y-3">
+              <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Live Status</div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white/80">Team Progress</span>
+                <span className="text-white">{Math.round(teamProgress)}%</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white/80">Tasks Done</span>
+                <span className="text-white">{teamTotals.completed}/{teamTotals.total}</span>
+              </div>
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white/80">Comms</span>
+                <span className={commsJammed ? 'text-red-300' : 'text-emerald-200'}>
+                  {commsJammed ? 'Jammed' : 'Online'}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+            <CardContent className="pt-6 space-y-3">
+              <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Quick Actions</div>
+              <Button onClick={handleCopyInvite} className="w-full" variant="secondary">
+                Copy Invite Link
+              </Button>
+              <Link href="/party/tv">
+                <Button className="w-full" variant="secondary">
+                  Open TV Mode
+                </Button>
+              </Link>
+              <Link href="/party/dashboard">
+                <Button className="w-full" variant="outline">
+                  Party Dashboard
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+
+          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+            <CardContent className="pt-6 space-y-3">
+              <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Sound + Haptics</div>
+              <Button
+                onClick={() => setSoundEnabled((prev) => !prev)}
+                className="w-full"
+                variant={soundEnabled ? 'default' : 'secondary'}
+              >
+                {soundEnabled ? 'Sound On' : 'Sound Off'}
+              </Button>
+              <Button
+                onClick={() => setHapticsEnabled((prev) => !prev)}
+                className="w-full"
+                variant={hapticsEnabled ? 'default' : 'secondary'}
+              >
+                {hapticsEnabled ? 'Haptics On' : 'Haptics Off'}
+              </Button>
+              <p className="text-xs text-white/60">
+                Tip: Enable vibration in your phone settings for the full effect.
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {role === 'IMPOSTER' && (
@@ -188,7 +272,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
           />
         )}
 
-        <Card className="border-white/10 bg-white/5 backdrop-blur">
+        <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
           <CardContent className="pt-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <button
@@ -219,9 +303,9 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
                   <span>Team Task Bar</span>
                   <span>{Math.round(teamProgress)}%</span>
                 </div>
-                <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+                <div className="w-full h-2 rounded-full bg-white/15 overflow-hidden">
                   <motion.div
-                    className="h-2 bg-gradient-to-r from-emerald-400 via-green-400 to-lime-300"
+                    className="h-2 bg-gradient-to-r from-cyan-300 via-emerald-300 to-lime-200"
                     initial={{ width: 0 }}
                     animate={{ width: `${teamProgress}%` }}
                     transition={{ duration: 0.6 }}
@@ -236,12 +320,21 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
           </CardContent>
         </Card>
 
+        <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+          <CardContent className="pt-6 space-y-2">
+            <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Role Tips</div>
+            <p className="text-sm text-white/80">Stay close to others to build trust, but avoid stacking.</p>
+            <p className="text-sm text-white/80">Complete tasks in clusters for fast progress.</p>
+            <p className="text-sm text-white/80">Report suspicious moves quickly to control the vote.</p>
+          </CardContent>
+        </Card>
+
         <div className="flex-1 max-h-[60vh] overflow-y-auto pr-1">
-          <Card className="border-white/10 bg-white/5 backdrop-blur">
+          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center justify-between">
-                <div className="text-sm uppercase tracking-[0.3em] text-white/60">Your Mission</div>
-                <Badge className="bg-white/10 text-white border-white/20">
+                <div className="text-sm uppercase tracking-[0.3em] text-white/70">Your Mission</div>
+                <Badge className="bg-white/15 text-white border-white/30">
                   {role === 'IMPOSTER' ? 'Fake Tasks' : 'Crew Tasks'}
                 </Badge>
               </div>
@@ -257,7 +350,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
                   {fakeTasks.map((task) => (
                     <div
                       key={task.id}
-                      className="rounded-lg border border-red-500/30 bg-red-500/10 p-4"
+                      className="rounded-lg border border-red-400/40 bg-red-500/15 p-4"
                     >
                       <p className="text-sm text-red-100">{task.description}</p>
                     </div>
@@ -268,7 +361,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
                   {tasks.map((task) => (
                     <motion.div
                       key={task.id}
-                      className={`rounded-lg border border-emerald-400/30 bg-emerald-500/10 p-4 ${
+                      className={`rounded-lg border border-emerald-300/40 bg-emerald-500/15 p-4 ${
                         task.isCompleted ? 'opacity-60' : ''
                       }`}
                       drag="x"
@@ -284,7 +377,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
                         <p className="text-sm text-emerald-50">{task.description}</p>
                         <span className="text-xs text-emerald-200">+{task.pointsReward ?? 50}</span>
                       </div>
-                      <div className="mt-2 text-[10px] uppercase tracking-widest text-emerald-200/60">
+                      <div className="mt-2 text-[10px] uppercase tracking-widest text-emerald-200/70">
                         Swipe right to complete
                       </div>
                     </motion.div>
@@ -295,9 +388,9 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
           </Card>
         </div>
 
-        <Card className="border-white/10 bg-white/5">
+        <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
           <CardContent className="pt-6 flex flex-col gap-3">
-            <p className="text-sm text-white/70">
+            <p className="text-sm text-white/80">
               Found something suspicious? Call an emergency meeting.
             </p>
             <Button
@@ -313,7 +406,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
         </Card>
 
         {sabotageOpen && role === 'IMPOSTER' && (
-          <Card className="border-red-500/40 bg-red-900/20">
+          <Card className="border-red-400/40 bg-red-900/25">
             <CardContent className="pt-6 space-y-3">
               <p className="text-sm text-red-200 uppercase tracking-widest">Sabotage</p>
               <Button
@@ -348,12 +441,36 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
           animation: glitchFlash 0.6s ease-in-out;
         }
 
+        .aurora {
+          animation: auroraShift 12s ease-in-out infinite;
+        }
+
+        .float {
+          animation: float 10s ease-in-out infinite;
+        }
+
+        .float-slow {
+          animation: float 16s ease-in-out infinite;
+        }
+
         @keyframes glitchFlash {
           0% { filter: hue-rotate(0deg); transform: skew(0deg); }
           20% { filter: hue-rotate(60deg); transform: skew(1deg); }
           40% { filter: hue-rotate(-40deg); transform: skew(-1deg); }
           60% { filter: hue-rotate(90deg); transform: skew(0.5deg); }
           100% { filter: hue-rotate(0deg); transform: skew(0deg); }
+        }
+
+        @keyframes auroraShift {
+          0% { filter: hue-rotate(0deg); }
+          50% { filter: hue-rotate(18deg); }
+          100% { filter: hue-rotate(0deg); }
+        }
+
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-12px); }
+          100% { transform: translateY(0px); }
         }
       `}</style>
     </div>

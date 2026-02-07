@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { 
   Users, 
   ShieldAlert, 
@@ -10,7 +11,8 @@ import {
   Plus, 
   Minus, 
   Play,
-  Printer
+  Printer,
+  ArrowLeft
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -197,6 +199,15 @@ export default function SpyGameSetup() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="text-center mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <Link href="/party/dashboard" className="inline-flex">
+              <Button variant="ghost" size="sm" className="text-white bg-white/10 hover:bg-white/20">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Party
+              </Button>
+            </Link>
+            <div className="text-xs text-purple-200/80">Setup</div>
+          </div>
           <h1 className="text-4xl font-bold text-white mb-2">🕵️ Spy Game Setup</h1>
           <p className="text-purple-200">Configure your party game</p>
           

@@ -1,17 +1,23 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
 import html2canvas from 'html2canvas';
 import { 
   Printer, Download, Wifi, Users, Car, Gamepad2,
-  Scissors, RefreshCw, Sparkles
+  Scissors, RefreshCw, Sparkles, Wand2, Trash2, Copy, Eye, EyeOff, Radio, Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
+import { createSmartQrAction, getAllSmartQrsAction, toggleSmartQrActiveAction, deleteSmartQrAction } from '@/app/actions/smart-qr';
+import { ScannerFeed } from '@/components/admin/ScannerFeed';
+import type { SmartQr } from '@/lib/db/schema';
 
 // =============================================================================
 // Types
@@ -60,6 +66,63 @@ export default function QRStudioPage() {
   const [batchPlayers, setBatchPlayers] = useState<string[]>(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6']);
   const [showBatchPreview, setShowBatchPreview] = useState(false);
   const [generating, setGenerating] = useState(false);
+
+  // Smart QR state
+  const [smartQrs, setSmartQrs] = useState<SmartQr[]>([]);
+  const [smartQrTitle, setSmartQrTitle] = useState('');
+  const [smartQrContent, setSmartQrContent] = useState('');
+  const [smartQrType, setSmartQrType] = useState<'CLUE' | 'TASK' | 'INFO'>('CLUE');
+  const [creatingSmartQr, setCreatingSmartQr] = useState(false);
+  const [generatedSmartUrl, setGeneratedSmartUrl] = useState('');
+  const [activeMainTab, setActiveMainTab] = useState('templates');
+
+  // Load Smart QRs on mount
+  useEffect(() => {
+    loadSmartQrs();
+  }, []);
+
+  const loadSmartQrs = async () => {
+    const qrs = await getAllSmartQrsAction();
+    setSmartQrs(qrs);
+  };
+
+  const handleCreateSmartQr = async () => {
+    if (!smartQrTitle.trim() || !smartQrContent.trim()) {
+      toast({ title: 'Missing fields', description: 'Please fill in title and content', variant: 'destructive' });
+      return;
+    }
+    
+    setCreatingSmartQr(true);
+    try {
+      const result = await createSmartQrAction({
+        title: smartQrTitle,
+        content: smartQrContent,
+        type: smartQrType,
+      });
+      
+      if (result.success && result.shortUrl) {
+        toast({ 
+          title: '✨ Smart QR Created!', 
+          description: `Token: ${result.qr?.token}` 
+        });
+        setGeneratedSmartUrl(result.shortUrl);
+        setSmartQrTitle('');
+        setSmartQrContent('');
+        loadSmartQrs();
+      } else {
+        toast({ title: 'Failed', description: result.error, variant: 'destructive' });
+      }
+    } catch (error) {
+      toast({ title: 'Error', description: 'Failed to create Smart QR', variant: 'destructive' });
+    } finally {
+      setCreatingSmartQr(false);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    toast({ title: '📋 Copied!', description: text });
+  };
 
   // =============================================================================
   // Generate QR Content based on template
@@ -218,45 +281,64 @@ export default function QRStudioPage() {
             <Printer className="w-8 h-8 text-purple-400" />
             QR Design Studio
           </h1>
-          <p className="text-gray-400 mt-1">58mm Thermal Label Designer • Direct to FunPrint</p>
+          <p className="text-gray-400 mt-1">58mm Thermal Label Designer • Smart Clues • Live Tracking</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* =================================================================== */}
-        {/* LEFT: Template Selector + Editor */}
-        {/* =================================================================== */}
-        <div className="space-y-4">
-          {/* Template Cards */}
-          <Card className="bg-black/40 border-purple-500/30">
-            <CardHeader>
-              <CardTitle className="text-white">⚡ Quick Templates</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-3">
-                {templates.map((t) => (
-                  <button
-                    key={t.id}
-                    onClick={() => setSelectedTemplate(t.id)}
-                    className={`p-4 rounded-lg border-2 transition-all ${
-                      selectedTemplate === t.id
-                        ? `bg-gradient-to-br ${t.color} border-white shadow-lg scale-105`
-                        : 'bg-black/30 border-gray-700 hover:border-gray-500'
-                    }`}
-                  >
-                    <div className={`${selectedTemplate === t.id ? 'text-white' : 'text-gray-400'}`}>
-                      {t.icon}
-                    </div>
-                    <p className={`mt-2 font-semibold ${selectedTemplate === t.id ? 'text-white' : 'text-gray-300'}`}>
-                      {t.name}
-                    </p>
-                  </button>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Main Tabs */}
+      <Tabs value={activeMainTab} onValueChange={setActiveMainTab} className="space-y-6">
+        <TabsList className="bg-black/40 border border-purple-500/30">
+          <TabsTrigger value="templates" className="data-[state=active]:bg-purple-600">
+            <Printer className="w-4 h-4 mr-2" />
+            Quick Templates
+          </TabsTrigger>
+          <TabsTrigger value="smart-clues" className="data-[state=active]:bg-purple-600">
+            <Wand2 className="w-4 h-4 mr-2" />
+            Smart Clues
+          </TabsTrigger>
+          <TabsTrigger value="live-feed" className="data-[state=active]:bg-purple-600">
+            <Radio className="w-4 h-4 mr-2" />
+            Live Feed
+          </TabsTrigger>
+        </TabsList>
 
-          {/* Live Editor Form */}
+        {/* ================================================================= */}
+        {/* TAB: Quick Templates */}
+        {/* ================================================================= */}
+        <TabsContent value="templates">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* LEFT: Template Selector + Editor */}
+            <div className="space-y-4">
+              {/* Template Cards */}
+              <Card className="bg-black/40 border-purple-500/30">
+                <CardHeader>
+                  <CardTitle className="text-white">⚡ Quick Templates</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-3">
+                    {templates.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => setSelectedTemplate(t.id)}
+                        className={`p-4 rounded-lg border-2 transition-all ${
+                          selectedTemplate === t.id
+                            ? `bg-gradient-to-br ${t.color} border-white shadow-lg scale-105`
+                            : 'bg-black/30 border-gray-700 hover:border-gray-500'
+                        }`}
+                      >
+                        <div className={`${selectedTemplate === t.id ? 'text-white' : 'text-gray-400'}`}>
+                          {t.icon}
+                        </div>
+                        <p className={`mt-2 font-semibold ${selectedTemplate === t.id ? 'text-white' : 'text-gray-300'}`}>
+                          {t.name}
+                        </p>
+                      </button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Live Editor Form */}
           <Card className="bg-black/40 border-gray-700">
             <CardHeader>
               <CardTitle className="text-white">Edit Content</CardTitle>
@@ -600,6 +682,175 @@ export default function QRStudioPage() {
           </CardContent>
         </Card>
       )}
+        </TabsContent>
+
+        {/* ================================================================= */}
+        {/* TAB: Smart Clues */}
+        {/* ================================================================= */}
+        <TabsContent value="smart-clues">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Left: Create New Smart QR */}
+            <Card className="bg-black/40 border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Plus className="w-5 h-5 text-purple-400" />
+                  Create Smart Clue
+                </CardTitle>
+                <CardDescription className="text-gray-400">
+                  QR codes that track scans and reveal content
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <Label className="text-gray-300">Type</Label>
+                  <Select value={smartQrType} onValueChange={(v) => setSmartQrType(v as 'CLUE' | 'TASK' | 'INFO')}>
+                    <SelectTrigger className="bg-black/50 border-gray-700">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="CLUE">🔎 CLUE - Hunt Clue</SelectItem>
+                      <SelectItem value="TASK">📋 TASK - Photo Challenge</SelectItem>
+                      <SelectItem value="INFO">ℹ️ INFO - General Info</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label className="text-gray-300">Title</Label>
+                  <Input
+                    value={smartQrTitle}
+                    onChange={(e) => setSmartQrTitle(e.target.value)}
+                    placeholder="The Golden Ticket"
+                    className="bg-black/50 border-gray-700"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-gray-300">Content (revealed on scan)</Label>
+                  <textarea
+                    value={smartQrContent}
+                    onChange={(e) => setSmartQrContent(e.target.value)}
+                    placeholder="Look behind the golden frame in the lounge..."
+                    className="w-full h-24 bg-black/50 border border-gray-700 rounded-lg p-3 text-white text-sm"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleCreateSmartQr}
+                  disabled={creatingSmartQr}
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  {creatingSmartQr ? 'Creating...' : 'Generate Smart QR'}
+                </Button>
+
+                {generatedSmartUrl && (
+                  <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-4 space-y-3">
+                    <p className="text-green-400 text-sm font-medium">✨ QR Created!</p>
+                    <div className="flex justify-center bg-white p-4 rounded-lg">
+                      <QRCodeSVG value={generatedSmartUrl} size={150} level="H" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Input value={generatedSmartUrl} readOnly className="bg-black/50 text-xs" />
+                      <Button size="sm" variant="outline" onClick={() => copyToClipboard(generatedSmartUrl)}>
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Right: Existing Smart QRs */}
+            <Card className="bg-black/40 border-purple-500/30">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center justify-between">
+                  <span>📋 Your Smart QRs</span>
+                  <Button size="sm" variant="ghost" onClick={loadSmartQrs}>
+                    <RefreshCw className="w-4 h-4" />
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {smartQrs.length === 0 ? (
+                  <p className="text-gray-500 text-center py-8">No Smart QRs yet. Create one!</p>
+                ) : (
+                  <div className="space-y-3 max-h-[500px] overflow-y-auto">
+                    {smartQrs.map((qr) => (
+                      <div
+                        key={qr.id}
+                        className={`p-4 rounded-lg border ${
+                          qr.isActive 
+                            ? 'bg-purple-900/20 border-purple-500/30' 
+                            : 'bg-gray-900/20 border-gray-700 opacity-60'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant={qr.type === 'CLUE' ? 'default' : qr.type === 'TASK' ? 'secondary' : 'outline'}>
+                                {qr.type}
+                              </Badge>
+                              <span className="font-mono text-purple-400 text-sm">{qr.token}</span>
+                            </div>
+                            <p className="text-white font-medium mt-1">{qr.title}</p>
+                            <p className="text-gray-400 text-sm truncate">{qr.content}</p>
+                            <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                              <span>👁️ {qr.scanCount} scans</span>
+                              {qr.lastScannedAt && (
+                                <span>Last: {new Date(qr.lastScannedAt).toLocaleDateString()}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={() => copyToClipboard(`${window.location.origin}/q/${qr.token}`)}
+                            >
+                              <Copy className="w-4 h-4" />
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onClick={async () => {
+                                await toggleSmartQrActiveAction(qr.id);
+                                loadSmartQrs();
+                              }}
+                            >
+                              {qr.isActive ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-red-400 hover:text-red-300"
+                              onClick={async () => {
+                                if (confirm('Delete this Smart QR?')) {
+                                  await deleteSmartQrAction(qr.id);
+                                  loadSmartQrs();
+                                }
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* ================================================================= */}
+        {/* TAB: Live Feed */}
+        {/* ================================================================= */}
+        <TabsContent value="live-feed">
+          <ScannerFeed />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

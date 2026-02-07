@@ -778,3 +778,37 @@ export type SystemLog = typeof systemLogs.$inferSelect;
 export type NewSystemLog = typeof systemLogs.$inferInsert;
 export type GlobalSetting = typeof globalSettings.$inferSelect;
 export type NewGlobalSetting = typeof globalSettings.$inferInsert;
+
+// ============================================
+// MODULE 9: SMART QR SYSTEM
+// ============================================
+
+// Smart QRs with tracking and dynamic content
+export const smartQrs = pgTable('smart_qrs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  token: varchar('token', { length: 10 }).notNull().unique(), // Short 6-char code
+  type: varchar('type', { length: 10 }).notNull().default('CLUE'), // 'CLUE', 'TASK', 'INFO'
+  title: text('title').notNull(), // Internal name (e.g., "Fridge Clue")
+  content: text('content').notNull(), // The actual message shown to user
+  scanCount: integer('scan_count').notNull().default(0),
+  lastScannedAt: timestamp('last_scanned_at'),
+  lastScannedBy: text('last_scanned_by'), // Name of last scanner
+  isActive: boolean('is_active').notNull().default(true),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  createdBy: text('created_by'), // Admin who created it
+});
+
+// Smart QR scan history
+export const smartQrScans = pgTable('smart_qr_scans', {
+  id: serial('id').primaryKey(),
+  qrId: uuid('qr_id').notNull().references(() => smartQrs.id, { onDelete: 'cascade' }),
+  scannerName: text('scanner_name').notNull().default('Guest'),
+  scannedAt: timestamp('scanned_at').notNull().defaultNow(),
+  userAgent: text('user_agent'), // Device info
+});
+
+// Module 9 types
+export type SmartQr = typeof smartQrs.$inferSelect;
+export type NewSmartQr = typeof smartQrs.$inferInsert;
+export type SmartQrScan = typeof smartQrScans.$inferSelect;
+export type NewSmartQrScan = typeof smartQrScans.$inferInsert;

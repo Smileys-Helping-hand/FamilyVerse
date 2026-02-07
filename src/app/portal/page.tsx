@@ -36,7 +36,7 @@ const MINI_APPS = [
     icon: PartyPopper,
     gradient: 'from-purple-500 via-pink-500 to-rose-500',
     glowColor: 'shadow-purple-500/50',
-    href: '/party/join',
+    href: '/setup/genesis',
     badge: 'Live',
     badgeVariant: 'destructive' as const,
     features: ['🏎️ Sim Racing', '🎭 Imposter', '💰 Betting Pool', '📺 TV Mode'],

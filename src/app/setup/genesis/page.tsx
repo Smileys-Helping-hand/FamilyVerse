@@ -23,6 +23,7 @@ export default function GenesisSetupPage() {
   const [partyJoinCode, setPartyJoinCode] = useState('');
   const [hostName, setHostName] = useState('');
   const [partyName, setPartyName] = useState('');
+  const [actualJoinCode, setActualJoinCode] = useState(''); // The code actually used
 
   useEffect(() => {
     checkSystemStatus();
@@ -50,10 +51,11 @@ export default function GenesisSetupPage() {
     });
 
     if (result.success) {
+      setActualJoinCode(result.joinCode || partyJoinCode);
       setSuccess(true);
       setTimeout(() => {
         router.push('/admin/dashboard');
-      }, 2000);
+      }, 3000); // Give more time to see the join code
     } else {
       alert(`Error: ${result.error}`);
       setInitializing(false);
@@ -92,7 +94,8 @@ export default function GenesisSetupPage() {
           <p className="text-green-300 text-xl">Redirecting to Admin Dashboard...</p>
           <div className="text-gray-400 text-sm space-y-1">
             <p>Party: <span className="font-mono text-white">{partyName}</span></p>
-            {partyJoinCode && <p>Join Code: <span className="font-mono text-white">{partyJoinCode}</span></p>}
+            <p className="text-2xl text-green-300 font-bold">Join Code: <span className="font-mono text-white">{actualJoinCode || partyJoinCode}</span></p>
+            <p className="text-xs">Share this with your guests!</p>
           </div>
         </motion.div>
       </div>

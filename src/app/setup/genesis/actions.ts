@@ -52,8 +52,30 @@ export async function initializeSystemAction(params: InitializeParams) {
       return { success: false, error: 'Party name is required' };
     }
     
-    // Auto-generate join code if not provided
-    const joinCode = partyJoinCode || Math.floor(1000 + Math.random() * 9000).toString();
+    // Auto-generate join code if not provided, ensure it's unique
+    let joinCode = partyJoinCode || '';
+    
+    // Generate a unique join code
+    const generateUniqueCode = async (): Promise<string> => {
+      for (let attempt = 0; attempt < 10; attempt++) {
+        const code = Math.floor(10000 + Math.random() * 90000).toString(); // 5 digits
+        const [existing] = await db.select().from(parties).where(eq(parties.joinCode, code));
+        if (!existing) return code;
+      }
+      // Fallback: use timestamp-based code
+      return Date.now().toString().slice(-6);
+    };
+    
+    // If user provided a code, check if it exists
+    if (joinCode) {
+      const [existing] = await db.select().from(parties).where(eq(parties.joinCode, joinCode));
+      if (existing) {
+        // Code taken, generate a new one
+        joinCode = await generateUniqueCode();
+      }
+    } else {
+      joinCode = await generateUniqueCode();
+    }
 
     // Create the party (no need to delete existing - just add new)
     const [party] = await db.insert(parties).values({
@@ -101,6 +123,7 @@ export async function initializeSystemAction(params: InitializeParams) {
       success: true,
       partyId: party.id,
       adminId: adminUser.id,
+      joinCode: joinCode, // Return the actual code used
     };
   } catch (error) {
     console.error('Error initializing system:', error);

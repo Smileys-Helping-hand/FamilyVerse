@@ -35,24 +35,25 @@ export async function checkSystemStatusAction() {
 /**
  * The "Big Bang" - Initialize the entire Party OS system
  * Creates admin user, party, and seeds all default settings
+ * PIN is auto-generated - you're logged in automatically after creation!
  */
 export async function initializeSystemAction(params: InitializeParams) {
-  const { adminPin, partyJoinCode, hostName, partyName } = params;
+  const { partyJoinCode, hostName, partyName } = params;
+  
+  // Auto-generate a random PIN (not needed for login since you're auto-logged in)
+  const autoPin = Math.random().toString(36).substring(2, 10);
 
   try {
     // Validate inputs
-    if (!adminPin || adminPin.length < 4) {
-      return { success: false, error: 'Admin PIN must be at least 4 characters' };
-    }
-    if (!partyJoinCode || partyJoinCode.length < 4) {
-      return { success: false, error: 'Party code must be at least 4 characters' };
-    }
     if (!hostName) {
       return { success: false, error: 'Host name is required' };
     }
     if (!partyName) {
       return { success: false, error: 'Party name is required' };
     }
+    
+    // Auto-generate join code if not provided
+    const joinCode = partyJoinCode || Math.floor(1000 + Math.random() * 9000).toString();
 
     // Step 1: Clean up existing data (if resetting)
     await db.delete(parties);
@@ -61,14 +62,14 @@ export async function initializeSystemAction(params: InitializeParams) {
     // Step 2: Create the party
     const [party] = await db.insert(parties).values({
       name: partyName,
-      joinCode: partyJoinCode,
+      joinCode: joinCode,
       isActive: true,
     }).returning();
 
-    // Step 3: Create the admin user
+    // Step 3: Create the admin user (PIN auto-generated, not needed for login)
     const [adminUser] = await db.insert(partyUsers).values({
       name: hostName,
-      pinCode: adminPin,
+      pinCode: autoPin,
       role: 'admin',
       walletBalance: 10000, // Admin gets bonus starting balance
       status: 'approved',
@@ -91,19 +92,13 @@ export async function initializeSystemAction(params: InitializeParams) {
       metaData: { partyId: party.id, adminId: adminUser.id },
     });
 
-    // Step 7: Set auth cookie for admin
+    // Step 7: Set auth cookie for admin (use party_user_id for consistency)
     const cookieStore = await cookies();
-    cookieStore.set('party-user-id', adminUser.id, {
+    cookieStore.set('party_user_id', adminUser.id, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7, // 1 week
-    });
-    cookieStore.set('party-user-role', 'admin', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7,
     });
 
     return {

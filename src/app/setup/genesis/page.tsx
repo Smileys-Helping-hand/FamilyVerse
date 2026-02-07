@@ -19,11 +19,10 @@ export default function GenesisSetupPage() {
   const [initializing, setInitializing] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  // Form fields
-  const [adminPin, setAdminPin] = useState('114477');
-  const [partyJoinCode, setPartyJoinCode] = useState('1696');
-  const [hostName, setHostName] = useState('Mohammed');
-  const [partyName, setPartyName] = useState("Mohammed's 26th Birthday");
+  // Form fields - simplified! No PIN needed
+  const [partyJoinCode, setPartyJoinCode] = useState('');
+  const [hostName, setHostName] = useState('');
+  const [partyName, setPartyName] = useState('');
 
   useEffect(() => {
     checkSystemStatus();
@@ -44,8 +43,8 @@ export default function GenesisSetupPage() {
     setInitializing(true);
 
     const result = await initializeSystemAction({
-      adminPin,
-      partyJoinCode,
+      adminPin: '', // Not used - auto-generated
+      partyJoinCode: partyJoinCode || '', // Optional - auto-generated if empty
       hostName,
       partyName,
     });
@@ -53,7 +52,7 @@ export default function GenesisSetupPage() {
     if (result.success) {
       setSuccess(true);
       setTimeout(() => {
-        router.push('/admin');
+        router.push('/admin/dashboard');
       }, 2000);
     } else {
       alert(`Error: ${result.error}`);
@@ -89,11 +88,11 @@ export default function GenesisSetupPage() {
           >
             <Check className="h-24 w-24 text-green-500 mx-auto" />
           </motion.div>
-          <h1 className="text-4xl font-bold text-white">System Initialized!</h1>
-          <p className="text-green-300 text-xl">Redirecting to Mission Control...</p>
+          <h1 className="text-4xl font-bold text-white">Party Created!</h1>
+          <p className="text-green-300 text-xl">Redirecting to Admin Dashboard...</p>
           <div className="text-gray-400 text-sm space-y-1">
-            <p>Admin PIN: <span className="font-mono text-white">{adminPin}</span></p>
-            <p>Party Code: <span className="font-mono text-white">{partyJoinCode}</span></p>
+            <p>Party: <span className="font-mono text-white">{partyName}</span></p>
+            {partyJoinCode && <p>Join Code: <span className="font-mono text-white">{partyJoinCode}</span></p>}
           </div>
         </motion.div>
       </div>
@@ -165,62 +164,25 @@ export default function GenesisSetupPage() {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-3">
                 <Shield className="h-6 w-6 text-purple-400" />
-                Admin Configuration
+                Create Your Party
               </CardTitle>
               <CardDescription className="text-gray-400">
-                Set your secret admin PIN and party settings
+                Enter your name and party details - you'll be logged in automatically!
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Admin PIN */}
-              <div className="space-y-2">
-                <Label htmlFor="adminPin" className="text-white flex items-center gap-2">
-                  <Key className="h-4 w-4 text-yellow-400" />
-                  Admin PIN (SECRET)
-                </Label>
-                <Input
-                  id="adminPin"
-                  type="password"
-                  value={adminPin}
-                  onChange={(e) => setAdminPin(e.target.value)}
-                  placeholder="Enter your secret admin PIN"
-                  className="bg-slate-800/50 border-purple-500/30 text-white font-mono text-lg"
-                />
-                <p className="text-xs text-gray-400">
-                  This is YOUR secret. Use it to access Mission Control.
-                </p>
-              </div>
-
-              {/* Party Join Code */}
-              <div className="space-y-2">
-                <Label htmlFor="joinCode" className="text-white flex items-center gap-2">
-                  <Users className="h-4 w-4 text-green-400" />
-                  Party Join Code (PUBLIC)
-                </Label>
-                <Input
-                  id="joinCode"
-                  value={partyJoinCode}
-                  onChange={(e) => setPartyJoinCode(e.target.value)}
-                  placeholder="Code guests use to join"
-                  className="bg-slate-800/50 border-green-500/30 text-white font-mono text-lg"
-                />
-                <p className="text-xs text-gray-400">
-                  Share this with your guests so they can join the party.
-                </p>
-              </div>
-
-              {/* Host Name */}
+              {/* Host Name - First! */}
               <div className="space-y-2">
                 <Label htmlFor="hostName" className="text-white flex items-center gap-2">
                   <PartyPopper className="h-4 w-4 text-pink-400" />
-                  Host Name
+                  Your Name
                 </Label>
                 <Input
                   id="hostName"
                   value={hostName}
                   onChange={(e) => setHostName(e.target.value)}
-                  placeholder="Your name"
-                  className="bg-slate-800/50 border-pink-500/30 text-white"
+                  placeholder="Enter your name"
+                  className="bg-slate-800/50 border-pink-500/30 text-white text-lg"
                 />
               </div>
 
@@ -234,26 +196,44 @@ export default function GenesisSetupPage() {
                   id="partyName"
                   value={partyName}
                   onChange={(e) => setPartyName(e.target.value)}
-                  placeholder="e.g., Mohammed's 26th Birthday"
-                  className="bg-slate-800/50 border-orange-500/30 text-white"
+                  placeholder="e.g., Birthday Bash, Game Night"
+                  className="bg-slate-800/50 border-orange-500/30 text-white text-lg"
                 />
+              </div>
+
+              {/* Party Join Code - Optional */}
+              <div className="space-y-2">
+                <Label htmlFor="joinCode" className="text-white flex items-center gap-2">
+                  <Users className="h-4 w-4 text-green-400" />
+                  Join Code (Optional)
+                </Label>
+                <Input
+                  id="joinCode"
+                  value={partyJoinCode}
+                  onChange={(e) => setPartyJoinCode(e.target.value)}
+                  placeholder="Leave empty for random code"
+                  className="bg-slate-800/50 border-green-500/30 text-white font-mono text-lg"
+                />
+                <p className="text-xs text-gray-400">
+                  Share this with your guests. Leave blank for a random 4-digit code.
+                </p>
               </div>
 
               {/* Initialize Button */}
               <Button
                 onClick={handleInitialize}
-                disabled={initializing || (systemExists && !confirmReset)}
+                disabled={initializing || (systemExists && !confirmReset) || !hostName || !partyName}
                 className="w-full h-16 text-xl font-bold bg-gradient-to-r from-purple-600 via-pink-600 to-red-600 hover:from-purple-500 hover:via-pink-500 hover:to-red-500 shadow-2xl shadow-purple-500/30"
               >
                 {initializing ? (
                   <>
                     <Loader2 className="h-6 w-6 mr-3 animate-spin" />
-                    Initializing System...
+                    Creating Party...
                   </>
                 ) : (
                   <>
                     <Rocket className="h-6 w-6 mr-3" />
-                    🚀 INITIALIZE SYSTEM
+                    🚀 CREATE PARTY
                   </>
                 )}
               </Button>
@@ -261,30 +241,23 @@ export default function GenesisSetupPage() {
           </Card>
         </motion.div>
 
-        {/* Quick Reference */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="grid grid-cols-2 gap-4"
-        >
-          <Card className="bg-purple-500/10 border-purple-500/30">
-            <CardContent className="pt-6 text-center">
-              <Key className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Admin PIN</p>
-              <p className="text-2xl font-mono font-bold text-white">{adminPin || '****'}</p>
-              <p className="text-xs text-red-400 mt-1">Keep this secret!</p>
-            </CardContent>
-          </Card>
-          <Card className="bg-green-500/10 border-green-500/30">
-            <CardContent className="pt-6 text-center">
-              <Users className="h-8 w-8 text-green-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Party Code</p>
-              <p className="text-2xl font-mono font-bold text-white">{partyJoinCode || '****'}</p>
-              <p className="text-xs text-green-400 mt-1">Share with guests!</p>
-            </CardContent>
-          </Card>
-        </motion.div>
+        {/* Quick Reference - Only show join code preview */}
+        {partyJoinCode && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <Card className="bg-green-500/10 border-green-500/30">
+              <CardContent className="pt-6 text-center">
+                <Users className="h-8 w-8 text-green-400 mx-auto mb-2" />
+                <p className="text-sm text-gray-400">Party Join Code</p>
+                <p className="text-4xl font-mono font-bold text-white">{partyJoinCode}</p>
+                <p className="text-xs text-green-400 mt-2">Share this with your guests!</p>
+              </CardContent>
+            </Card>
+          </motion.div>
+        )}
       </div>
     </div>
   );

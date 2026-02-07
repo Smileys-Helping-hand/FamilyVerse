@@ -20,7 +20,7 @@ export default function GenesisSetupPage() {
   const [success, setSuccess] = useState(false);
 
   // Form fields
-  const [adminPin, setAdminPin] = useState('2026');
+  const [adminPin, setAdminPin] = useState('114477');
   const [partyJoinCode, setPartyJoinCode] = useState('1696');
   const [hostName, setHostName] = useState('Mohammed');
   const [partyName, setPartyName] = useState("Mohammed's 26th Birthday");

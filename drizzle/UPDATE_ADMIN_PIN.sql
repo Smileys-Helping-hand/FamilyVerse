@@ -21,7 +21,7 @@ SELECT * FROM parties WHERE join_code = '1696';
 -- ⚠️ CHANGE 'Mohammed Parker' to your actual user name if different
 UPDATE party_users 
 SET 
-  pin_code = '2026',      -- YOUR SECRET ADMIN PIN (change if you want)
+  pin_code = '114477',    -- YOUR SECRET ADMIN PIN (change if you want)
   role = 'admin'          -- Ensure admin role is set
 WHERE 
   name = 'Mohammed Parker'  -- Change this to your actual name

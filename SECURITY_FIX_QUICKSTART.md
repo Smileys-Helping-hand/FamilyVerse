@@ -47,7 +47,7 @@ Guest Path:
 Code: 1696 → Party Join → Enter Name → Guest Access
 
 Admin Path:
-"Host Login" → PIN: 2026 → Admin Dashboard
+"Host Login" → PIN: 114477 → Admin Dashboard
 ```
 
 ---
@@ -57,7 +57,7 @@ Admin Path:
 | Code | Type | Who Uses It | Access Level |
 |------|------|-------------|--------------|
 | **1696** | Party Join Code | GUESTS (public) | Limited (games, betting) |
-| **2026** | Admin PIN | YOU ONLY (secret) | Full control |
+| **114477** | Admin PIN | YOU ONLY (secret) | Full control |
 
 ---
 
@@ -138,7 +138,7 @@ WHERE role != 'admin' OR role IS NULL;
 > "Join the party! Go to [your-url]/party/join and enter code **1696**"
 
 **Keep secret:**
-> Admin PIN: **2026** (NEVER share this!)
+> Admin PIN: **114477** (NEVER share this!)
 
 ---
 

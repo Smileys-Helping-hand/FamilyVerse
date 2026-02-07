@@ -111,16 +111,23 @@ export default function PartyDashboardClient({ user }: { user: PartyUser }) {
           </div>
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-                {user.avatarUrl ? (
-                  <img src={user.avatarUrl} alt={user.name} className="w-full h-full rounded-full" />
-                ) : (
-                  <User className="w-8 h-8" />
-                )}
-              </div>
+              <Link href="/party/profile">
+                <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center cursor-pointer hover:ring-4 hover:ring-white/50 transition-all group relative">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt={user.name} className="w-full h-full rounded-full" />
+                  ) : (
+                    <User className="w-8 h-8" />
+                  )}
+                  <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                    <span className="text-xs">Edit</span>
+                  </div>
+                </div>
+              </Link>
               <div>
                 <h1 className="text-3xl font-bold">{user.name}</h1>
-                <p className="text-white/80">PIN: {user.pinCode}</p>
+                <Link href="/party/profile" className="text-white/80 hover:text-white hover:underline text-sm">
+                  ✏️ Edit Profile
+                </Link>
               </div>
             </div>
             <div className="text-right">

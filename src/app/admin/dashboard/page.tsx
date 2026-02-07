@@ -10,6 +10,7 @@ import PrintManager from '@/components/game-master/PrintManager';
 import { LogoutButton } from '@/components/party/LogoutButton';
 import { SpyGameControl } from '@/components/party/SpyGameControl';
 import { PartyManagement } from '@/components/party/PartyManagement';
+import { RecentFindsTicker } from '@/components/admin/RecentFindsTicker';
 import { Shield } from 'lucide-react';
 
 export default async function AdminDashboard() {
@@ -47,16 +48,20 @@ export default async function AdminDashboard() {
           <p className="text-slate-300">Control the Blackout game experience</p>
         </div>
 
-        <Tabs defaultValue="spy-game" className="space-y-6">
-          <TabsList className="flex flex-wrap gap-2 h-auto p-2 md:grid md:grid-cols-7 md:w-full max-w-5xl mx-auto">
-            <TabsTrigger value="spy-game" className="flex-1 min-w-fit">Spy Game</TabsTrigger>
-            <TabsTrigger value="parties" className="flex-1 min-w-fit">Parties</TabsTrigger>
-            <TabsTrigger value="config" className="flex-1 min-w-fit">Config</TabsTrigger>
-            <TabsTrigger value="content" className="flex-1 min-w-fit">Content</TabsTrigger>
-            <TabsTrigger value="scannables" className="flex-1 min-w-fit">Scannables</TabsTrigger>
-            <TabsTrigger value="print" className="flex-1 min-w-fit">Print</TabsTrigger>
-            <TabsTrigger value="players" className="flex-1 min-w-fit">Players</TabsTrigger>
-          </TabsList>
+        {/* Two-column layout: Main content + Live Feed */}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Main Content (3 cols) */}
+          <div className="lg:col-span-3">
+            <Tabs defaultValue="spy-game" className="space-y-6">
+              <TabsList className="flex flex-wrap gap-2 h-auto p-2 md:grid md:grid-cols-7 md:w-full max-w-5xl">
+                <TabsTrigger value="spy-game" className="flex-1 min-w-fit">Spy Game</TabsTrigger>
+                <TabsTrigger value="parties" className="flex-1 min-w-fit">Parties</TabsTrigger>
+                <TabsTrigger value="config" className="flex-1 min-w-fit">Config</TabsTrigger>
+                <TabsTrigger value="content" className="flex-1 min-w-fit">Content</TabsTrigger>
+                <TabsTrigger value="scannables" className="flex-1 min-w-fit">Scannables</TabsTrigger>
+                <TabsTrigger value="print" className="flex-1 min-w-fit">Print</TabsTrigger>
+                <TabsTrigger value="players" className="flex-1 min-w-fit">Players</TabsTrigger>
+              </TabsList>
 
           <TabsContent value="spy-game">
             <SpyGameControl />
@@ -85,7 +90,14 @@ export default async function AdminDashboard() {
           <TabsContent value="players">
             <PlayerManager sessionId="" eventId={1} />
           </TabsContent>
-        </Tabs>
+            </Tabs>
+          </div>
+
+          {/* Live Feed Sidebar (1 col) */}
+          <div className="lg:col-span-1">
+            <RecentFindsTicker />
+          </div>
+        </div>
       </div>
     </div>
   );

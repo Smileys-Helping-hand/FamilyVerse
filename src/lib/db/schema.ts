@@ -367,13 +367,18 @@ export const parties = pgTable('parties', {
 export const partyUsers = pgTable('party_users', {
   id: uuid('id').primaryKey().defaultRandom(),
   name: text('name').notNull(),
+  displayName: text('display_name'), // Custom display name (nickname)
   pinCode: text('pin_code').unique(), // SECRET PIN for admin/host login (e.g., 'admin-9999')
   avatarUrl: text('avatar_url'),
+  avatarEmoji: varchar('avatar_emoji', { length: 10 }).default('😎'), // Quick emoji avatar
   walletBalance: integer('wallet_balance').notNull().default(1000), // Party currency
   role: varchar('role', { length: 20 }).notNull().default('guest'), // 'admin', 'host', 'guest'
   status: varchar('status', { length: 20 }).notNull().default('approved'), // 'pending', 'approved', 'rejected'
   partyId: uuid('party_id'), // Which party they joined
+  bio: text('bio'), // Short bio/tagline
+  favoriteColor: varchar('favorite_color', { length: 20 }), // For theming
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
 });
 
 // Party Games (Sim Racing, Imposter, Dominoes, etc.)
@@ -787,9 +792,14 @@ export type NewGlobalSetting = typeof globalSettings.$inferInsert;
 export const smartQrs = pgTable('smart_qrs', {
   id: uuid('id').primaryKey().defaultRandom(),
   token: varchar('token', { length: 10 }).notNull().unique(), // Short 6-char code
-  type: varchar('type', { length: 10 }).notNull().default('CLUE'), // 'CLUE', 'TASK', 'INFO'
+  type: varchar('type', { length: 10 }).notNull().default('CLUE'), // 'CLUE', 'TASK', 'INFO', 'TRAP'
   title: text('title').notNull(), // Internal name (e.g., "Fridge Clue")
   content: text('content').notNull(), // The actual message shown to user
+  // Gamification fields
+  points: integer('points').notNull().default(100), // Points awarded (or deducted if trap)
+  isTrap: boolean('is_trap').notNull().default(false), // If true, DEDUCTS points
+  bonusFirstFinder: integer('bonus_first_finder').notNull().default(200), // Extra for first scanner
+  // Tracking
   scanCount: integer('scan_count').notNull().default(0),
   lastScannedAt: timestamp('last_scanned_at'),
   lastScannedBy: text('last_scanned_by'), // Name of last scanner
@@ -807,8 +817,21 @@ export const smartQrScans = pgTable('smart_qr_scans', {
   userAgent: text('user_agent'), // Device info
 });
 
+// QR Claims - prevents double-scanning for points
+export const qrClaims = pgTable('qr_claims', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  qrId: uuid('qr_id').notNull().references(() => smartQrs.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(), // User who claimed it
+  userName: text('user_name').notNull().default('Guest'),
+  pointsAwarded: integer('points_awarded').notNull(), // Can be negative for traps
+  wasFirstFinder: boolean('was_first_finder').notNull().default(false),
+  claimedAt: timestamp('claimed_at').notNull().defaultNow(),
+});
+
 // Module 9 types
 export type SmartQr = typeof smartQrs.$inferSelect;
 export type NewSmartQr = typeof smartQrs.$inferInsert;
 export type SmartQrScan = typeof smartQrScans.$inferSelect;
 export type NewSmartQrScan = typeof smartQrScans.$inferInsert;
+export type QrClaim = typeof qrClaims.$inferSelect;
+export type NewQrClaim = typeof qrClaims.$inferInsert;

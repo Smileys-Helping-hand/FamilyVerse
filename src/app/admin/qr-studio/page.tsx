@@ -71,7 +71,10 @@ export default function QRStudioPage() {
   const [smartQrs, setSmartQrs] = useState<SmartQr[]>([]);
   const [smartQrTitle, setSmartQrTitle] = useState('');
   const [smartQrContent, setSmartQrContent] = useState('');
-  const [smartQrType, setSmartQrType] = useState<'CLUE' | 'TASK' | 'INFO'>('CLUE');
+  const [smartQrType, setSmartQrType] = useState<'CLUE' | 'TASK' | 'INFO' | 'TRAP'>('CLUE');
+  const [smartQrPoints, setSmartQrPoints] = useState(100);
+  const [smartQrIsTrap, setSmartQrIsTrap] = useState(false);
+  const [smartQrBonusFirstFinder, setSmartQrBonusFirstFinder] = useState(200);
   const [creatingSmartQr, setCreatingSmartQr] = useState(false);
   const [generatedSmartUrl, setGeneratedSmartUrl] = useState('');
   const [activeMainTab, setActiveMainTab] = useState('templates');
@@ -98,16 +101,22 @@ export default function QRStudioPage() {
         title: smartQrTitle,
         content: smartQrContent,
         type: smartQrType,
+        points: smartQrPoints,
+        isTrap: smartQrIsTrap,
+        bonusFirstFinder: smartQrBonusFirstFinder,
       });
       
       if (result.success && result.shortUrl) {
         toast({ 
-          title: '✨ Smart QR Created!', 
-          description: `Token: ${result.qr?.token}` 
+          title: smartQrIsTrap ? '🪤 Trap Created!' : '✨ Smart QR Created!', 
+          description: `Token: ${result.qr?.token} | ${smartQrIsTrap ? '-' : '+'}${smartQrPoints} pts` 
         });
         setGeneratedSmartUrl(result.shortUrl);
         setSmartQrTitle('');
         setSmartQrContent('');
+        setSmartQrPoints(100);
+        setSmartQrIsTrap(false);
+        setSmartQrBonusFirstFinder(200);
         loadSmartQrs();
       } else {
         toast({ title: 'Failed', description: result.error, variant: 'destructive' });
@@ -703,14 +712,23 @@ export default function QRStudioPage() {
               <CardContent className="space-y-4">
                 <div>
                   <Label className="text-gray-300">Type</Label>
-                  <Select value={smartQrType} onValueChange={(v) => setSmartQrType(v as 'CLUE' | 'TASK' | 'INFO')}>
+                  <Select value={smartQrType} onValueChange={(v) => {
+                    setSmartQrType(v as 'CLUE' | 'TASK' | 'INFO' | 'TRAP');
+                    if (v === 'TRAP') {
+                      setSmartQrIsTrap(true);
+                      setSmartQrPoints(50);
+                    } else {
+                      setSmartQrIsTrap(false);
+                    }
+                  }}>
                     <SelectTrigger className="bg-black/50 border-gray-700">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="CLUE">🔎 CLUE - Hunt Clue</SelectItem>
-                      <SelectItem value="TASK">📋 TASK - Photo Challenge</SelectItem>
-                      <SelectItem value="INFO">ℹ️ INFO - General Info</SelectItem>
+                      <SelectItem value="CLUE">🔎 CLUE - Hunt Clue (+points)</SelectItem>
+                      <SelectItem value="TASK">📋 TASK - Challenge (+points)</SelectItem>
+                      <SelectItem value="INFO">ℹ️ INFO - General Info (no points)</SelectItem>
+                      <SelectItem value="TRAP">💥 TRAP - Decoy (-points)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -720,7 +738,7 @@ export default function QRStudioPage() {
                   <Input
                     value={smartQrTitle}
                     onChange={(e) => setSmartQrTitle(e.target.value)}
-                    placeholder="The Golden Ticket"
+                    placeholder={smartQrIsTrap ? "Free Beer (it's a trap!)" : "The Golden Ticket"}
                     className="bg-black/50 border-gray-700"
                   />
                 </div>
@@ -730,18 +748,63 @@ export default function QRStudioPage() {
                   <textarea
                     value={smartQrContent}
                     onChange={(e) => setSmartQrContent(e.target.value)}
-                    placeholder="Look behind the golden frame in the lounge..."
+                    placeholder={smartQrIsTrap ? "BOOM! You fell for the trap!" : "Look behind the golden frame in the lounge..."}
                     className="w-full h-24 bg-black/50 border border-gray-700 rounded-lg p-3 text-white text-sm"
                   />
+                </div>
+
+                {/* Gamification Options */}
+                <div className={`p-4 rounded-lg border ${smartQrIsTrap ? 'bg-red-900/20 border-red-500/30' : 'bg-green-900/20 border-green-500/30'}`}>
+                  <Label className={`${smartQrIsTrap ? 'text-red-400' : 'text-green-400'} font-semibold mb-3 block`}>
+                    {smartQrIsTrap ? '💥 Trap Settings' : '🎮 Reward Settings'}
+                  </Label>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label className="text-gray-400 text-xs">
+                        {smartQrIsTrap ? 'Points Deducted' : 'Base Points'}
+                      </Label>
+                      <Input
+                        type="number"
+                        value={smartQrPoints}
+                        onChange={(e) => setSmartQrPoints(parseInt(e.target.value) || 0)}
+                        className="bg-black/50 border-gray-700"
+                        min={0}
+                      />
+                    </div>
+                    
+                    {!smartQrIsTrap && (
+                      <div>
+                        <Label className="text-gray-400 text-xs">First Finder Bonus</Label>
+                        <Input
+                          type="number"
+                          value={smartQrBonusFirstFinder}
+                          onChange={(e) => setSmartQrBonusFirstFinder(parseInt(e.target.value) || 0)}
+                          className="bg-black/50 border-gray-700"
+                          min={0}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  
+                  <p className="text-xs text-gray-500 mt-2">
+                    {smartQrIsTrap 
+                      ? `Scanner loses ${smartQrPoints} points. Their phone will shake and play explosion sound!`
+                      : `First scanner gets ${smartQrPoints + smartQrBonusFirstFinder} pts. Others get ${smartQrPoints} pts.`
+                    }
+                  </p>
                 </div>
 
                 <Button
                   onClick={handleCreateSmartQr}
                   disabled={creatingSmartQr}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600"
+                  className={`w-full ${smartQrIsTrap 
+                    ? 'bg-gradient-to-r from-red-600 to-orange-600' 
+                    : 'bg-gradient-to-r from-purple-600 to-pink-600'
+                  }`}
                 >
                   <Wand2 className="w-4 h-4 mr-2" />
-                  {creatingSmartQr ? 'Creating...' : 'Generate Smart QR'}
+                  {creatingSmartQr ? 'Creating...' : smartQrIsTrap ? '🪤 Create Trap' : '✨ Generate Smart QR'}
                 </Button>
 
                 {generatedSmartUrl && (

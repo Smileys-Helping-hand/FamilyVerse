@@ -1,10 +1,22 @@
 'use server';
 
 import { db } from '@/lib/db';
-import { smartQrs, smartQrScans, type SmartQr, type NewSmartQr } from '@/lib/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { smartQrs, smartQrScans, qrClaims, partyUsers, type SmartQr, type NewSmartQr, type QrClaim } from '@/lib/db/schema';
+import { eq, desc, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
-import crypto from 'crypto';
+import { cookies } from 'next/headers';
+
+// Scan result types for the UI
+export type ScanStatus = 'SUCCESS' | 'FIRST_FINDER' | 'TRAP' | 'ALREADY_CLAIMED' | 'NOT_FOUND' | 'EXPIRED' | 'ERROR';
+
+export interface ScanResult {
+  status: ScanStatus;
+  message: string;
+  points?: number; // Positive for reward, negative for trap
+  totalBalance?: number;
+  qr?: SmartQr;
+  isFirstFinder?: boolean;
+}
 
 // Generate a random 6-character token
 function generateToken(): string {
@@ -16,13 +28,26 @@ function generateToken(): string {
   return token;
 }
 
+// Get current user ID from cookie
+async function getCurrentUserId(): Promise<string | null> {
+  try {
+    const cookieStore = await cookies();
+    return cookieStore.get('partyUserId')?.value || null;
+  } catch {
+    return null;
+  }
+}
+
 // ============================================
-// CREATE SMART QR
+// CREATE SMART QR (with gamification options)
 // ============================================
 export async function createSmartQrAction(data: {
   title: string;
   content: string;
-  type: 'CLUE' | 'TASK' | 'INFO';
+  type: 'CLUE' | 'TASK' | 'INFO' | 'TRAP';
+  points?: number;
+  isTrap?: boolean;
+  bonusFirstFinder?: number;
   createdBy?: string;
 }): Promise<{ success: boolean; qr?: SmartQr; shortUrl?: string; error?: string }> {
   try {
@@ -45,6 +70,9 @@ export async function createSmartQrAction(data: {
       title: data.title,
       content: data.content,
       type: data.type,
+      points: data.points ?? 100,
+      isTrap: data.isTrap ?? false,
+      bonusFirstFinder: data.bonusFirstFinder ?? 200,
       createdBy: data.createdBy || 'admin',
     }).returning();
     
@@ -76,13 +104,15 @@ export async function getSmartQrByTokenAction(token: string): Promise<SmartQr | 
 }
 
 // ============================================
-// RECORD A SCAN (Called when someone visits /q/[token])
+// RESOLVE SMART QR (Full Game Logic)
+// Called when someone visits /q/[token]
 // ============================================
-export async function recordSmartQrScanAction(
+export async function resolveSmartQrAction(
   token: string,
   scannerName: string = 'Guest',
-  userAgent?: string
-): Promise<{ success: boolean; qr?: SmartQr; error?: string }> {
+  userAgent?: string,
+  userId?: string
+): Promise<ScanResult> {
   try {
     // Get the QR
     const qr = await db.query.smartQrs.findFirst({
@@ -90,14 +120,109 @@ export async function recordSmartQrScanAction(
     });
     
     if (!qr) {
-      return { success: false, error: 'QR not found' };
+      return { status: 'NOT_FOUND', message: 'This clue doesn\'t exist!' };
     }
     
     if (!qr.isActive) {
-      return { success: false, error: 'This clue has expired' };
+      return { status: 'EXPIRED', message: 'This clue has expired!', qr };
     }
     
-    // Update scan count and last scanned
+    // Get user ID from parameter or cookie
+    const effectiveUserId = userId || await getCurrentUserId() || `guest_${Date.now()}`;
+    
+    // CHECK 2: Already claimed by this user?
+    const existingClaim = await db.query.qrClaims.findFirst({
+      where: and(
+        eq(qrClaims.qrId, qr.id),
+        eq(qrClaims.userId, effectiveUserId)
+      ),
+    });
+    
+    if (existingClaim) {
+      return { 
+        status: 'ALREADY_CLAIMED', 
+        message: 'You already found this one!',
+        points: 0,
+        qr,
+      };
+    }
+    
+    // CHECK 3: Is it a TRAP?
+    if (qr.isTrap) {
+      const trapPoints = -(qr.points || 50); // Deduct points
+      
+      // Update user wallet (if logged in)
+      let newBalance = 0;
+      if (effectiveUserId && !effectiveUserId.startsWith('guest_')) {
+        const [updatedUser] = await db.update(partyUsers)
+          .set({ walletBalance: sql`wallet_balance + ${trapPoints}` })
+          .where(eq(partyUsers.id, effectiveUserId))
+          .returning();
+        newBalance = updatedUser?.walletBalance || 0;
+      }
+      
+      // Record claim
+      await db.insert(qrClaims).values({
+        qrId: qr.id,
+        userId: effectiveUserId,
+        userName: scannerName,
+        pointsAwarded: trapPoints,
+        wasFirstFinder: false,
+      });
+      
+      // Update scan count
+      await db.update(smartQrs)
+        .set({
+          scanCount: qr.scanCount + 1,
+          lastScannedAt: new Date(),
+          lastScannedBy: scannerName,
+        })
+        .where(eq(smartQrs.id, qr.id));
+      
+      // Record scan history
+      await db.insert(smartQrScans).values({
+        qrId: qr.id,
+        scannerName,
+        userAgent,
+      });
+      
+      // TODO: Trigger Pusher for TV explosion
+      
+      return {
+        status: 'TRAP',
+        message: `💥 BOOM! You lost ${Math.abs(trapPoints)} points!`,
+        points: trapPoints,
+        totalBalance: newBalance,
+        qr,
+      };
+    }
+    
+    // CHECK 4: First Finder bonus?
+    const isFirstFinder = qr.scanCount === 0;
+    const basePoints = qr.points || 100;
+    const bonusPoints = isFirstFinder ? (qr.bonusFirstFinder || 200) : 0;
+    const totalPoints = basePoints + bonusPoints;
+    
+    // Update user wallet
+    let newBalance = 0;
+    if (effectiveUserId && !effectiveUserId.startsWith('guest_')) {
+      const [updatedUser] = await db.update(partyUsers)
+        .set({ walletBalance: sql`wallet_balance + ${totalPoints}` })
+        .where(eq(partyUsers.id, effectiveUserId))
+        .returning();
+      newBalance = updatedUser?.walletBalance || 0;
+    }
+    
+    // Record claim
+    await db.insert(qrClaims).values({
+      qrId: qr.id,
+      userId: effectiveUserId,
+      userName: scannerName,
+      pointsAwarded: totalPoints,
+      wasFirstFinder: isFirstFinder,
+    });
+    
+    // Update QR scan count
     const [updatedQr] = await db.update(smartQrs)
       .set({
         scanCount: qr.scanCount + 1,
@@ -107,21 +232,55 @@ export async function recordSmartQrScanAction(
       .where(eq(smartQrs.id, qr.id))
       .returning();
     
-    // Record scan in history
+    // Record scan history
     await db.insert(smartQrScans).values({
       qrId: qr.id,
       scannerName,
       userAgent,
     });
     
-    // TODO: Trigger Pusher event for live feed
-    // await triggerScanEvent(updatedQr);
+    // TODO: Trigger Pusher for TV celebration
     
-    return { success: true, qr: updatedQr };
+    if (isFirstFinder) {
+      return {
+        status: 'FIRST_FINDER',
+        message: `🎉 FIRST FINDER BONUS! +${totalPoints} points!`,
+        points: totalPoints,
+        totalBalance: newBalance,
+        qr: updatedQr,
+        isFirstFinder: true,
+      };
+    }
+    
+    return {
+      status: 'SUCCESS',
+      message: `✨ Found it! +${totalPoints} points!`,
+      points: totalPoints,
+      totalBalance: newBalance,
+      qr: updatedQr,
+    };
+    
   } catch (error) {
-    console.error('Failed to record scan:', error);
-    return { success: false, error: 'Failed to record scan' };
+    console.error('Failed to resolve Smart QR:', error);
+    return { status: 'ERROR', message: 'Something went wrong!' };
   }
+}
+
+// ============================================
+// RECORD A SCAN (Legacy - for backwards compatibility)
+// ============================================
+export async function recordSmartQrScanAction(
+  token: string,
+  scannerName: string = 'Guest',
+  userAgent?: string
+): Promise<{ success: boolean; qr?: SmartQr; error?: string }> {
+  const result = await resolveSmartQrAction(token, scannerName, userAgent);
+  
+  if (result.status === 'NOT_FOUND' || result.status === 'ERROR') {
+    return { success: false, error: result.message };
+  }
+  
+  return { success: true, qr: result.qr };
 }
 
 // ============================================
@@ -138,7 +297,42 @@ export async function getAllSmartQrsAction(): Promise<SmartQr[]> {
 }
 
 // ============================================
-// GET RECENT SCANS (Admin Live Feed)
+// GET RECENT CLAIMS (Admin Ticker with Points!)
+// ============================================
+export async function getRecentClaimsAction(limit: number = 10): Promise<{
+  id: string;
+  qrTitle: string;
+  userName: string;
+  points: number;
+  wasFirstFinder: boolean;
+  isTrap: boolean;
+  claimedAt: Date;
+}[]> {
+  try {
+    const claims = await db
+      .select({
+        id: qrClaims.id,
+        qrTitle: smartQrs.title,
+        userName: qrClaims.userName,
+        points: qrClaims.pointsAwarded,
+        wasFirstFinder: qrClaims.wasFirstFinder,
+        isTrap: smartQrs.isTrap,
+        claimedAt: qrClaims.claimedAt,
+      })
+      .from(qrClaims)
+      .innerJoin(smartQrs, eq(qrClaims.qrId, smartQrs.id))
+      .orderBy(desc(qrClaims.claimedAt))
+      .limit(limit);
+    
+    return claims;
+  } catch (error) {
+    console.error('Failed to fetch recent claims:', error);
+    return [];
+  }
+}
+
+// ============================================
+// GET RECENT SCANS (Admin Live Feed - Legacy)
 // ============================================
 export async function getRecentScansAction(limit: number = 10): Promise<{
   id: number;

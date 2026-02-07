@@ -36,6 +36,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setLoading(true);
       setUser(user);
 
+      // Set auth cookie for middleware (Iron Gate security)
+      if (user?.email) {
+        document.cookie = `firebase-auth-email=${user.email}; path=/; max-age=86400; SameSite=Lax`;
+      } else {
+        document.cookie = 'firebase-auth-email=; path=/; max-age=0';
+      }
+
       if (!user) {
         setUserProfile(null);
         setFamily(null);

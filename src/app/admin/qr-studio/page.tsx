@@ -1,609 +1,543 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { QRCodeSVG } from 'qrcode.react';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import html2canvas from 'html2canvas';
+import { 
+  Printer, Download, Share2, Wifi, Link2, Trophy, 
+  Type, QrCode, Trash2,
+  Palette, Users,
+  Gamepad2, Plus
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import {
-  Printer,
-  QrCode,
-  Wifi,
-  CheckCircle2,
-  Users,
-  Car,
-  Download,
-  Copy,
-  ExternalLink,
-  Settings,
-  Layers,
-} from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { getPartyTasksAction } from '@/app/actions/party-logic';
 
-type QRType = 'party-join' | 'task-completion' | 'sim-rig' | 'wifi' | 'custom';
+// =============================================================================
+// Types
+// =============================================================================
+type ElementType = 'qr' | 'text' | 'icon';
 
-interface LabelSettings {
-  paperWidth: number;
-  paperHeight: number | 'continuous';
-  includeHelperText: boolean;
-  helperText: string;
-}
-
-interface Task {
+interface CanvasElement {
   id: string;
-  title: string;
-  description: string;
+  type: ElementType;
+  content: string;
+  size: number;
+  x: number;
+  y: number;
 }
 
+// =============================================================================
+// QR Design Studio - WYSIWYG Editor for Thermal Labels
+// =============================================================================
 export default function QRStudioPage() {
-  const router = useRouter();
   const { toast } = useToast();
+  const canvasRef = useRef<HTMLDivElement>(null);
   
-  const [qrType, setQrType] = useState<QRType>('party-join');
-  const [qrValue, setQrValue] = useState('');
-  const [previewValue, setPreviewValue] = useState('');
+  // Canvas state
+  const [elements, setElements] = useState<CanvasElement[]>([
+    { id: 'qr-1', type: 'qr', content: 'https://familyverse.app', size: 200, x: 92, y: 50 },
+    { id: 'text-1', type: 'text', content: 'SCAN ME', size: 24, x: 142, y: 280 },
+  ]);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [qrData, setQrData] = useState('https://familyverse.app');
+  const [inverted, setInverted] = useState(false);
+  const [qrSize, setQrSize] = useState(200);
   
-  const [labelSettings, setLabelSettings] = useState<LabelSettings>({
-    paperWidth: 50,
-    paperHeight: 30,
-    includeHelperText: true,
-    helperText: 'Scan Me!',
-  });
-  
-  // Type-specific inputs
-  const [partyCode, setPartyCode] = useState('');
-  const [selectedTaskId, setSelectedTaskId] = useState('');
+  // Quick Action states
   const [wifiSSID, setWifiSSID] = useState('');
   const [wifiPassword, setWifiPassword] = useState('');
-  const [wifiSecurity, setWifiSecurity] = useState('WPA');
-  const [customURL, setCustomURL] = useState('');
+  const wifiType = 'WPA';
   
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [loading, setLoading] = useState(false);
+  // Spy Game states
+  const [spyCardCount, setSpyCardCount] = useState(10);
+  const [baseUrl, setBaseUrl] = useState('https://alphatraders.co.za');
 
-  // Load tasks on mount
-  useEffect(() => {
-    loadTasks();
-  }, []);
+  // =============================================================================
+  // Element Management
+  // =============================================================================
+  const addElement = (type: ElementType, content: string) => {
+    const newElement: CanvasElement = {
+      id: `${type}-${Date.now()}`,
+      type,
+      content,
+      size: type === 'qr' ? 150 : type === 'text' ? 20 : 40,
+      x: 142,
+      y: elements.length * 60 + 50,
+    };
+    setElements([...elements, newElement]);
+    setSelectedId(newElement.id);
+  };
 
-  const loadTasks = async () => {
-    try {
-      const result = await getPartyTasksAction();
-      if (result.success && result.tasks) {
-        setTasks(result.tasks.map(t => ({
-          id: t.id,
-          title: t.title,
-          description: t.description || '',
-        })));
+  const removeElement = (id: string) => {
+    setElements(elements.filter(el => el.id !== id));
+    if (selectedId === id) setSelectedId(null);
+  };
+
+  const updateElement = (id: string, updates: Partial<CanvasElement>) => {
+    setElements(elements.map(el => 
+      el.id === id ? { ...el, ...updates } : el
+    ));
+  };
+
+  const updateQRData = (data: string) => {
+    setQrData(data);
+    elements.forEach(el => {
+      if (el.type === 'qr') {
+        updateElement(el.id, { content: data });
       }
-    } catch (error) {
-      console.error('Failed to load tasks:', error);
-    }
-  };
-
-  // Generate QR value based on type
-  useEffect(() => {
-    let value = '';
-    const baseURL = typeof window !== 'undefined' ? window.location.origin : '';
-
-    switch (qrType) {
-      case 'party-join':
-        if (partyCode) {
-          value = `${baseURL}/party/join?code=${partyCode}`;
-        }
-        break;
-      case 'task-completion':
-        if (selectedTaskId) {
-          const task = tasks.find(t => t.id === selectedTaskId);
-          value = `${baseURL}/api/tasks/complete?taskId=${selectedTaskId}`;
-          if (task && labelSettings.includeHelperText) {
-            setLabelSettings(prev => ({
-              ...prev,
-              helperText: `Complete: ${task.title}`,
-            }));
-          }
-        }
-        break;
-      case 'sim-rig':
-        value = `${baseURL}/party/sim-racing`;
-        break;
-      case 'wifi':
-        if (wifiSSID) {
-          // Standard WiFi QR format: WIFI:S:<SSID>;T:<WPA|WEP|nopass>;P:<password>;;
-          value = `WIFI:S:${wifiSSID};T:${wifiSecurity};P:${wifiPassword};;`;
-        }
-        break;
-      case 'custom':
-        value = customURL;
-        break;
-    }
-
-    setQrValue(value);
-    setPreviewValue(value);
-  }, [qrType, partyCode, selectedTaskId, wifiSSID, wifiPassword, wifiSecurity, customURL, tasks]);
-
-  const openPrintWindow = () => {
-    if (!qrValue) {
-      toast({
-        title: '❌ No QR Code',
-        description: 'Generate a QR code first',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const printURL = `/admin/print-label?` + new URLSearchParams({
-      value: qrValue,
-      text: labelSettings.includeHelperText ? labelSettings.helperText : '',
-      width: labelSettings.paperWidth.toString(),
-      height: labelSettings.paperHeight === 'continuous' ? '30' : labelSettings.paperHeight.toString(),
-    }).toString();
-
-    window.open(printURL, '_blank', 'width=800,height=600');
-  };
-
-  const openBatchPrint = () => {
-    if (tasks.length === 0) {
-      toast({
-        title: '❌ No Tasks',
-        description: 'No tasks available to print',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    const baseURL = typeof window !== 'undefined' ? window.location.origin : '';
-    const taskData = tasks.map(task => ({
-      value: `${baseURL}/api/tasks/complete?taskId=${task.id}`,
-      text: `Task: ${task.title}`,
-    }));
-
-    const printURL = `/admin/print-batch?` + new URLSearchParams({
-      width: labelSettings.paperWidth.toString(),
-      height: labelSettings.paperHeight === 'continuous' ? '30' : labelSettings.paperHeight.toString(),
-      data: JSON.stringify(taskData),
-    }).toString();
-
-    window.open(printURL, '_blank', 'width=800,height=600');
-  };
-
-  const copyToClipboard = () => {
-    if (qrValue) {
-      navigator.clipboard.writeText(qrValue);
-      toast({
-        title: '📋 Copied!',
-        description: 'QR value copied to clipboard',
-      });
-    }
-  };
-
-  const downloadQR = () => {
-    // Get the SVG element
-    const svg = document.querySelector('#preview-qr svg');
-    if (!svg) return;
-
-    // Convert to data URL and download
-    const svgData = new XMLSerializer().serializeToString(svg);
-    const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
-    const svgUrl = URL.createObjectURL(svgBlob);
-    const downloadLink = document.createElement('a');
-    downloadLink.href = svgUrl;
-    downloadLink.download = `qr-${qrType}-${Date.now()}.svg`;
-    document.body.appendChild(downloadLink);
-    downloadLink.click();
-    document.body.removeChild(downloadLink);
-
-    toast({
-      title: '💾 Downloaded!',
-      description: 'QR code saved as SVG',
     });
   };
 
+  // =============================================================================
+  // Quick Actions
+  // =============================================================================
+  const generateWifiQR = () => {
+    if (!wifiSSID) {
+      toast({ title: 'Enter WiFi name', variant: 'destructive' });
+      return;
+    }
+    const wifiString = `WIFI:S:${wifiSSID};T:${wifiType};P:${wifiPassword};;`;
+    updateQRData(wifiString);
+    toast({ title: '📶 WiFi QR Generated!', description: 'Scan to auto-connect' });
+  };
+
+  const generateJoinPartyQR = () => {
+    const partyUrl = `${baseUrl}/party/join`;
+    updateQRData(partyUrl);
+    toast({ title: '🎉 Party Link Generated!' });
+  };
+
+  const generateLeaderboardQR = () => {
+    const leaderboardUrl = `${baseUrl}/party/leaderboard`;
+    updateQRData(leaderboardUrl);
+    toast({ title: '🏆 Leaderboard QR Generated!' });
+  };
+
+  // =============================================================================
+  // Spy Game Batch Generation
+  // =============================================================================
+  const generateSpyCards = async () => {
+    toast({ title: '🕵️ Generating Spy Cards...', description: `Creating ${spyCardCount} unique cards` });
+    
+    const cards: string[] = [];
+    for (let i = 0; i < spyCardCount; i++) {
+      const token = btoa(`spy-${Date.now()}-${i}-${Math.random().toString(36).slice(2)}`);
+      const deepLink = `${baseUrl}/spy/reveal?token=${token}`;
+      cards.push(deepLink);
+    }
+    
+    // Set the first card as preview
+    updateQRData(cards[0]);
+    
+    toast({ 
+      title: '✅ Spy Cards Ready!', 
+      description: `${spyCardCount} unique QR codes generated.` 
+    });
+    
+    return cards;
+  };
+
+  // =============================================================================
+  // Print Engine
+  // =============================================================================
+  const captureCanvas = async (): Promise<Blob | null> => {
+    if (!canvasRef.current) return null;
+    
+    try {
+      const canvas = await html2canvas(canvasRef.current, {
+        backgroundColor: inverted ? '#000000' : '#ffffff',
+        scale: 2,
+        useCORS: true,
+      });
+      
+      return new Promise((resolve) => {
+        canvas.toBlob((blob) => resolve(blob), 'image/png', 1.0);
+      });
+    } catch (error) {
+      console.error('Canvas capture failed:', error);
+      return null;
+    }
+  };
+
+  const downloadPNG = async () => {
+    const blob = await captureCanvas();
+    if (!blob) {
+      toast({ title: 'Export failed', variant: 'destructive' });
+      return;
+    }
+    
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `qr-sticker-${Date.now()}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({ title: '📥 Downloaded!', description: 'PNG ready for printing' });
+  };
+
+  const shareToPrinter = async () => {
+    const blob = await captureCanvas();
+    if (!blob) {
+      toast({ title: 'Export failed', variant: 'destructive' });
+      return;
+    }
+
+    const file = new File([blob], 'qr-sticker.png', { type: 'image/png' });
+    
+    if (navigator.share && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({
+          files: [file],
+          title: 'QR Sticker',
+          text: 'Print this sticker!',
+        });
+        toast({ title: '🖨️ Sent to Share Sheet!', description: 'Select your printer app' });
+      } catch (error) {
+        if ((error as Error).name !== 'AbortError') {
+          toast({ title: 'Share failed', variant: 'destructive' });
+        }
+      }
+    } else {
+      downloadPNG();
+    }
+  };
+
+  // Icon Library
+  const icons = [
+    { emoji: '🕵️', label: 'Spy' },
+    { emoji: '🏎️', label: 'Car' },
+    { emoji: '👻', label: 'Ghost' },
+    { emoji: '🎮', label: 'Game' },
+    { emoji: '🏆', label: 'Trophy' },
+    { emoji: '📶', label: 'WiFi' },
+    { emoji: '🎉', label: 'Party' },
+    { emoji: '⭐', label: 'Star' },
+    { emoji: '🔥', label: 'Fire' },
+    { emoji: '💎', label: 'Diamond' },
+  ];
+
+  // =============================================================================
+  // Render
+  // =============================================================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-6">
-      <div className="max-w-7xl mx-auto space-y-6">
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-4xl font-bold text-white flex items-center gap-3">
-              <QrCode className="w-10 h-10 text-purple-400" />
-              QR Studio & Label Engine
-            </h1>
-            <p className="text-slate-400 mt-2">
-              Generate, preview, and print QR codes for your thermal label printer
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={() => router.push('/admin/control')}
-            className="border-slate-600 text-slate-300"
-          >
-            Back to Control
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
+            <QrCode className="w-8 h-8 text-purple-400" />
+            QR Design Studio
+          </h1>
+          <p className="text-gray-400 mt-1">WYSIWYG editor for thermal label printing</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={downloadPNG}>
+            <Download className="w-4 h-4 mr-2" />
+            Download PNG
+          </Button>
+          <Button onClick={shareToPrinter} className="bg-gradient-to-r from-purple-500 to-pink-500">
+            <Printer className="w-4 h-4 mr-2" />
+            Send to Printer
           </Button>
         </div>
+      </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Left: Configuration & Generator */}
-          <div className="space-y-6">
-            {/* Label Settings */}
-            <Card className="bg-slate-800/50 backdrop-blur border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Settings className="w-5 h-5 text-blue-400" />
-                  Label Settings
-                </CardTitle>
-                <CardDescription>Configure your thermal printer paper</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label className="text-slate-300">Paper Width (mm)</Label>
-                    <Input
-                      type="number"
-                      value={labelSettings.paperWidth}
-                      onChange={(e) => setLabelSettings(prev => ({
-                        ...prev,
-                        paperWidth: Number(e.target.value),
-                      }))}
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-slate-300">Paper Height (mm)</Label>
-                    <Input
-                      type="number"
-                      value={labelSettings.paperHeight === 'continuous' ? 30 : labelSettings.paperHeight}
-                      onChange={(e) => setLabelSettings(prev => ({
-                        ...prev,
-                        paperHeight: Number(e.target.value),
-                      }))}
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                  <Label className="text-slate-300">Include Helper Text</Label>
-                  <Switch
-                    checked={labelSettings.includeHelperText}
-                    onCheckedChange={(checked) => setLabelSettings(prev => ({
-                      ...prev,
-                      includeHelperText: checked,
-                    }))}
-                  />
-                </div>
-
-                {labelSettings.includeHelperText && (
-                  <div className="space-y-2">
-                    <Label className="text-slate-300">Helper Text</Label>
-                    <Input
-                      value={labelSettings.helperText}
-                      onChange={(e) => setLabelSettings(prev => ({
-                        ...prev,
-                        helperText: e.target.value,
-                      }))}
-                      className="bg-slate-700 border-slate-600 text-white"
-                      placeholder="Scan me!"
-                    />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* QR Generator */}
-            <Card className="bg-slate-800/50 backdrop-blur border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <QrCode className="w-5 h-5 text-purple-400" />
-                  QR Generator
-                </CardTitle>
-                <CardDescription>Choose what to encode</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Type Selector */}
-                <div className="space-y-2">
-                  <Label className="text-slate-300">QR Type</Label>
-                  <Select value={qrType} onValueChange={(value) => setQrType(value as QRType)}>
-                    <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="party-join">
-                        <div className="flex items-center gap-2">
-                          <Users className="w-4 h-4" />
-                          Party Join
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="task-completion">
-                        <div className="flex items-center gap-2">
-                          <CheckCircle2 className="w-4 h-4" />
-                          Task Completion
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="sim-rig">
-                        <div className="flex items-center gap-2">
-                          <Car className="w-4 h-4" />
-                          Sim Rig Check-in
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="wifi">
-                        <div className="flex items-center gap-2">
-                          <Wifi className="w-4 h-4" />
-                          Wi-Fi Login
-                        </div>
-                      </SelectItem>
-                      <SelectItem value="custom">
-                        <div className="flex items-center gap-2">
-                          <ExternalLink className="w-4 h-4" />
-                          Custom URL
-                        </div>
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Separator className="bg-slate-700" />
-
-                {/* Type-specific inputs */}
-                {qrType === 'party-join' && (
-                  <div className="space-y-2">
-                    <Label className="text-slate-300">Party Code</Label>
-                    <Input
-                      value={partyCode}
-                      onChange={(e) => setPartyCode(e.target.value)}
-                      placeholder="PARTY123"
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
-                    <p className="text-xs text-slate-400">
-                      Guests scan this to join your party
-                    </p>
-                  </div>
-                )}
-
-                {qrType === 'task-completion' && (
-                  <div className="space-y-2">
-                    <Label className="text-slate-300">Select Task</Label>
-                    <Select value={selectedTaskId} onValueChange={setSelectedTaskId}>
-                      <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                        <SelectValue placeholder="Choose a task..." />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {tasks.map(task => (
-                          <SelectItem key={task.id} value={task.id}>
-                            {task.title}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <p className="text-xs text-slate-400">
-                      Scanning completes the task
-                    </p>
-                  </div>
-                )}
-
-                {qrType === 'sim-rig' && (
-                  <div className="rounded-lg bg-blue-500/10 border border-blue-500/50 p-4">
-                    <p className="text-blue-300 text-sm">
-                      <Car className="w-4 h-4 inline mr-2" />
-                      Generates a link to the sim racing lap time submission page
-                    </p>
-                  </div>
-                )}
-
-                {qrType === 'wifi' && (
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label className="text-slate-300">Network Name (SSID)</Label>
-                      <Input
-                        value={wifiSSID}
-                        onChange={(e) => setWifiSSID(e.target.value)}
-                        placeholder="MyHomeWiFi"
-                        className="bg-slate-700 border-slate-600 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-300">Password</Label>
-                      <Input
-                        type="password"
-                        value={wifiPassword}
-                        onChange={(e) => setWifiPassword(e.target.value)}
-                        placeholder="••••••••"
-                        className="bg-slate-700 border-slate-600 text-white"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="text-slate-300">Security Type</Label>
-                      <Select value={wifiSecurity} onValueChange={setWifiSecurity}>
-                        <SelectTrigger className="bg-slate-700 border-slate-600 text-white">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="WPA">WPA/WPA2</SelectItem>
-                          <SelectItem value="WEP">WEP</SelectItem>
-                          <SelectItem value="nopass">No Password</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <p className="text-xs text-slate-400">
-                      <Wifi className="w-4 h-4 inline mr-2" />
-                      Guests can scan to auto-connect to WiFi
-                    </p>
-                  </div>
-                )}
-
-                {qrType === 'custom' && (
-                  <div className="space-y-2">
-                    <Label className="text-slate-300">Custom URL</Label>
-                    <Input
-                      value={customURL}
-                      onChange={(e) => setCustomURL(e.target.value)}
-                      placeholder="https://example.com"
-                      className="bg-slate-700 border-slate-600 text-white"
-                    />
-                    <p className="text-xs text-slate-400">
-                      Any URL or text content
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Batch Actions */}
-            <Card className="bg-gradient-to-r from-orange-500/10 to-red-500/10 border-orange-500/50">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <Layers className="w-5 h-5 text-orange-400" />
-                  Batch Generator
-                </CardTitle>
-                <CardDescription>Print multiple labels at once</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button
-                  onClick={openBatchPrint}
-                  className="w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600"
-                  disabled={tasks.length === 0}
-                >
-                  <Printer className="w-4 h-4 mr-2" />
-                  Print All Task QRs ({tasks.length})
-                </Button>
-                <p className="text-xs text-slate-400 mt-2">
-                  Generates a continuous strip of all task completion QR codes
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Right: Preview & Print */}
-          <div className="space-y-6">
-            {/* Label Preview */}
-            <Card className="bg-slate-800/50 backdrop-blur border-slate-700">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-white">
-                  <QrCode className="w-5 h-5 text-green-400" />
-                  Label Preview
-                </CardTitle>
-                <CardDescription>
-                  Physical size: {labelSettings.paperWidth}mm × {labelSettings.paperHeight === 'continuous' ? '30' : labelSettings.paperHeight}mm
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                {/* Preview Container */}
-                <div className="flex justify-center items-center p-8 bg-slate-900 rounded-lg">
-                  <div
-                    id="preview-qr"
-                    className="bg-white p-4 rounded-lg shadow-2xl flex flex-col items-center justify-center"
-                    style={{
-                      width: `${labelSettings.paperWidth * 2}px`,
-                      minHeight: `${(labelSettings.paperHeight === 'continuous' ? 30 : labelSettings.paperHeight) * 2}px`,
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* LEFT: The Canvas */}
+        <Card className="bg-black/40 border-purple-500/30">
+          <CardHeader>
+            <CardTitle className="text-white flex items-center gap-2">
+              <Palette className="w-5 h-5" />
+              Canvas (384px Thermal Width)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {/* Canvas Container */}
+            <div className="flex justify-center">
+              <div
+                ref={canvasRef}
+                className={`relative transition-colors ${inverted ? 'bg-black' : 'bg-white'}`}
+                style={{ width: 384, minHeight: 400, padding: 16 }}
+              >
+                {elements.map((element) => (
+                  <motion.div
+                    key={element.id}
+                    className={`absolute cursor-move ${selectedId === element.id ? 'ring-2 ring-purple-500 ring-offset-2' : ''}`}
+                    style={{ left: element.x, top: element.y }}
+                    drag
+                    dragMomentum={false}
+                    onDragEnd={(_, info) => {
+                      updateElement(element.id, {
+                        x: element.x + info.offset.x,
+                        y: element.y + info.offset.y,
+                      });
                     }}
+                    onClick={() => setSelectedId(element.id)}
                   >
-                    {previewValue ? (
-                      <>
-                        {labelSettings.includeHelperText && (
-                          <p className="text-black text-center font-bold text-sm mb-2">
-                            {labelSettings.helperText}
-                          </p>
-                        )}
-                        <QRCodeSVG
-                          value={previewValue}
-                          size={Math.min(labelSettings.paperWidth * 1.5, 200)}
-                          level="H"
-                          includeMargin={true}
-                        />
-                      </>
-                    ) : (
-                      <div className="text-gray-400 text-center">
-                        <QrCode className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                        <p className="text-sm">Configure settings to generate QR</p>
-                      </div>
+                    {element.type === 'qr' && (
+                      <QRCodeSVG
+                        value={element.content || ' '}
+                        size={qrSize}
+                        bgColor={inverted ? '#000000' : '#ffffff'}
+                        fgColor={inverted ? '#ffffff' : '#000000'}
+                        level="H"
+                        includeMargin={false}
+                      />
                     )}
-                  </div>
-                </div>
+                    {element.type === 'text' && (
+                      <p className={`font-bold ${inverted ? 'text-white' : 'text-black'}`} style={{ fontSize: element.size }}>
+                        {element.content}
+                      </p>
+                    )}
+                    {element.type === 'icon' && (
+                      <span style={{ fontSize: element.size }}>{element.content}</span>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+            </div>
 
-                {/* QR Value Display */}
-                {previewValue && (
-                  <div className="mt-4 p-3 bg-slate-900/50 rounded-lg">
-                    <p className="text-xs text-slate-400 mb-1">Encoded Value:</p>
-                    <p className="text-sm text-slate-300 break-all font-mono">
-                      {previewValue}
-                    </p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            {/* Canvas Controls */}
+            <div className="mt-6 space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="text-gray-300">Inverted (White on Black)</Label>
+                <Switch checked={inverted} onCheckedChange={setInverted} />
+              </div>
+              
+              <div className="space-y-2">
+                <Label className="text-gray-300">QR Code Size: {qrSize}px</Label>
+                <Slider value={[qrSize]} onValueChange={([v]) => setQrSize(v)} min={100} max={350} step={10} />
+              </div>
 
-            {/* Actions */}
-            <Card className="bg-slate-800/50 backdrop-blur border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Print & Export</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                <Button
-                  onClick={openPrintWindow}
-                  disabled={!qrValue}
-                  className="w-full bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
-                  size="lg"
-                >
-                  <Printer className="w-5 h-5 mr-2" />
-                  Print Now
+              {selectedId && (
+                <Button variant="destructive" size="sm" onClick={() => removeElement(selectedId)}>
+                  <Trash2 className="w-4 h-4 mr-1" />
+                  Delete Selected
                 </Button>
+              )}
+            </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <Button
-                    onClick={copyToClipboard}
-                    disabled={!qrValue}
-                    variant="outline"
-                    className="border-slate-600 text-slate-300"
-                  >
-                    <Copy className="w-4 h-4 mr-2" />
-                    Copy URL
+            {/* Add Elements */}
+            <div className="mt-6 border-t border-gray-700 pt-4">
+              <Label className="text-gray-300 mb-3 block">Add Elements</Label>
+              <div className="flex flex-wrap gap-2">
+                <Button size="sm" variant="outline" onClick={() => addElement('qr', qrData)}>
+                  <QrCode className="w-4 h-4 mr-1" />
+                  QR Code
+                </Button>
+                <Button size="sm" variant="outline" onClick={() => addElement('text', 'SCAN ME')}>
+                  <Type className="w-4 h-4 mr-1" />
+                  Text
+                </Button>
+                {icons.slice(0, 4).map((icon) => (
+                  <Button key={icon.emoji} size="sm" variant="ghost" onClick={() => addElement('icon', icon.emoji)} title={icon.label}>
+                    {icon.emoji}
                   </Button>
-                  <Button
-                    onClick={downloadQR}
-                    disabled={!qrValue}
-                    variant="outline"
-                    className="border-slate-600 text-slate-300"
-                  >
-                    <Download className="w-4 h-4 mr-2" />
-                    Download SVG
-                  </Button>
-                </div>
+                ))}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-                {/* Print Tips */}
-                <div className="mt-4 p-4 bg-blue-500/10 border border-blue-500/50 rounded-lg">
-                  <h4 className="text-blue-300 font-semibold mb-2 flex items-center gap-2">
-                    <Printer className="w-4 h-4" />
-                    Thermal Printer Tips
-                  </h4>
-                  <ul className="text-xs text-blue-200 space-y-1">
-                    <li>• Select your mini printer as destination</li>
-                    <li>• Set margins to "None" in print settings</li>
-                    <li>• Adjust scale to 90-100% if needed</li>
-                    <li>• Use "Portrait" orientation</li>
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+        {/* RIGHT: Data Source Tabs */}
+        <div className="space-y-4">
+          <Tabs defaultValue="quick" className="w-full">
+            <TabsList className="grid grid-cols-3 w-full">
+              <TabsTrigger value="quick">⚡ Quick Actions</TabsTrigger>
+              <TabsTrigger value="spy">🕵️ Spy Cards</TabsTrigger>
+              <TabsTrigger value="custom">✏️ Custom</TabsTrigger>
+            </TabsList>
+
+            {/* Quick Actions Tab */}
+            <TabsContent value="quick" className="space-y-4">
+              <Card className="bg-black/40 border-blue-500/30">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Wifi className="w-5 h-5 text-blue-400" />
+                    WiFi Login QR
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Network Name (SSID)</Label>
+                    <Input
+                      value={wifiSSID}
+                      onChange={(e) => setWifiSSID(e.target.value)}
+                      placeholder="MyHomeWiFi"
+                      className="bg-black/50"
+                    />
+                  </div>
+                  <div>
+                    <Label>Password</Label>
+                    <Input
+                      type="password"
+                      value={wifiPassword}
+                      onChange={(e) => setWifiPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="bg-black/50"
+                    />
+                  </div>
+                  <Button onClick={generateWifiQR} className="w-full">
+                    <Wifi className="w-4 h-4 mr-2" />
+                    Generate WiFi QR
+                  </Button>
+                </CardContent>
+              </Card>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Card className="bg-black/40 border-green-500/30 cursor-pointer hover:border-green-400 transition-colors" onClick={generateJoinPartyQR}>
+                  <CardContent className="p-4 text-center">
+                    <Link2 className="w-8 h-8 mx-auto mb-2 text-green-400" />
+                    <p className="font-semibold text-white">Join Party Link</p>
+                    <p className="text-xs text-gray-400">Party lobby URL</p>
+                  </CardContent>
+                </Card>
+                <Card className="bg-black/40 border-yellow-500/30 cursor-pointer hover:border-yellow-400 transition-colors" onClick={generateLeaderboardQR}>
+                  <CardContent className="p-4 text-center">
+                    <Trophy className="w-8 h-8 mx-auto mb-2 text-yellow-400" />
+                    <p className="font-semibold text-white">Leaderboard</p>
+                    <p className="text-xs text-gray-400">Sim Racing scores</p>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+
+            {/* Spy Game Cards Tab */}
+            <TabsContent value="spy" className="space-y-4">
+              <Card className="bg-black/40 border-red-500/30">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Users className="w-5 h-5 text-red-400" />
+                    Batch Spy Cards Generator
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>Number of Player Cards</Label>
+                    <div className="flex gap-2 mt-2">
+                      {[6, 8, 10, 12].map((n) => (
+                        <Button
+                          key={n}
+                          size="sm"
+                          variant={spyCardCount === n ? 'default' : 'outline'}
+                          onClick={() => setSpyCardCount(n)}
+                        >
+                          {n}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <Label>Base URL</Label>
+                    <Input
+                      value={baseUrl}
+                      onChange={(e) => setBaseUrl(e.target.value)}
+                      placeholder="https://yourapp.com"
+                      className="bg-black/50"
+                    />
+                  </div>
+                  <Button onClick={generateSpyCards} className="w-full bg-gradient-to-r from-red-500 to-orange-500">
+                    <Gamepad2 className="w-4 h-4 mr-2" />
+                    Generate {spyCardCount} Spy Cards
+                  </Button>
+                  <p className="text-xs text-gray-400">
+                    Each card contains a unique deep link to the role reveal page.
+                  </p>
+                </CardContent>
+              </Card>
+
+              {/* Icon Palette */}
+              <Card className="bg-black/40 border-purple-500/30">
+                <CardHeader>
+                  <CardTitle className="text-white">Icon Library</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-5 gap-2">
+                    {icons.map((icon) => (
+                      <Button
+                        key={icon.emoji}
+                        variant="ghost"
+                        className="h-12 text-2xl hover:bg-purple-500/20"
+                        onClick={() => addElement('icon', icon.emoji)}
+                        title={icon.label}
+                      >
+                        {icon.emoji}
+                      </Button>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* Custom Tab */}
+            <TabsContent value="custom" className="space-y-4">
+              <Card className="bg-black/40 border-gray-500/30">
+                <CardHeader>
+                  <CardTitle className="text-white">Custom QR Data</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <Label>QR Code Content</Label>
+                    <Input
+                      value={qrData}
+                      onChange={(e) => updateQRData(e.target.value)}
+                      placeholder="https://example.com or any text"
+                      className="bg-black/50"
+                    />
+                  </div>
+                  <div>
+                    <Label>Add Custom Text</Label>
+                    <div className="flex gap-2">
+                      <Input id="customText" placeholder="Your text here" className="bg-black/50" />
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          const input = document.getElementById('customText') as HTMLInputElement;
+                          if (input.value) {
+                            addElement('text', input.value);
+                            input.value = '';
+                          }
+                        }}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+
+          {/* Export Actions */}
+          <Card className="bg-gradient-to-r from-purple-900/50 to-pink-900/50 border-purple-500/30">
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
+                <Printer className="w-5 h-5" />
+                Print Engine
+              </h3>
+              <div className="grid grid-cols-2 gap-3">
+                <Button onClick={downloadPNG} variant="outline" className="w-full">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PNG
+                </Button>
+                <Button onClick={shareToPrinter} className="w-full bg-gradient-to-r from-purple-500 to-pink-500">
+                  <Share2 className="w-4 h-4 mr-2" />
+                  Share to Printer
+                </Button>
+              </div>
+              <p className="text-xs text-gray-400 mt-3">
+                💡 Tip: Use "Share to Printer" on mobile to send directly to your FunPrint app!
+              </p>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

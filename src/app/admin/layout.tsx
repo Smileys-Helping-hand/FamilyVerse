@@ -56,13 +56,15 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Sidebar */}
         <aside className="w-64 min-h-screen bg-black/20 backdrop-blur-sm border-r border-red-500/20 p-4">
           <nav className="space-y-2">
-            <NavLink href="/admin" icon="📊">Overview</NavLink>
+            <NavLink href="/admin" icon="📊">Mission Control</NavLink>
+            <NavLink href="/admin/qr-studio" icon="🖨️">QR Design Studio</NavLink>
             <NavLink href="/admin/logs" icon="📜">System Logs</NavLink>
             <NavLink href="/admin/settings" icon="⚙️">Settings</NavLink>
 
             <div className="pt-6 mt-6 border-t border-red-500/30">
-              <p className="text-xs text-gray-500 mb-2 px-3">GOD MODE</p>
-              <NavLink href="/admin/controls" icon="🎮">Game Control</NavLink>
+              <p className="text-xs text-gray-500 mb-2 px-3">GAME MASTER</p>
+              <NavLink href="/admin/dashboard" icon="🎮">Party Dashboard</NavLink>
+              <NavLink href="/admin/controls" icon="🔧">Game Controls</NavLink>
             </div>
 
             <div className="pt-6 mt-6 border-t border-red-500/30">

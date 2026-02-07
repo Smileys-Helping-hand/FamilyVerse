@@ -266,11 +266,10 @@ export default function PortalPage() {
                   className={cn(
                     'group relative overflow-hidden transition-all duration-300 h-full',
                     'bg-slate-900/50 backdrop-blur-lg border-2',
-                    selectedApp === app.id ? 'border-white shadow-2xl' : 'border-slate-700/50 hover:border-slate-600',
-                    !isComingSoon && 'hover:shadow-2xl hover:-translate-y-2 cursor-pointer',
-                    isComingSoon && 'opacity-75 cursor-not-allowed'
+                    'border-slate-700/50 hover:border-slate-600',
+                    !isComingSoon && 'hover:shadow-2xl hover:-translate-y-2',
+                    isComingSoon && 'opacity-75'
                   )}
-                  onClick={() => !isComingSoon && setSelectedApp(app.id)}
                 >
                   {/* Gradient Background */}
                   <div className={cn(
@@ -320,37 +319,19 @@ export default function PortalPage() {
                     
                     {/* Launch Button */}
                     {!isComingSoon ? (
-                      app.external ? (
-                        <a href={app.href} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()}>
-                          <Button
-                            onClick={(e) => e.stopPropagation()}
-                            className={cn(
-                              'w-full bg-gradient-to-r text-white font-semibold',
-                              'hover:shadow-xl transition-all group/btn',
-                              app.gradient,
-                              app.glowColor
-                            )}
-                          >
-                            Launch App
-                            <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                          </Button>
-                        </a>
-                      ) : (
-                        <Link href={app.href} className="block" onClick={(e: any) => e && e.stopPropagation()}>
-                          <Button
-                            onClick={(e) => e.stopPropagation()}
-                            className={cn(
-                              'w-full bg-gradient-to-r text-white font-semibold',
-                              'hover:shadow-xl transition-all group/btn',
-                              app.gradient,
-                              app.glowColor
-                            )}
-                          >
-                            Launch App
-                            <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
-                          </Button>
-                        </Link>
-                      )
+                      <Link href={app.href} className="block">
+                        <Button
+                          className={cn(
+                            'w-full bg-gradient-to-r text-white font-semibold',
+                            'hover:shadow-xl transition-all group/btn',
+                            app.gradient,
+                            app.glowColor
+                          )}
+                        >
+                          Launch App
+                          <ChevronRight className="w-4 h-4 ml-2 group-hover/btn:translate-x-1 transition-transform" />
+                        </Button>
+                      </Link>
                     ) : (
                       <Button
                         disabled

@@ -57,7 +57,7 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Comic+Neue:wght@400;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <PWAHead />
       </head>
-      <body className="font-body antialiased" suppressHydrationWarning>
+      <body className="font-body antialiased min-h-screen w-full overflow-x-hidden bg-[#1a0b2e] text-white" suppressHydrationWarning>
         <ThemeProvider>
           <Providers>
             <FirebaseClientProvider>

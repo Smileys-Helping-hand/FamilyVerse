@@ -399,27 +399,31 @@ export default function HostControlPage() {
 
         {/* Main Tabs */}
         <Tabs defaultValue="approval" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="approval" className="relative">
-              <Users className="w-4 h-4 mr-2" />
-              Approvals
+          <TabsList className="flex flex-wrap gap-1 h-auto p-1 md:grid md:w-full md:grid-cols-4">
+            <TabsTrigger value="approval" className="relative flex-1 min-w-fit text-xs sm:text-sm">
+              <Users className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Approvals</span>
+              <span className="sm:hidden">Approve</span>
               {pendingUsers.length > 0 && (
-                <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
+                <Badge variant="destructive" className="ml-1 sm:ml-2 h-5 w-5 p-0 flex items-center justify-center text-xs">
                   {pendingUsers.length}
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="racing">
-              <Flag className="w-4 h-4 mr-2" />
-              Sim Racing
+            <TabsTrigger value="racing" className="flex-1 min-w-fit text-xs sm:text-sm">
+              <Flag className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Sim Racing</span>
+              <span className="sm:hidden">Racing</span>
             </TabsTrigger>
-            <TabsTrigger value="imposter">
-              <Gamepad2 className="w-4 h-4 mr-2" />
-              Imposter Game
+            <TabsTrigger value="imposter" className="flex-1 min-w-fit text-xs sm:text-sm">
+              <Gamepad2 className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Imposter Game</span>
+              <span className="sm:hidden">Game</span>
             </TabsTrigger>
-            <TabsTrigger value="wallet">
-              <DollarSign className="w-4 h-4 mr-2" />
-              Wallet Control
+            <TabsTrigger value="wallet" className="flex-1 min-w-fit text-xs sm:text-sm">
+              <DollarSign className="w-4 h-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Wallet Control</span>
+              <span className="sm:hidden">Wallet</span>
             </TabsTrigger>
           </TabsList>
 

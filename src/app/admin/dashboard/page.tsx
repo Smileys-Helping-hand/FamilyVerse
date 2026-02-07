@@ -48,14 +48,14 @@ export default async function AdminDashboard() {
         </div>
 
         <Tabs defaultValue="spy-game" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-7 max-w-5xl mx-auto">
-            <TabsTrigger value="spy-game">Spy Game</TabsTrigger>
-            <TabsTrigger value="parties">Parties</TabsTrigger>
-            <TabsTrigger value="config">Config</TabsTrigger>
-            <TabsTrigger value="content">Content</TabsTrigger>
-            <TabsTrigger value="scannables">Scannables</TabsTrigger>
-            <TabsTrigger value="print">Print</TabsTrigger>
-            <TabsTrigger value="players">Players</TabsTrigger>
+          <TabsList className="flex flex-wrap gap-2 h-auto p-2 md:grid md:grid-cols-7 md:w-full max-w-5xl mx-auto">
+            <TabsTrigger value="spy-game" className="flex-1 min-w-fit">Spy Game</TabsTrigger>
+            <TabsTrigger value="parties" className="flex-1 min-w-fit">Parties</TabsTrigger>
+            <TabsTrigger value="config" className="flex-1 min-w-fit">Config</TabsTrigger>
+            <TabsTrigger value="content" className="flex-1 min-w-fit">Content</TabsTrigger>
+            <TabsTrigger value="scannables" className="flex-1 min-w-fit">Scannables</TabsTrigger>
+            <TabsTrigger value="print" className="flex-1 min-w-fit">Print</TabsTrigger>
+            <TabsTrigger value="players" className="flex-1 min-w-fit">Players</TabsTrigger>
           </TabsList>
 
           <TabsContent value="spy-game">

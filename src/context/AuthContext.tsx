@@ -30,11 +30,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [initialLoad, setInitialLoad] = useState(true);
 
   useEffect(() => {
-    if (!auth) return;
+    if (!auth) {
+      // Avoid blocking the app if Firebase auth isn't ready.
+      setLoading(false);
+      if (initialLoad) setInitialLoad(false);
+      return;
+    }
     
     const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
       setLoading(true);
       setUser(user);
+      if (initialLoad) setInitialLoad(false);
 
       // Set auth cookie for middleware (Iron Gate security)
       if (user?.email) {
@@ -47,7 +53,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUserProfile(null);
         setFamily(null);
         setLoading(false);
-        if (initialLoad) setInitialLoad(false);
         return;
       }
       
@@ -85,7 +90,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         }
         
         setLoading(false);
-        if (initialLoad) setInitialLoad(false);
       } catch (error) {
         console.error('Error fetching user data:', error);
         // If there's a database error, sign them out
@@ -97,7 +101,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUserProfile(null);
         setFamily(null);
         setLoading(false);
-        if (initialLoad) setInitialLoad(false);
       }
     });
 

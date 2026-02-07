@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Skull, 
@@ -23,6 +24,7 @@ import {
   getAdminRoundStatusAction,
   triggerTenMinuteWarningAction,
   forceVotingPhaseAction,
+  forceEndImposterGameAction,
 } from '@/app/actions/party-logic';
 
 export function SpyGameControl() {
@@ -30,6 +32,7 @@ export function SpyGameControl() {
   const [loading, setLoading] = useState(false);
   const [autoMode, setAutoMode] = useState(false);
   const [duration, setDuration] = useState(45);
+  const [selectedImposterId, setSelectedImposterId] = useState('RANDOM');
   const { toast } = useToast();
 
   // Fetch round status
@@ -74,7 +77,8 @@ export function SpyGameControl() {
 
   const handleStartRound = async () => {
     setLoading(true);
-    const result = await startImposterRoundAction(duration);
+    const imposterId = selectedImposterId === 'RANDOM' ? undefined : selectedImposterId;
+    const result = await startImposterRoundAction(duration, imposterId);
     
     if (result.success) {
       toast({
@@ -121,6 +125,23 @@ export function SpyGameControl() {
       toast({
         title: '🚨 Emergency Meeting!',
         description: 'Voting phase activated',
+      });
+      await fetchStatus();
+    } else {
+      toast({
+        title: '❌ Error',
+        description: result.error,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleForceEnd = async () => {
+    const result = await forceEndImposterGameAction();
+    if (result.success) {
+      toast({
+        title: '🛑 Game Ended',
+        description: 'Imposter round ended for all players',
       });
       await fetchStatus();
     } else {
@@ -227,7 +248,7 @@ export function SpyGameControl() {
             </div>
 
             {/* Manual Controls */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <Button
                 onClick={handleTriggerWarning}
                 disabled={roundStatus.round.warningSent || roundStatus.round.status !== 'ACTIVE'}
@@ -245,6 +266,14 @@ export function SpyGameControl() {
                 <Vote className="h-4 w-4 mr-2" />
                 Force Voting
               </Button>
+              <Button
+                onClick={handleForceEnd}
+                variant="destructive"
+                className="bg-red-700 hover:bg-red-800"
+              >
+                <Skull className="h-4 w-4 mr-2" />
+                Force End Game
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -261,6 +290,14 @@ export function SpyGameControl() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {roundStatus?.players && (
+              <div className="space-y-2">
+                <Label>Lobby Players</Label>
+                <p className="text-sm text-muted-foreground">
+                  {roundStatus.players.length} players ready. Need at least 3 to start.
+                </p>
+              </div>
+            )}
             <div className="space-y-2">
               <Label htmlFor="duration">Round Duration (minutes)</Label>
               <div className="flex gap-2">
@@ -276,9 +313,25 @@ export function SpyGameControl() {
                 ))}
               </div>
             </div>
+            <div className="space-y-2">
+              <Label>Choose Imposter</Label>
+              <Select value={selectedImposterId} onValueChange={setSelectedImposterId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Random" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="RANDOM">Random</SelectItem>
+                  {roundStatus?.players?.map((player: any) => (
+                    <SelectItem key={player.id} value={player.id}>
+                      {player.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Button
               onClick={handleStartRound}
-              disabled={loading}
+              disabled={loading || (roundStatus?.players?.length ?? 0) < 3}
               className="w-full"
               size="lg"
             >

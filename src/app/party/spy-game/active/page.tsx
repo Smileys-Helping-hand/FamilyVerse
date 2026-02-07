@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { getRandomHint, CategoryName } from "@/lib/spy-game-data";
+import { useAuth } from "@/context/AuthContext";
 
 interface GameConfig {
   numPlayers: number;
@@ -38,6 +39,8 @@ interface GameData {
 export default function SpyGameActive() {
   const router = useRouter();
   const { toast } = useToast();
+  const { user: firebaseUser } = useAuth();
+  const isAdmin = firebaseUser?.email === "mraaziqp@gmail.com";
   
   const [gameConfig, setGameConfig] = useState<GameConfig | null>(null);
   const [gameData, setGameData] = useState<GameData | null>(null);
@@ -151,6 +154,14 @@ export default function SpyGameActive() {
       description: "Vote now! Who is the spy?",
       duration: 10000,
     });
+  };
+
+  const handleForceEndGame = () => {
+    if (!confirm("Force end this spy game for everyone?")) {
+      return;
+    }
+    setTimeRemaining(0);
+    triggerGameEnd();
   };
 
   // Send hint (Admin feature)
@@ -393,6 +404,15 @@ export default function SpyGameActive() {
               >
                 Vote Now
               </Button>
+              {isAdmin && (
+                <Button
+                  onClick={handleForceEndGame}
+                  variant="destructive"
+                  className="bg-red-700 hover:bg-red-800"
+                >
+                  Force End Game
+                </Button>
+              )}
             </div>
           </div>
         </Card>

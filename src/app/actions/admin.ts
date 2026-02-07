@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { systemLogs, globalSettings } from '@/lib/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { ensureSystemLogsSchema } from '@/lib/db/ensure-system-logs-schema';
 
 // Helper to get allowed admin emails
 function getAllowedAdmins(): string[] {
@@ -39,6 +40,7 @@ export async function logEvent(
   ipAddress?: string
 ) {
   try {
+    await ensureSystemLogsSchema();
     await db.insert(systemLogs).values({
       level,
       source,

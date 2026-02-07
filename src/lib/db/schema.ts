@@ -387,7 +387,8 @@ export const partyGames = pgTable('party_games', {
   title: text('title').notNull(),
   type: varchar('type', { length: 20 }).notNull(), // 'SIM_RACE', 'IMPOSTER', 'DOMINOES', 'OTHER'
   status: varchar('status', { length: 20 }).notNull().default('OPEN'), // 'OPEN', 'LOCKED', 'FINISHED'
-  raceState: varchar('race_state', { length: 20 }).notNull().default('REGISTRATION'), // 'REGISTRATION', 'BETTING_OPEN', 'RACE_STARTED', 'FINISHED'
+  raceState: varchar('race_state', { length: 20 }).notNull().default('PENDING'), // 'PENDING', 'OPEN_FOR_BETS', 'LIVE', 'FINISHED'
+  bettingClosed: boolean('betting_closed').notNull().default(false),
   registeredDrivers: jsonb('registered_drivers').$type<string[]>().notNull().default([]),
   description: text('description'),
   startTime: timestamp('start_time'),
@@ -477,6 +478,15 @@ export const playerStatus = pgTable('player_status', {
   killedAt: timestamp('killed_at'),
   killedBy: uuid('killed_by').references(() => partyUsers.id),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Trickshot Scores (Party OS)
+export const trickshotScores = pgTable('trickshot_scores', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: uuid('user_id').notNull().references(() => partyUsers.id, { onDelete: 'cascade' }),
+  shotType: varchar('shot_type', { length: 20 }).notNull(),
+  points: integer('points').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // Kill Cooldown Tracker
@@ -619,6 +629,7 @@ export const partyUsersRelations = relations(partyUsers, ({ many }) => ({
   raceEntries: many(simRaceEntries),
   betsPlaced: many(bets, { relationName: 'bettor' }),
   betsReceived: many(bets, { relationName: 'target' }),
+  trickshotScores: many(trickshotScores),
 }));
 
 export const partyGamesRelations = relations(partyGames, ({ many }) => ({
@@ -751,6 +762,8 @@ export type PartyImposterRound = typeof partyImposterRounds.$inferSelect;
 export type NewPartyImposterRound = typeof partyImposterRounds.$inferInsert;
 export type PartyEvent = typeof partyEvents.$inferSelect;
 export type NewPartyEvent = typeof partyEvents.$inferInsert;
+export type TrickshotScore = typeof trickshotScores.$inferSelect;
+export type NewTrickshotScore = typeof trickshotScores.$inferInsert;
 
 // ============================================
 // MODULE 8: SYSTEM ADMINISTRATION

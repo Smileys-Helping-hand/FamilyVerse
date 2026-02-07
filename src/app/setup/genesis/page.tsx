@@ -163,7 +163,7 @@ export default function GenesisSetupPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm">
+          <Card className="bg-black/40 border-purple-500/30 backdrop-blur-sm relative z-10 pointer-events-auto">
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-3">
                 <Shield className="h-6 w-6 text-purple-400" />

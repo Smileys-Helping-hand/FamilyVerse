@@ -30,6 +30,7 @@ import {
   openBettingAction,
   startRaceAction,
   settleRaceAction,
+  getActiveRaceStateAction,
 } from '@/app/actions/party-logic';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -67,7 +68,8 @@ export default function HostControlPage() {
   // Racing State
   const [activeGameId, setActiveGameId] = useState<string>('');
   const [registeredDrivers, setRegisteredDrivers] = useState<any[]>([]);
-  const [raceState, setRaceState] = useState<string>('REGISTRATION');
+  const [raceState, setRaceState] = useState<string>('PENDING');
+  const [readyForBets, setReadyForBets] = useState(false);
   const [winnerId, setWinnerId] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
   
@@ -117,6 +119,11 @@ export default function HostControlPage() {
     // TODO: Get active game ID - for now use a fixed one
     const gameId = '595e9f85-839b-4ad7-ad71-e3629758363d'; // Your sim racing game ID
     setActiveGameId(gameId);
+
+    const stateResult = await getActiveRaceStateAction();
+    if (stateResult.success && stateResult.game?.raceState) {
+      setRaceState(stateResult.game.raceState);
+    }
     
     const result = await getRegisteredDriversAction(gameId);
     if (result.success && result.drivers) {
@@ -124,9 +131,7 @@ export default function HostControlPage() {
       
       // Determine race state based on drivers
       const allReady = result.drivers.length >= 3 && result.drivers.every((d: any) => d.isReady);
-      if (allReady && raceState === 'REGISTRATION') {
-        setRaceState('READY_FOR_BETTING');
-      }
+      setReadyForBets(allReady);
     }
   };
 
@@ -158,7 +163,7 @@ export default function HostControlPage() {
     const result = await openBettingAction(activeGameId);
 
     if (result.success) {
-      setRaceState('BETTING_OPEN');
+      setRaceState('OPEN_FOR_BETS');
       toast({
         title: '🎰 BETTING IS OPEN!',
         description: 'Shout to guests: "60 SECONDS TO PLACE BETS!"',
@@ -179,7 +184,7 @@ export default function HostControlPage() {
     const result = await startRaceAction(activeGameId);
 
     if (result.success) {
-      setRaceState('RACE_STARTED');
+      setRaceState('LIVE');
       toast({
         title: '🏁 RACE STARTED!',
         description: 'Betting is now CLOSED!',
@@ -214,7 +219,7 @@ export default function HostControlPage() {
         description: 'Winners have been paid 2.0x!',
       });
       setWinnerId('');
-      setRaceState('REGISTRATION');
+      setRaceState('FINISHED');
       await loadRaceState();
     } else {
       toast({
@@ -543,10 +548,12 @@ export default function HostControlPage() {
               <CardContent className="pt-6">
                 <div className="text-center">
                   <Badge variant="default" className="text-lg px-4 py-2 mb-2">
-                    {raceState === 'REGISTRATION' && '📝 REGISTRATION - Drivers join & mark ready'}
-                    {raceState === 'READY_FOR_BETTING' && '✅ READY - All drivers ready!'}
-                    {raceState === 'BETTING_OPEN' && '🎰 BETTING OPEN - Guests placing bets!'}
-                    {raceState === 'RACE_STARTED' && '🏁 RACE IN PROGRESS - Betting closed'}
+                    {raceState === 'PENDING' && (readyForBets
+                      ? '✅ READY - Open betting now'
+                      : '🟡 PENDING - Drivers join & mark ready')}
+                    {raceState === 'OPEN_FOR_BETS' && '🟢 OPEN FOR BETS - Guests placing bets!'}
+                    {raceState === 'LIVE' && '🔴 RACE LIVE - Betting locked'}
+                    {raceState === 'FINISHED' && '🏁 FINISHED - Settle complete'}
                   </Badge>
                   <p className="text-sm text-muted-foreground mt-2">
                     {registeredDrivers.length} drivers registered | {registeredDrivers.filter((d: any) => d.isReady).length} ready
@@ -606,17 +613,29 @@ export default function HostControlPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
+                  <div className="rounded-xl border border-border/60 p-3 bg-gradient-to-br from-emerald-950/20 via-slate-900/20 to-red-950/20">
+                    <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <span>Traffic Light</span>
+                      <span>{raceState.replace(/_/g, ' ')}</span>
+                    </div>
+                    <div className="mt-3 grid grid-cols-3 gap-2">
+                      <div className={`h-3 rounded-full ${raceState === 'OPEN_FOR_BETS' ? 'bg-green-500' : 'bg-green-900/40'}`} />
+                      <div className={`h-3 rounded-full ${raceState === 'PENDING' ? 'bg-yellow-500' : 'bg-yellow-900/40'}`} />
+                      <div className={`h-3 rounded-full ${raceState === 'LIVE' ? 'bg-red-500' : 'bg-red-900/40'}`} />
+                    </div>
+                  </div>
+
                   {/* Step 1: Open Betting */}
                   <div>
                     <Label className="mb-2 block">Step 1: Open Betting Market</Label>
                     <Button
                       onClick={handleOpenBetting}
-                      disabled={submitting || raceState !== 'REGISTRATION' && raceState !== 'READY_FOR_BETTING'}
+                      disabled={submitting || !readyForBets || !(raceState === 'PENDING' || raceState === 'FINISHED')}
                       className="w-full"
                       size="lg"
-                      variant={raceState === 'BETTING_OPEN' ? 'secondary' : 'default'}
+                      variant={raceState === 'OPEN_FOR_BETS' ? 'secondary' : 'default'}
                     >
-                      {raceState === 'BETTING_OPEN' ? '✅ Betting Open' : '🎰 Open Betting (Shout!)'}
+                      {raceState === 'OPEN_FOR_BETS' ? '✅ Betting Open' : '🟢 OPEN BETTING'}
                     </Button>
                     <p className="text-xs text-muted-foreground mt-1">
                       Requires 3+ ready drivers
@@ -628,12 +647,12 @@ export default function HostControlPage() {
                     <Label className="mb-2 block">Step 2: Start Race (Close Betting)</Label>
                     <Button
                       onClick={handleStartRace}
-                      disabled={submitting || raceState !== 'BETTING_OPEN'}
+                      disabled={submitting || raceState !== 'OPEN_FOR_BETS'}
                       className="w-full"
                       size="lg"
-                      variant={raceState === 'RACE_STARTED' ? 'secondary' : 'default'}
+                      variant={raceState === 'LIVE' ? 'secondary' : 'default'}
                     >
-                      {raceState === 'RACE_STARTED' ? '✅ Race Started' : '🏁 START RACE!'}
+                      {raceState === 'LIVE' ? '✅ Race Live' : '🔴 START RACE (LOCK BETS)'}
                     </Button>
                   </div>
 
@@ -643,7 +662,7 @@ export default function HostControlPage() {
                     <Select 
                       value={winnerId} 
                       onValueChange={setWinnerId}
-                      disabled={raceState !== 'RACE_STARTED'}
+                      disabled={raceState !== 'LIVE'}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select winner" />
@@ -659,7 +678,7 @@ export default function HostControlPage() {
                     
                     <Button
                       onClick={handleSettleRace}
-                      disabled={submitting || !winnerId || raceState !== 'RACE_STARTED'}
+                      disabled={submitting || !winnerId || raceState !== 'LIVE'}
                       className="w-full mt-2"
                       size="lg"
                       variant="default"

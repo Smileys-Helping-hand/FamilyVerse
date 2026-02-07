@@ -2,7 +2,7 @@
   "name": "Party OS",
   "short_name": "Party",
   "description": "Join the Sim Racing, Spy Game, and Betting live!",
-  "start_url": "/join",
+  "start_url": "/",
   "display": "standalone",
   "background_color": "#0a0118",
   "theme_color": "#4c1d95",

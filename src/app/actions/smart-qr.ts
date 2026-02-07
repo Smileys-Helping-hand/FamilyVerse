@@ -5,6 +5,7 @@ import { smartQrs, smartQrScans, qrClaims, partyUsers, type SmartQr, type NewSma
 import { eq, desc, and, sql } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { cookies } from 'next/headers';
+import { ensureSmartQrSchema } from '@/lib/db/ensure-smart-qr-schema';
 
 // Scan result types for the UI
 export type ScanStatus = 'SUCCESS' | 'FIRST_FINDER' | 'TRAP' | 'ALREADY_CLAIMED' | 'NOT_FOUND' | 'EXPIRED' | 'ERROR';
@@ -32,7 +33,7 @@ function generateToken(): string {
 async function getCurrentUserId(): Promise<string | null> {
   try {
     const cookieStore = await cookies();
-    return cookieStore.get('partyUserId')?.value || null;
+    return cookieStore.get('party_user_id')?.value || cookieStore.get('partyUserId')?.value || null;
   } catch {
     return null;
   }
@@ -51,6 +52,7 @@ export async function createSmartQrAction(data: {
   createdBy?: string;
 }): Promise<{ success: boolean; qr?: SmartQr; shortUrl?: string; error?: string }> {
   try {
+    await ensureSmartQrSchema();
     // Generate unique token
     let token = generateToken();
     let attempts = 0;
@@ -93,6 +95,7 @@ export async function createSmartQrAction(data: {
 // ============================================
 export async function getSmartQrByTokenAction(token: string): Promise<SmartQr | null> {
   try {
+    await ensureSmartQrSchema();
     const qr = await db.query.smartQrs.findFirst({
       where: eq(smartQrs.token, token.toUpperCase()),
     });
@@ -114,6 +117,7 @@ export async function resolveSmartQrAction(
   userId?: string
 ): Promise<ScanResult> {
   try {
+    await ensureSmartQrSchema();
     // Get the QR
     const qr = await db.query.smartQrs.findFirst({
       where: eq(smartQrs.token, token.toUpperCase()),
@@ -288,6 +292,7 @@ export async function recordSmartQrScanAction(
 // ============================================
 export async function getAllSmartQrsAction(): Promise<SmartQr[]> {
   try {
+    await ensureSmartQrSchema();
     const qrs = await db.select().from(smartQrs).orderBy(desc(smartQrs.createdAt));
     return qrs;
   } catch (error) {
@@ -309,6 +314,7 @@ export async function getRecentClaimsAction(limit: number = 10): Promise<{
   claimedAt: Date;
 }[]> {
   try {
+    await ensureSmartQrSchema();
     const claims = await db
       .select({
         id: qrClaims.id,
@@ -341,6 +347,7 @@ export async function getRecentScansAction(limit: number = 10): Promise<{
   scannedAt: Date;
 }[]> {
   try {
+    await ensureSmartQrSchema();
     const scans = await db
       .select({
         id: smartQrScans.id,
@@ -365,6 +372,7 @@ export async function getRecentScansAction(limit: number = 10): Promise<{
 // ============================================
 export async function toggleSmartQrActiveAction(id: string): Promise<{ success: boolean }> {
   try {
+    await ensureSmartQrSchema();
     const qr = await db.query.smartQrs.findFirst({
       where: eq(smartQrs.id, id),
     });
@@ -388,6 +396,7 @@ export async function toggleSmartQrActiveAction(id: string): Promise<{ success: 
 // ============================================
 export async function deleteSmartQrAction(id: string): Promise<{ success: boolean }> {
   try {
+    await ensureSmartQrSchema();
     await db.delete(smartQrs).where(eq(smartQrs.id, id));
     revalidatePath('/admin/qr-studio');
     return { success: true };

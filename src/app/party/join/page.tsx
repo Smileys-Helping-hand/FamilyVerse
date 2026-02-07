@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { PartyPopper, LogIn, KeyRound, Shield, ArrowLeft } from 'lucide-react';
-import { checkCodeAction, getCurrentPartyUserAction } from '@/app/actions/party-logic';
+import { checkCodeAction, getCurrentPartyUserAction, logoutAction } from '@/app/actions/party-logic';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -33,6 +33,14 @@ export default function PartyJoinPage() {
     const checkExistingUser = async () => {
       const user = await getCurrentPartyUserAction();
       if (user) {
+        if (user.status === 'rejected') {
+          await logoutAction();
+          setChecking(false);
+          if (qrCode) {
+            setCode(qrCode);
+          }
+          return;
+        }
         // Redirect based on role
         if (user.role === 'admin') {
           router.push('/admin/dashboard');

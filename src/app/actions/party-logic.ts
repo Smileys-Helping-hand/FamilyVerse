@@ -11,15 +11,37 @@ import {
   partyTasks,
   playerTasks,
   playerStatus,
-  killCooldowns
+  killCooldowns,
+  trickshotScores
 } from '@/lib/db/schema';
-import { eq, and, sql, asc, desc, lt, count } from 'drizzle-orm';
+import { eq, and, sql, asc, desc, lt, count, inArray } from 'drizzle-orm';
 import { triggerPartyEvent } from '@/lib/pusher/server';
 import { generateText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { logEvent } from './admin';
+import { ensurePartySchema } from '@/lib/db/ensure-party-schema';
+import { ensurePartyUsersSchema } from '@/lib/db/ensure-party-users-schema';
+import { generateTaskBatch, generateFakeTaskBatch } from '@/lib/task-engine';
+
+type PartyUsersColumnInfo = {
+  column_name: string;
+  is_nullable: 'YES' | 'NO';
+};
+
+async function getPartyUsersColumnInfo(): Promise<Map<string, PartyUsersColumnInfo>> {
+  const result = await db.execute(sql`
+    SELECT column_name, is_nullable
+    FROM information_schema.columns
+    WHERE table_name = 'party_users'
+  `);
+
+  const rows = (result as { rows?: PartyUsersColumnInfo[] }).rows || [];
+  const map = new Map<string, PartyUsersColumnInfo>();
+  rows.forEach((row) => map.set(row.column_name, row));
+  return map;
+}
 
 // ============================================
 // AUTHENTICATION & ONBOARDING - SECURITY FIXED
@@ -31,6 +53,8 @@ import { logEvent } from './admin';
  */
 export async function checkCodeAction(code: string) {
   try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
     // Step 1: Check if it's a Party Join Code (PUBLIC)
     const [party] = await db.select().from(parties).where(eq(parties.joinCode, code));
     
@@ -78,16 +102,67 @@ export async function checkCodeAction(code: string) {
  */
 export async function createGuestUserAction(name: string, avatarUrl: string | null, partyId: string) {
   try {
-    // Create guest user (no PIN, auto-approved)
-    const [user] = await db.insert(partyUsers).values({
-      name,
-      avatarUrl,
-      role: 'guest',
-      status: 'approved',
-      partyId,
-      walletBalance: 1000,
-      pinCode: null, // Guests don't have PINs
-    }).returning();
+    await ensurePartyUsersSchema();
+
+    let user;
+    try {
+      // Create guest user (no PIN, auto-approved)
+      const [created] = await db.insert(partyUsers).values({
+        name,
+        avatarUrl,
+        role: 'guest',
+        status: 'approved',
+        partyId,
+        walletBalance: 1000,
+        pinCode: null, // Guests don't have PINs
+      }).returning();
+      user = created;
+    } catch (insertError) {
+      // Fallback for legacy schemas missing newer columns or NOT NULL pin_code
+      const columnInfo = await getPartyUsersColumnInfo();
+      const columns: string[] = [];
+      const values: any[] = [];
+
+      const addColumn = (column: string, value: any) => {
+        if (columnInfo.has(column)) {
+          columns.push(column);
+          values.push(value);
+        }
+      };
+
+      addColumn('name', name);
+      addColumn('avatar_url', avatarUrl);
+      addColumn('wallet_balance', 1000);
+      addColumn('role', 'guest');
+      addColumn('status', 'approved');
+      addColumn('party_id', partyId);
+
+      const pinCodeInfo = columnInfo.get('pin_code');
+      if (pinCodeInfo) {
+        const needsPin = pinCodeInfo.is_nullable === 'NO';
+        addColumn('pin_code', needsPin ? Math.floor(1000 + Math.random() * 9000).toString() : null);
+      }
+
+      if (columns.length === 0) {
+        throw insertError;
+      }
+
+      const columnsSql = sql.raw(columns.map((column) => `"${column}"`).join(', '));
+      const valuesSql = sql.join(values.map((value) => sql`${value}`), sql`, `);
+
+      const fallbackResult = await db.execute(sql`
+        INSERT INTO party_users (${columnsSql})
+        VALUES (${valuesSql})
+        RETURNING id, name, wallet_balance, pin_code, avatar_url, role, status, party_id
+      `);
+
+      const fallbackRows = (fallbackResult as { rows?: typeof user[] }).rows || [];
+      user = fallbackRows[0];
+
+      if (!user) {
+        throw insertError;
+      }
+    }
     
     // Set cookie for guest session
     const cookieStore = await cookies();
@@ -119,6 +194,7 @@ export async function createGuestUserAction(name: string, avatarUrl: string | nu
  */
 export async function joinPartyAction(name: string, partyCode?: string) {
   try {
+    await ensurePartyUsersSchema();
     // Generate a unique 4-digit PIN
     const pinCode = Math.floor(1000 + Math.random() * 9000);
     
@@ -157,6 +233,7 @@ export async function joinPartyAction(name: string, partyCode?: string) {
 
 export async function loginWithPinAction(pinCode: string) {
   try {
+    await ensurePartyUsersSchema();
     const [user] = await db.select().from(partyUsers).where(eq(partyUsers.pinCode, pinCode));
     
     if (!user) {
@@ -181,6 +258,7 @@ export async function loginWithPinAction(pinCode: string) {
 
 export async function getCurrentPartyUserAction() {
   try {
+    await ensurePartyUsersSchema();
     const cookieStore = await cookies();
     const userId = cookieStore.get('party_user_id')?.value;
     
@@ -216,6 +294,8 @@ export async function logoutAction() {
  */
 export async function createPartyAction(name: string) {
   try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
     const user = await getCurrentPartyUserAction();
     if (!user || user.role !== 'admin') {
       return { success: false, error: 'Admin access required' };
@@ -244,6 +324,8 @@ export async function createPartyAction(name: string) {
  */
 export async function getAllPartiesAction() {
   try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
     const user = await getCurrentPartyUserAction();
     if (!user || user.role !== 'admin') {
       return { success: false, error: 'Admin access required' };
@@ -263,6 +345,7 @@ export async function getAllPartiesAction() {
 
 export async function submitLapTimeAction(timeString: string, carModel?: string, track?: string) {
   try {
+    await ensurePartySchema();
     const user = await getCurrentPartyUserAction();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -353,6 +436,7 @@ export async function submitLapTimeAction(timeString: string, carModel?: string,
 
 export async function getSimRacingLeaderboardAction(gameId?: string) {
   try {
+    await ensurePartySchema();
     let game;
     
     if (gameId) {
@@ -399,8 +483,13 @@ export async function getSimRacingLeaderboardAction(gameId?: string) {
 // RACE REGISTRATION & STATE MANAGEMENT
 // ============================================
 
+const BETTING_OPEN_STATES = new Set(['BETTING_OPEN', 'OPEN_FOR_BETS']);
+const LIVE_RACE_STATES = new Set(['RACE_STARTED', 'LIVE']);
+const PENDING_RACE_STATES = new Set(['REGISTRATION', 'PENDING', 'READY_FOR_BETTING']);
+
 export async function registerAsDriverAction(gameId: string) {
   try {
+    await ensurePartySchema();
     const user = await getCurrentPartyUserAction();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -450,6 +539,7 @@ export async function registerAsDriverAction(gameId: string) {
 
 export async function markDriverReadyAction(gameId: string) {
   try {
+    await ensurePartySchema();
     const user = await getCurrentPartyUserAction();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -484,6 +574,7 @@ export async function markDriverReadyAction(gameId: string) {
 
 export async function openBettingAction(gameId: string) {
   try {
+    await ensurePartySchema();
     // Check if enough drivers are ready
     const entries = await db.select().from(simRaceEntries).where(eq(simRaceEntries.gameId, gameId));
     
@@ -499,13 +590,20 @@ export async function openBettingAction(gameId: string) {
     // Update game state
     await db.update(partyGames)
       .set({ 
-        raceState: 'BETTING_OPEN',
+        raceState: 'OPEN_FOR_BETS',
+        bettingClosed: false,
         registeredDrivers: entries.map(e => e.userId),
       })
       .where(eq(partyGames.id, gameId));
 
     // Trigger betting open event
     await triggerPartyEvent('sim-racing', 'betting-open', {
+      gameId,
+      drivers: entries,
+      timestamp: new Date().toISOString(),
+    });
+
+    await triggerPartyEvent('sim-racing', 'betting-opened', {
       gameId,
       drivers: entries,
       timestamp: new Date().toISOString(),
@@ -520,10 +618,12 @@ export async function openBettingAction(gameId: string) {
 
 export async function startRaceAction(gameId: string) {
   try {
+    await ensurePartySchema();
     // Update game state to close betting
     await db.update(partyGames)
       .set({ 
-        raceState: 'RACE_STARTED',
+        raceState: 'LIVE',
+        bettingClosed: true,
         startTime: new Date(),
       })
       .where(eq(partyGames.id, gameId));
@@ -544,6 +644,7 @@ export async function startRaceAction(gameId: string) {
 
 export async function getRegisteredDriversAction(gameId: string) {
   try {
+    await ensurePartySchema();
     const entries = await db.select({
       id: simRaceEntries.id,
       userId: simRaceEntries.userId,
@@ -562,12 +663,38 @@ export async function getRegisteredDriversAction(gameId: string) {
   }
 }
 
+export async function getActiveRaceStateAction() {
+  try {
+    await ensurePartySchema();
+    const [game] = await db.select({
+      id: partyGames.id,
+      raceState: partyGames.raceState,
+      bettingClosed: partyGames.bettingClosed,
+    })
+    .from(partyGames)
+    .where(and(
+      eq(partyGames.type, 'SIM_RACE'),
+      eq(partyGames.status, 'OPEN')
+    ));
+
+    if (!game) {
+      return { success: false, error: 'No active race' };
+    }
+
+    return { success: true, game };
+  } catch (error) {
+    console.error('Error getting race state:', error);
+    return { success: false, error: 'Failed to get race state' };
+  }
+}
+
 // ============================================
 // BETTING SYSTEM
 // ============================================
 
 export async function placeBetAction(targetUserId: string, amount: number) {
   try {
+    await ensurePartySchema();
     const user = await getCurrentPartyUserAction();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -590,15 +717,18 @@ export async function placeBetAction(targetUserId: string, amount: number) {
       return { success: false, error: 'No active game to bet on' };
     }
 
-    // Check if betting is open
-    if (game.raceState !== 'BETTING_OPEN') {
-      if (game.raceState === 'REGISTRATION') {
+    const bettingOpen = BETTING_OPEN_STATES.has(game.raceState);
+    const raceLive = LIVE_RACE_STATES.has(game.raceState);
+    const racePending = PENDING_RACE_STATES.has(game.raceState);
+
+    if (!bettingOpen || game.bettingClosed) {
+      if (racePending) {
         return { success: false, error: 'Betting not open yet - waiting for drivers to be ready' };
-      } else if (game.raceState === 'RACE_STARTED') {
-        return { success: false, error: 'Betting closed - race has started!' };
-      } else {
-        return { success: false, error: 'Betting not available' };
       }
+      if (raceLive) {
+        return { success: false, error: 'Betting closed - race has started!' };
+      }
+      return { success: false, error: 'Betting not available' };
     }
     
     // Deduct from wallet
@@ -637,6 +767,7 @@ export async function placeBetAction(targetUserId: string, amount: number) {
 
 export async function settleBetsAction(gameId: string) {
   try {
+    await ensurePartySchema();
     // Admin only - should add auth check
     
     // Get game winner (first place)
@@ -661,17 +792,13 @@ export async function settleBetsAction(gameId: string) {
         // Winner! Pay out 2x
         const payout = bet.amount * 2;
         
-        await db.transaction(async (tx) => {
-          // Update bet status
-          await tx.update(bets)
-            .set({ status: 'WON', payout, settledAt: new Date() })
-            .where(eq(bets.id, bet.id));
-          
-          // Add to wallet
-          await tx.update(partyUsers)
-            .set({ walletBalance: sql`${partyUsers.walletBalance} + ${payout}` })
-            .where(eq(partyUsers.id, bet.bettorId));
-        });
+        await db.update(bets)
+          .set({ status: 'WON', payout, settledAt: new Date() })
+          .where(eq(bets.id, bet.id));
+        
+        await db.update(partyUsers)
+          .set({ walletBalance: sql`${partyUsers.walletBalance} + ${payout}` })
+          .where(eq(partyUsers.id, bet.bettorId));
       } else {
         // Lost
         await db.update(bets)
@@ -701,6 +828,7 @@ export async function settleBetsAction(gameId: string) {
 
 export async function getUserBetsAction() {
   try {
+    await ensurePartySchema();
     const user = await getCurrentPartyUserAction();
     if (!user) {
       return { success: false, error: 'Not authenticated' };
@@ -728,6 +856,83 @@ export async function getUserBetsAction() {
   }
 }
 
+export async function getWalletOverviewAction() {
+  try {
+    await ensurePartySchema();
+    const user = await getCurrentPartyUserAction();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const betRows = await db.select({
+      id: bets.id,
+      amount: bets.amount,
+      status: bets.status,
+      payout: bets.payout,
+      createdAt: bets.createdAt,
+      targetName: partyUsers.name,
+    })
+    .from(bets)
+    .innerJoin(partyUsers, eq(bets.targetUserId, partyUsers.id))
+    .where(eq(bets.bettorId, user.id))
+    .orderBy(desc(bets.createdAt));
+
+    const taskRows = await db.select({
+      id: playerTasks.id,
+      description: partyTasks.description,
+      pointsReward: partyTasks.pointsReward,
+      completedAt: playerTasks.completedAt,
+    })
+    .from(playerTasks)
+    .innerJoin(partyTasks, eq(playerTasks.taskId, partyTasks.id))
+    .where(and(eq(playerTasks.userId, user.id), eq(playerTasks.isCompleted, true)))
+    .orderBy(desc(playerTasks.completedAt));
+
+    const history = [
+      ...betRows.map((bet) => ({
+        id: bet.id,
+        type: 'BET' as const,
+        label:
+          bet.status === 'WON'
+            ? `Won Bet on ${bet.targetName}`
+            : bet.status === 'LOST'
+            ? `Lost Bet on ${bet.targetName}`
+            : `Bet Placed on ${bet.targetName}`,
+        amount: bet.status === 'WON' ? bet.payout ?? 0 : bet.status === 'LOST' ? -bet.amount : 0,
+        createdAt: bet.createdAt,
+        status: bet.status,
+      })),
+      ...taskRows.map((task) => ({
+        id: task.id,
+        type: 'TASK' as const,
+        label: `Completed Task: ${task.description}`,
+        amount: task.pointsReward,
+        createdAt: task.completedAt,
+        status: 'COMPLETED' as const,
+      })),
+    ]
+      .filter((event) => event.createdAt)
+      .sort((a, b) => new Date(b.createdAt as Date).getTime() - new Date(a.createdAt as Date).getTime())
+      .slice(0, 12);
+
+    const leaderboard = await db.select({
+      id: partyUsers.id,
+      name: partyUsers.name,
+      walletBalance: partyUsers.walletBalance,
+      avatarUrl: partyUsers.avatarUrl,
+    })
+    .from(partyUsers)
+    .where(eq(partyUsers.status, 'approved'))
+    .orderBy(desc(partyUsers.walletBalance))
+    .limit(3);
+
+    return { success: true, history, leaderboard };
+  } catch (error) {
+    console.error('Error getting wallet overview:', error);
+    return { success: false, error: 'Failed to load wallet overview' };
+  }
+}
+
 // ============================================
 // IMPOSTER GAME - AUTOMATED SPY GAME ENGINE
 // ============================================
@@ -736,11 +941,25 @@ export async function getUserBetsAction() {
  * Start a new Imposter round with automatic timer
  * @param durationMinutes - Round duration (default 45 minutes)
  */
-export async function startImposterRoundAction(durationMinutes: number = 45) {
+export async function startImposterRoundAction(durationMinutes: number = 45, selectedImposterId?: string) {
   try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
     const user = await getCurrentPartyUserAction();
-    if (!user || user.role !== 'admin') {
-      return { success: false, error: 'Admin access required' };
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const [party] = await db
+      .select()
+      .from(parties)
+      .where(and(
+        eq(parties.hostId, user.id),
+        eq(parties.isActive, true)
+      ));
+
+    if (!party) {
+      return { success: false, error: 'You are not the host!' };
     }
     
     // Get all active, approved party users (exclude admin)
@@ -755,8 +974,14 @@ export async function startImposterRoundAction(durationMinutes: number = 45) {
       return { success: false, error: 'Need at least 3 active players' };
     }
     
-    // Select random imposter
-    const imposter = users[Math.floor(Math.random() * users.length)];
+    let imposter = users[Math.floor(Math.random() * users.length)];
+    if (selectedImposterId) {
+      const selected = users.find((player) => player.id === selectedImposterId);
+      if (!selected) {
+        return { success: false, error: 'Selected imposter is not an active player' };
+      }
+      imposter = selected;
+    }
     
     // Get or create imposter game
     let [game] = await db.select().from(partyGames).where(
@@ -874,6 +1099,49 @@ Example output:
       timestamp: new Date().toISOString(),
     });
     
+    for (const player of users) {
+      const isImposter = player.id === imposter.id;
+      await db
+        .insert(playerStatus)
+        .values({
+          userId: player.id,
+          status: 'ALIVE',
+          role: isImposter ? 'IMPOSTER' : 'CREWMATE',
+          updatedAt: new Date(),
+        })
+        .onConflictDoUpdate({
+          target: playerStatus.userId,
+          set: {
+            status: 'ALIVE',
+            role: isImposter ? 'IMPOSTER' : 'CREWMATE',
+            updatedAt: new Date(),
+          },
+        });
+    }
+
+    const crewmates = users.filter((player) => player.id !== imposter.id);
+    for (const crewmate of crewmates) {
+      const taskDescriptions = generateTaskBatch(3);
+      const taskRows = await db
+        .insert(partyTasks)
+        .values(
+          taskDescriptions.map((description) => ({
+            description,
+            pointsReward: 50,
+            verificationType: 'BUTTON',
+            isActive: true,
+          }))
+        )
+        .returning();
+
+      await db.insert(playerTasks).values(
+        taskRows.map((task) => ({
+          userId: crewmate.id,
+          taskId: task.id,
+        }))
+      );
+    }
+
     // Send role-specific data to each player
     for (const player of users) {
       const isImposter = player.id === imposter.id;
@@ -896,7 +1164,7 @@ Example output:
     };
   } catch (error) {
     console.error('Error starting imposter round:', error);
-    return { success: false, error: 'Failed to start round' };
+    return { success: false, error: error instanceof Error ? error.message : 'Failed to start round' };
   }
 }
 
@@ -1004,15 +1272,99 @@ export async function forceVotingPhaseAction(roundId: string) {
   }
 }
 
+export async function forceEndImposterGameAction() {
+  try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
+    const user = await getCurrentPartyUserAction();
+    if (!user || user.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
+    }
+
+    const now = new Date();
+
+    await db.update(partyImposterRounds)
+      .set({ status: 'REVEALED', endTime: now })
+      .where(inArray(partyImposterRounds.status, ['ACTIVE', 'WARNING', 'VOTING']));
+
+    await db.update(partyGames)
+      .set({ status: 'FINISHED', endTime: now })
+      .where(and(
+        eq(partyGames.type, 'IMPOSTER'),
+        eq(partyGames.status, 'OPEN')
+      ));
+
+    await triggerPartyEvent('imposter-game', 'round-ended', {
+      forced: true,
+      timestamp: now.toISOString(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error forcing imposter end:', error);
+    return { success: false, error: 'Failed to force end game' };
+  }
+}
+
+export async function forceEndSimRaceAction() {
+  try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
+    const user = await getCurrentPartyUserAction();
+    if (!user || user.role !== 'admin') {
+      return { success: false, error: 'Admin access required' };
+    }
+
+    const now = new Date();
+
+    await db.update(partyGames)
+      .set({
+        status: 'FINISHED',
+        raceState: 'FINISHED',
+        bettingClosed: true,
+        endTime: now,
+      })
+      .where(and(
+        eq(partyGames.type, 'SIM_RACE'),
+        eq(partyGames.status, 'OPEN')
+      ));
+
+    await triggerPartyEvent('sim-racing', 'race-ended', {
+      forced: true,
+      timestamp: now.toISOString(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error forcing race end:', error);
+    return { success: false, error: 'Failed to force end game' };
+  }
+}
+
 /**
  * Get round status for admin dashboard
  */
 export async function getAdminRoundStatusAction() {
   try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
     const user = await getCurrentPartyUserAction();
     if (!user || user.role !== 'admin') {
       return { success: false, error: 'Admin access required' };
     }
+
+    const players = await db.select({
+      id: partyUsers.id,
+      name: partyUsers.name,
+      avatarUrl: partyUsers.avatarUrl,
+    })
+    .from(partyUsers)
+    .where(
+      and(
+        eq(partyUsers.status, 'approved'),
+        eq(partyUsers.role, 'guest')
+      )
+    );
     
     // Get active round with imposter details
     const roundData = await db.select({
@@ -1027,7 +1379,14 @@ export async function getAdminRoundStatusAction() {
     .limit(1);
     
     if (roundData.length === 0) {
-      return { success: false, error: 'No active round' };
+      return {
+        success: true,
+        data: {
+          round: null,
+          imposter: null,
+          players,
+        },
+      };
     }
     
     const { round, imposterName, imposterAvatar } = roundData[0];
@@ -1037,20 +1396,6 @@ export async function getAdminRoundStatusAction() {
     const endTimeMs = round.endTime ? new Date(round.endTime).getTime() : now;
     const timeRemainingMs = Math.max(0, endTimeMs - now);
     const timeRemainingMinutes = Math.floor(timeRemainingMs / (1000 * 60));
-    
-    // Get all active players
-    const players = await db.select({
-      id: partyUsers.id,
-      name: partyUsers.name,
-      avatarUrl: partyUsers.avatarUrl,
-    })
-    .from(partyUsers)
-    .where(
-      and(
-        eq(partyUsers.status, 'approved'),
-        eq(partyUsers.role, 'guest')
-      )
-    );
     
     return {
       success: true,
@@ -1225,17 +1570,106 @@ export async function getPlayerTasksAction(userId: string) {
         description: partyTasks.description,
         pointsReward: partyTasks.pointsReward,
         verificationType: partyTasks.verificationType,
+        qrCode: partyTasks.qrCode,
         isCompleted: playerTasks.isCompleted,
         completedAt: playerTasks.completedAt,
       })
       .from(playerTasks)
       .innerJoin(partyTasks, eq(playerTasks.taskId, partyTasks.id))
-      .where(eq(playerTasks.userId, userId));
+      .where(eq(playerTasks.userId, userId))
+      .orderBy(desc(playerTasks.createdAt))
+      .limit(3);
     
     return { success: true, tasks };
   } catch (error) {
     console.error('Error getting player tasks:', error);
     return { success: false, error: 'Failed to get tasks' };
+  }
+}
+
+export async function getTaskPadDataAction() {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const [status] = await db.select().from(playerStatus).where(eq(playerStatus.userId, user.id));
+    const role = status?.role || 'CREWMATE';
+
+    if (role === 'IMPOSTER') {
+      return {
+        success: true,
+        role,
+        tasks: [],
+        fakeTasks: generateFakeTaskBatch(3),
+      };
+    }
+
+    const result = await getPlayerTasksAction(user.id);
+    return {
+      success: true,
+      role,
+      tasks: result.tasks || [],
+      fakeTasks: [],
+    };
+  } catch (error) {
+    console.error('Error loading task pad:', error);
+    return { success: false, error: 'Failed to load task pad' };
+  }
+}
+
+export async function getTaskProgressAction() {
+  try {
+    const [progress] = await db
+      .select({
+        total: count(),
+        completed: sql<number>`SUM(CASE WHEN ${playerTasks.isCompleted} THEN 1 ELSE 0 END)`,
+      })
+      .from(playerTasks);
+
+    const total = Number(progress?.total ?? 0);
+    const completed = Number(progress?.completed ?? 0);
+    const completionRate = total > 0 ? (completed / total) * 100 : 0;
+
+    return { success: true, total, completed, completionRate };
+  } catch (error) {
+    console.error('Error getting task progress:', error);
+    return { success: false, error: 'Failed to get task progress' };
+  }
+}
+
+export async function getPlayerStatusAction(userId?: string) {
+  try {
+    const currentUser = userId ? null : await getCurrentPartyUserAction();
+    const targetUserId = userId || currentUser?.id;
+
+    if (!targetUserId) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const [status] = await db
+      .select()
+      .from(playerStatus)
+      .where(eq(playerStatus.userId, targetUserId));
+
+    if (status) {
+      return { success: true, status };
+    }
+
+    const [created] = await db
+      .insert(playerStatus)
+      .values({
+        userId: targetUserId,
+        status: 'ALIVE',
+        role: 'CREWMATE',
+      })
+      .returning();
+
+    return { success: true, status: created };
+  } catch (error) {
+    console.error('Error getting player status:', error);
+    return { success: false, error: 'Failed to get player status' };
   }
 }
 
@@ -1440,6 +1874,115 @@ export async function reportBodyAction(reporterId: string) {
 }
 
 // ============================================
+// TRICKSHOT SCORING SYSTEM
+// ============================================
+
+export async function logTrickshotHitAction(data: {
+  userId: string;
+  shotType: 'STANDARD' | 'BOUNCE' | 'CUP' | 'NO_LOOK';
+  points: number;
+}) {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const [score] = await db
+      .insert(trickshotScores)
+      .values({
+        userId: data.userId,
+        shotType: data.shotType,
+        points: data.points,
+      })
+      .returning();
+
+    await triggerPartyEvent('trickshot', 'score-update', {
+      userId: data.userId,
+      shotType: data.shotType,
+      points: data.points,
+      timestamp: new Date().toISOString(),
+    });
+
+    return { success: true, score };
+  } catch (error) {
+    console.error('Error logging trickshot hit:', error);
+    return { success: false, error: 'Failed to log hit' };
+  }
+}
+
+export async function getTrickshotLeaderboardAction() {
+  try {
+    const leaderboard = await db
+      .select({
+        userId: partyUsers.id,
+        userName: partyUsers.name,
+        avatarUrl: partyUsers.avatarUrl,
+        totalPoints: sql<number>`SUM(${trickshotScores.points})`,
+      })
+      .from(trickshotScores)
+      .innerJoin(partyUsers, eq(trickshotScores.userId, partyUsers.id))
+      .groupBy(partyUsers.id)
+      .orderBy(sql`SUM(${trickshotScores.points}) DESC`)
+      .limit(10);
+
+    return { success: true, leaderboard };
+  } catch (error) {
+    console.error('Error loading trickshot leaderboard:', error);
+    return { success: false, error: 'Failed to load leaderboard' };
+  }
+}
+
+export async function triggerFalseAlarmAction() {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const [status] = await db.select().from(playerStatus).where(eq(playerStatus.userId, user.id));
+    if (status?.role !== 'IMPOSTER') {
+      return { success: false, error: 'Imposter access required' };
+    }
+
+    await triggerPartyEvent('party-lobby', 'false-alarm', {
+      userId: user.id,
+      timestamp: new Date().toISOString(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error triggering false alarm:', error);
+    return { success: false, error: 'Failed to trigger false alarm' };
+  }
+}
+
+export async function jamCommsAction(durationMs: number = 30000) {
+  try {
+    const user = await getCurrentPartyUserAction();
+    if (!user) {
+      return { success: false, error: 'Not authenticated' };
+    }
+
+    const [status] = await db.select().from(playerStatus).where(eq(playerStatus.userId, user.id));
+    if (status?.role !== 'IMPOSTER') {
+      return { success: false, error: 'Imposter access required' };
+    }
+
+    await triggerPartyEvent('party-lobby', 'jam-comms', {
+      userId: user.id,
+      durationMs,
+      timestamp: new Date().toISOString(),
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error jamming comms:', error);
+    return { success: false, error: 'Failed to jam comms' };
+  }
+}
+
+// ============================================
 // ENHANCED RACE PAYOUT SYSTEM
 // ============================================
 
@@ -1456,45 +1999,42 @@ export async function settleRaceAction(gameId: string, winnerId: string) {
         eq(bets.status, 'PENDING')
       ));
     
-    // Process payouts transactionally
-    await db.transaction(async (tx) => {
-      for (const bet of raceBets) {
-        if (bet.targetUserId === winnerId) {
-          // Winner - calculate payout and add to wallet
-          const payout = Math.floor(bet.amount * MULTIPLIER);
-          
-          await tx
-            .update(partyUsers)
-            .set({ walletBalance: sql`${partyUsers.walletBalance} + ${payout}` })
-            .where(eq(partyUsers.id, bet.bettorId));
-          
-          await tx
-            .update(bets)
-            .set({
-              status: 'WON',
-              payout,
-              settledAt: new Date(),
-            })
-            .where(eq(bets.id, bet.id));
-          
-          // Trigger celebration for winner
-          await triggerPartyEvent(`party-user-${bet.bettorId}`, 'payout-celebration', {
-            amount: payout,
-            multiplier: MULTIPLIER,
-            timestamp: new Date().toISOString(),
-          });
-        } else {
-          // Loser - mark bet as lost
-          await tx
-            .update(bets)
-            .set({
-              status: 'LOST',
-              settledAt: new Date(),
-            })
-            .where(eq(bets.id, bet.id));
-        }
+    for (const bet of raceBets) {
+      if (bet.targetUserId === winnerId) {
+        // Winner - calculate payout and add to wallet
+        const payout = Math.floor(bet.amount * MULTIPLIER);
+        
+        await db
+          .update(partyUsers)
+          .set({ walletBalance: sql`${partyUsers.walletBalance} + ${payout}` })
+          .where(eq(partyUsers.id, bet.bettorId));
+        
+        await db
+          .update(bets)
+          .set({
+            status: 'WON',
+            payout,
+            settledAt: new Date(),
+          })
+          .where(eq(bets.id, bet.id));
+        
+        // Trigger celebration for winner
+        await triggerPartyEvent(`party-user-${bet.bettorId}`, 'payout-celebration', {
+          amount: payout,
+          multiplier: MULTIPLIER,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        // Loser - mark bet as lost
+        await db
+          .update(bets)
+          .set({
+            status: 'LOST',
+            settledAt: new Date(),
+          })
+          .where(eq(bets.id, bet.id));
       }
-    });
+    }
     
     // Broadcast race results
     await triggerPartyEvent('party-lobby', 'race-settled', {
@@ -1502,6 +2042,14 @@ export async function settleRaceAction(gameId: string, winnerId: string) {
       winnerId,
       timestamp: new Date().toISOString(),
     });
+
+    await db.update(partyGames)
+      .set({
+        raceState: 'FINISHED',
+        bettingClosed: false,
+        endTime: new Date(),
+      })
+      .where(eq(partyGames.id, gameId));
     
     return { success: true };
   } catch (error) {

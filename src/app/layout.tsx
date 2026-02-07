@@ -5,9 +5,8 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import Providers from '@/components/Providers';
 import { ThemeProvider } from '@/context/ThemeContext';
-import { AwehChatFAB } from '@/components/party/AwehChatIntegration';
-import { PWAInstallPrompt } from '@/components/pwa/PWAInstallPrompt';
 import { PWAHead } from '@/components/pwa/PWAHead';
+import ClientWidgets from '@/components/ClientWidgets';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://alphatraders.co.za'),
@@ -63,8 +62,7 @@ export default function RootLayout({
             <FirebaseClientProvider>
               <AuthProvider>
                 {children}
-                <AwehChatFAB />
-                <PWAInstallPrompt />
+                <ClientWidgets />
               </AuthProvider>
               <Toaster />
             </FirebaseClientProvider>

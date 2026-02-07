@@ -1,11 +1,21 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, Circle, Camera, QrCode, Zap } from 'lucide-react';
+import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { getPlayerTasksAction, completeTaskAction } from '@/app/actions/party-logic';
 import { useToast } from '@/hooks/use-toast';
 
@@ -15,19 +25,30 @@ interface Task {
   description: string;
   pointsReward: number;
   verificationType: string;
+  qrCode?: string | null;
   isCompleted: boolean;
   completedAt: Date | null;
 }
 
 interface TaskChecklistProps {
   userId: string;
+  role: 'CREWMATE' | 'IMPOSTER' | 'UNKNOWN';
 }
 
-export function TaskChecklist({ userId }: TaskChecklistProps) {
+const HOLD_DURATION_MS = 1500;
+
+export function TaskChecklist({ userId, role }: TaskChecklistProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [completing, setCompleting] = useState<string | null>(null);
   const [floatingPoints, setFloatingPoints] = useState<{ id: string; points: number }[]>([]);
+  const [qrTask, setQrTask] = useState<Task | null>(null);
+  const [qrInput, setQrInput] = useState('');
+  const [holdingTaskId, setHoldingTaskId] = useState<string | null>(null);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef<number | null>(null);
+  const holdIntervalRef = useRef<number | null>(null);
+  const vibrateIntervalRef = useRef<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -42,12 +63,20 @@ export function TaskChecklist({ userId }: TaskChecklistProps) {
     setLoading(false);
   };
 
-  const handleCompleteTask = async (playerTaskId: string, pointsReward: number) => {
+  const handleCompleteTask = async (playerTaskId: string, pointsReward: number, proof?: string) => {
     setCompleting(playerTaskId);
 
-    const result = await completeTaskAction(userId, playerTaskId);
+    const result = await completeTaskAction(userId, playerTaskId, proof);
 
     if (result.success) {
+      confetti({
+        particleCount: 60,
+        spread: 80,
+        origin: { y: 0.7 },
+        colors: ['#7dd3fc', '#22c55e', '#facc15'],
+        scalar: 0.8,
+      });
+
       // Show floating points animation
       setFloatingPoints((prev) => [...prev, { id: playerTaskId, points: pointsReward }]);
       setTimeout(() => {
@@ -90,8 +119,75 @@ export function TaskChecklist({ userId }: TaskChecklistProps) {
   const totalCount = tasks.length;
   const progress = totalCount > 0 ? (completedCount / totalCount) * 100 : 0;
 
+  const startHold = (task: Task) => {
+    if (completing || task.isCompleted) {
+      return;
+    }
+
+    if (holdingTaskId && holdingTaskId !== task.id) {
+      endHold();
+    }
+
+    setHoldingTaskId(task.id);
+    setHoldProgress(0);
+
+    const startTime = Date.now();
+    holdIntervalRef.current = window.setInterval(() => {
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(elapsed / HOLD_DURATION_MS, 1);
+      setHoldProgress(progress);
+    }, 40);
+
+    holdTimerRef.current = window.setTimeout(async () => {
+      if (task.verificationType === 'QR_SCAN') {
+        setQrTask(task);
+        setQrInput('');
+      } else {
+        await handleCompleteTask(task.id, task.pointsReward);
+      }
+      endHold();
+    }, HOLD_DURATION_MS);
+
+    if (navigator.vibrate) {
+      navigator.vibrate(20);
+      vibrateIntervalRef.current = window.setInterval(() => {
+        navigator.vibrate(20);
+      }, 200);
+    }
+  };
+
+  const endHold = () => {
+    if (holdTimerRef.current) {
+      window.clearTimeout(holdTimerRef.current);
+      holdTimerRef.current = null;
+    }
+    if (holdIntervalRef.current) {
+      window.clearInterval(holdIntervalRef.current);
+      holdIntervalRef.current = null;
+    }
+    if (vibrateIntervalRef.current) {
+      window.clearInterval(vibrateIntervalRef.current);
+      vibrateIntervalRef.current = null;
+    }
+    setHoldingTaskId(null);
+    setHoldProgress(0);
+  };
+
+  useEffect(() => {
+    return () => {
+      endHold();
+    };
+  }, []);
+
+  const glowBorder =
+    role === 'IMPOSTER'
+      ? 'border-red-500/60 shadow-[0_0_18px_rgba(248,113,113,0.35)]'
+      : role === 'CREWMATE'
+      ? 'border-emerald-400/70 shadow-[0_0_18px_rgba(52,211,153,0.35)]'
+      : 'border-white/20';
+
   return (
-    <Card className="relative overflow-hidden">
+    <Card className={`relative overflow-hidden bg-white/5 backdrop-blur-md ${glowBorder}`}>
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center gap-2">
@@ -126,8 +222,8 @@ export function TaskChecklist({ userId }: TaskChecklistProps) {
             >
               <div
                 className={`
-                  flex items-center gap-3 p-3 rounded-lg border
-                  ${task.isCompleted ? 'bg-secondary/50 border-primary/30' : 'bg-card border-border'}
+                  flex items-center gap-3 p-3 rounded-lg border transition
+                  ${task.isCompleted ? 'bg-white/5 border-white/10' : 'bg-white/10 border-white/20'}
                 `}
               >
                 {/* Icon */}
@@ -161,10 +257,44 @@ export function TaskChecklist({ userId }: TaskChecklistProps) {
                 {!task.isCompleted && (
                   <Button
                     size="sm"
-                    onClick={() => handleCompleteTask(task.id, task.pointsReward)}
+                    className="relative overflow-hidden"
+                    onPointerDown={() => startHold(task)}
+                    onPointerUp={endHold}
+                    onPointerLeave={endHold}
+                    onPointerCancel={endHold}
                     disabled={completing === task.id}
                   >
-                    {completing === task.id ? 'Verifying...' : 'Complete'}
+                    {completing === task.id
+                      ? 'Verifying...'
+                      : task.verificationType === 'QR_SCAN'
+                      ? 'Hold to Scan'
+                      : 'Hold to Complete'}
+                    {holdingTaskId === task.id && (
+                      <svg
+                        className="absolute right-2 top-1/2 h-5 w-5 -translate-y-1/2"
+                        viewBox="0 0 36 36"
+                      >
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="16"
+                          stroke="rgba(255,255,255,0.2)"
+                          strokeWidth="3"
+                          fill="transparent"
+                        />
+                        <circle
+                          cx="18"
+                          cy="18"
+                          r="16"
+                          stroke="rgba(59,130,246,0.9)"
+                          strokeWidth="3"
+                          strokeDasharray={100}
+                          strokeDashoffset={100 - holdProgress * 100}
+                          fill="transparent"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                    )}
                   </Button>
                 )}
               </div>
@@ -187,6 +317,54 @@ export function TaskChecklist({ userId }: TaskChecklistProps) {
           ))
         )}
       </CardContent>
+
+      <Dialog
+        open={!!qrTask}
+        onOpenChange={(open) => {
+          if (!open) {
+            setQrTask(null);
+            setQrInput('');
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Scan Task QR</DialogTitle>
+            <DialogDescription>
+              Enter the QR code from the station to complete this task.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Input
+              placeholder="Enter QR code"
+              value={qrInput}
+              onChange={(event) => setQrInput(event.target.value)}
+            />
+          </div>
+          <DialogFooter>
+            <Button
+              onClick={async () => {
+                if (!qrTask) {
+                  return;
+                }
+                if (!qrTask.qrCode || qrInput.trim() !== qrTask.qrCode) {
+                  toast({
+                    title: '❌ Invalid Code',
+                    description: 'That QR code does not match this task.',
+                    variant: 'destructive',
+                  });
+                  return;
+                }
+                await handleCompleteTask(qrTask.id, qrTask.pointsReward, qrInput.trim());
+                setQrTask(null);
+                setQrInput('');
+              }}
+            >
+              Verify Task
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

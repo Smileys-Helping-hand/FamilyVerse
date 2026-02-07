@@ -273,11 +273,11 @@ export default function PortalPage() {
                 >
                   {/* Gradient Background */}
                   <div className={cn(
-                    'absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity',
+                    'absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity pointer-events-none',
                     app.gradient
                   )} />
                   
-                  <CardHeader>
+                  <CardHeader className="relative z-10">
                     <div className="flex items-start justify-between mb-2">
                       <div className={cn(
                         'p-3 rounded-xl bg-gradient-to-br shadow-lg',
@@ -304,7 +304,7 @@ export default function PortalPage() {
                     </p>
                   </CardHeader>
                   
-                  <CardContent className="space-y-4">
+                  <CardContent className="space-y-4 relative z-10">
                     {/* Features */}
                     <div className="grid grid-cols-2 gap-2">
                       {app.features.map((feature, idx) => (

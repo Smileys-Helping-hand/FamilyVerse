@@ -78,6 +78,12 @@ export function ContentManager({ eventId }: ContentManagerProps) {
         title: 'Hint Added',
         description: 'New imposter hint created successfully',
       });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -92,6 +98,12 @@ export function ContentManager({ eventId }: ContentManagerProps) {
         title: 'Topic Added',
         description: 'New civilian topic created successfully',
       });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -101,6 +113,12 @@ export function ContentManager({ eventId }: ContentManagerProps) {
       setHints(hints.map(h => h.id === hintId ? result.data : h));
       toast({
         title: currentState ? 'Hint Disabled' : 'Hint Enabled',
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error,
+        variant: 'destructive',
       });
     }
   };
@@ -112,6 +130,12 @@ export function ContentManager({ eventId }: ContentManagerProps) {
       toast({
         title: currentState ? 'Topic Disabled' : 'Topic Enabled',
       });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -120,6 +144,12 @@ export function ContentManager({ eventId }: ContentManagerProps) {
     if (result.success) {
       setHints(hints.filter(h => h.id !== hintId));
       toast({ title: 'Hint Deleted' });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -128,6 +158,12 @@ export function ContentManager({ eventId }: ContentManagerProps) {
     if (result.success) {
       setTopics(topics.filter(t => t.id !== topicId));
       toast({ title: 'Topic Deleted' });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error,
+        variant: 'destructive',
+      });
     }
   };
 

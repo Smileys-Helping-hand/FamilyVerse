@@ -22,7 +22,7 @@ import type { SmartQr } from '@/lib/db/schema';
 // =============================================================================
 // Types
 // =============================================================================
-type TemplateType = 'wifi' | 'party' | 'spy' | 'simrig';
+type TemplateType = 'wifi' | 'party' | 'spy' | 'simrig' | 'custom';
 
 interface WifiData {
   ssid: string;
@@ -45,6 +45,11 @@ interface SimRigData {
   baseUrl: string;
 }
 
+interface CustomData {
+  label: string;
+  payload: string;
+}
+
 // =============================================================================
 // QR Design Studio - Template-Based Thermal Label Editor
 // =============================================================================
@@ -52,6 +57,8 @@ export default function QRStudioPage() {
   const { toast } = useToast();
   const canvasRef = useRef<HTMLDivElement>(null);
   const batchCanvasRef = useRef<HTMLDivElement>(null);
+  const smartQrPreviewRef = useRef<HTMLDivElement>(null);
+  const selectedSmartQrPreviewRef = useRef<HTMLDivElement>(null);
 
   // Template state
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateType>('wifi');
@@ -61,6 +68,7 @@ export default function QRStudioPage() {
   const [partyData, setPartyData] = useState<PartyData>({ code: 'PARTY2026', baseUrl: 'https://alphatraders.co.za' });
   const [spyData, setSpyData] = useState<SpyData>({ playerName: 'Agent X', playerId: '001', baseUrl: 'https://alphatraders.co.za' });
   const [simRigData, setSimRigData] = useState<SimRigData>({ challengerName: 'Uncle Mo', baseUrl: 'https://alphatraders.co.za' });
+  const [customData, setCustomData] = useState<CustomData>({ label: 'Custom QR', payload: 'https://alphatraders.co.za' });
 
   // Batch mode
   const [batchPlayers, setBatchPlayers] = useState<string[]>(['Player 1', 'Player 2', 'Player 3', 'Player 4', 'Player 5', 'Player 6']);
@@ -78,15 +86,23 @@ export default function QRStudioPage() {
   const [creatingSmartQr, setCreatingSmartQr] = useState(false);
   const [generatedSmartUrl, setGeneratedSmartUrl] = useState('');
   const [activeMainTab, setActiveMainTab] = useState('templates');
+  const [selectedSmartQrId, setSelectedSmartQrId] = useState<string>('');
+  const [baseUrl, setBaseUrl] = useState('');
 
   // Load Smart QRs on mount
   useEffect(() => {
     loadSmartQrs();
+    if (typeof window !== 'undefined') {
+      setBaseUrl(window.location.origin);
+    }
   }, []);
 
   const loadSmartQrs = async () => {
     const qrs = await getAllSmartQrsAction();
     setSmartQrs(qrs);
+    if (qrs.length > 0 && (!selectedSmartQrId || !qrs.find((qr) => qr.id === selectedSmartQrId))) {
+      setSelectedSmartQrId(qrs[0].id);
+    }
   };
 
   const handleCreateSmartQr = async () => {
@@ -133,6 +149,11 @@ export default function QRStudioPage() {
     toast({ title: '📋 Copied!', description: text });
   };
 
+  const getSmartQrUrl = (token: string) => {
+    const appBaseUrl = process.env.NEXT_PUBLIC_APP_URL || baseUrl || 'https://alphatraders.co.za';
+    return `${appBaseUrl}/q/${token}`;
+  };
+
   // =============================================================================
   // Generate QR Content based on template
   // =============================================================================
@@ -146,6 +167,8 @@ export default function QRStudioPage() {
         return `${spyData.baseUrl}/spy/reveal/${spyData.playerId}`;
       case 'simrig':
         return `${simRigData.baseUrl}/party/leaderboard`;
+      case 'custom':
+        return customData.payload || 'https://familyverse.app';
       default:
         return 'https://familyverse.app';
     }
@@ -154,55 +177,58 @@ export default function QRStudioPage() {
   // =============================================================================
   // Native Bridge - Direct Print via Share API
   // =============================================================================
-  const handlePrint = async () => {
-    if (!canvasRef.current) return;
+  const captureStickerBlob = async (): Promise<Blob | null> => {
+    if (!canvasRef.current) return null;
+    const canvas = await html2canvas(canvasRef.current, {
+      backgroundColor: '#ffffff',
+      scale: 2, // High DPI
+      useCORS: true,
+      logging: false,
+    });
 
+    return new Promise((resolve) => {
+      canvas.toBlob((blob) => resolve(blob), 'image/png', 1.0);
+    });
+  };
+
+  const handlePrint = async () => {
     try {
       setGenerating(true);
       toast({ title: '📸 Capturing sticker...', description: 'Please wait' });
 
-      const canvas = await html2canvas(canvasRef.current, {
-        backgroundColor: '#ffffff',
-        scale: 2, // High DPI
-        useCORS: true,
-        logging: false,
-      });
-
-      canvas.toBlob(async (blob) => {
-        if (!blob) {
-          toast({ title: 'Capture failed', variant: 'destructive' });
-          setGenerating(false);
-          return;
-        }
-
-        const file = new File([blob], 'sticker.png', { type: 'image/png' });
-
-        // Check if native sharing is supported (mobile)
-        if (navigator.share && navigator.canShare({ files: [file] })) {
-          try {
-            await navigator.share({
-              files: [file],
-              title: 'Print Sticker',
-            });
-            toast({ title: '🖨️ Sent to Share Sheet!', description: 'Tap FunPrint to print' });
-          } catch (err) {
-            if ((err as Error).name !== 'AbortError') {
-              console.error('Share failed', err);
-              // Fallback to download
-              downloadBlob(blob, 'sticker.png');
-            }
-          }
-        } else {
-          // Desktop fallback: download file
-          downloadBlob(blob, 'sticker.png');
-          toast({ title: '📥 Downloaded!', description: 'Open in your printer app' });
-        }
-
+      const blob = await captureStickerBlob();
+      if (!blob) {
+        toast({ title: 'Capture failed', variant: 'destructive' });
         setGenerating(false);
-      }, 'image/png', 1.0);
+        return;
+      }
+
+      const file = new File([blob], 'sticker.png', { type: 'image/png' });
+
+      // Check if native sharing is supported (mobile)
+      if (navigator.share && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Print Sticker',
+          });
+          toast({ title: '🖨️ Sent to Share Sheet!', description: 'Tap FunPrint to print' });
+        } catch (err) {
+          if ((err as Error).name !== 'AbortError') {
+            console.error('Share failed', err);
+            // Fallback to download
+            downloadBlob(blob, 'sticker.png');
+          }
+        }
+      } else {
+        // Desktop fallback: download file
+        downloadBlob(blob, 'sticker.png');
+        toast({ title: '📥 Downloaded!', description: 'Open in your printer app' });
+      }
     } catch (error) {
       console.error('Print failed:', error);
       toast({ title: 'Print failed', variant: 'destructive' });
+    } finally {
       setGenerating(false);
     }
   };
@@ -214,6 +240,70 @@ export default function QRStudioPage() {
     a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+  };
+
+  const handleDownloadSticker = async () => {
+    try {
+      setGenerating(true);
+      const blob = await captureStickerBlob();
+      if (!blob) {
+        toast({ title: 'Capture failed', variant: 'destructive' });
+        return;
+      }
+      downloadBlob(blob, 'sticker.png');
+      toast({ title: '📥 Downloaded!', description: 'Ready to print from your phone' });
+    } catch (error) {
+      console.error('Download failed:', error);
+      toast({ title: 'Download failed', variant: 'destructive' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const handleDownloadSmartQr = async () => {
+    if (!smartQrPreviewRef.current) return;
+    try {
+      const canvas = await html2canvas(smartQrPreviewRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast({ title: 'Download failed', variant: 'destructive' });
+          return;
+        }
+        downloadBlob(blob, 'smart-qr.png');
+        toast({ title: '📥 Downloaded!', description: 'Smart QR saved' });
+      }, 'image/png', 1.0);
+    } catch (error) {
+      console.error('Smart QR download failed:', error);
+      toast({ title: 'Download failed', variant: 'destructive' });
+    }
+  };
+
+  const handleDownloadSelectedSmartQr = async () => {
+    if (!selectedSmartQrPreviewRef.current) return;
+    try {
+      const canvas = await html2canvas(selectedSmartQrPreviewRef.current, {
+        backgroundColor: '#ffffff',
+        scale: 2,
+        useCORS: true,
+        logging: false,
+      });
+      canvas.toBlob((blob) => {
+        if (!blob) {
+          toast({ title: 'Download failed', variant: 'destructive' });
+          return;
+        }
+        downloadBlob(blob, 'smart-qr.png');
+        toast({ title: '📥 Downloaded!', description: 'Smart QR saved' });
+      }, 'image/png', 1.0);
+    } catch (error) {
+      console.error('Smart QR download failed:', error);
+      toast({ title: 'Download failed', variant: 'destructive' });
+    }
   };
 
   // =============================================================================
@@ -276,7 +366,10 @@ export default function QRStudioPage() {
     { id: 'party', name: 'Party Join', icon: <Users className="w-6 h-6" />, color: 'from-green-500 to-emerald-500' },
     { id: 'spy', name: 'Spy Role', icon: <Gamepad2 className="w-6 h-6" />, color: 'from-red-500 to-orange-500' },
     { id: 'simrig', name: 'Sim Rig', icon: <Car className="w-6 h-6" />, color: 'from-purple-500 to-pink-500' },
+    { id: 'custom', name: 'Custom QR', icon: <Sparkles className="w-6 h-6" />, color: 'from-slate-500 to-indigo-500' },
   ];
+
+  const selectedSmartQr = smartQrs.find((qr) => qr.id === selectedSmartQrId) || smartQrs[0];
 
   // =============================================================================
   // Render
@@ -429,6 +522,29 @@ export default function QRStudioPage() {
                       value={simRigData.challengerName}
                       onChange={(e) => setSimRigData({ ...simRigData, challengerName: e.target.value })}
                       placeholder="Uncle Mo"
+                      className="bg-black/50"
+                    />
+                  </div>
+                </>
+              )}
+
+              {selectedTemplate === 'custom' && (
+                <>
+                  <div>
+                    <Label>Label</Label>
+                    <Input
+                      value={customData.label}
+                      onChange={(e) => setCustomData({ ...customData, label: e.target.value })}
+                      placeholder="Custom QR"
+                      className="bg-black/50"
+                    />
+                  </div>
+                  <div>
+                    <Label>QR Content (URL or text)</Label>
+                    <Input
+                      value={customData.payload}
+                      onChange={(e) => setCustomData({ ...customData, payload: e.target.value })}
+                      placeholder="https://alphatraders.co.za"
                       className="bg-black/50"
                     />
                   </div>
@@ -590,6 +706,27 @@ export default function QRStudioPage() {
                         </div>
                       </div>
                     )}
+
+                    {/* Template E: Custom */}
+                    {selectedTemplate === 'custom' && (
+                      <div className="text-center">
+                        <div className="flex justify-center mb-4">
+                          <QRCodeSVG
+                            value={getQRContent()}
+                            size={220}
+                            bgColor="#ffffff"
+                            fgColor="#000000"
+                            level="H"
+                          />
+                        </div>
+                        <div className="text-black font-black text-xl tracking-wide">
+                          {customData.label || 'Custom QR'}
+                        </div>
+                        <div className="text-black text-xs mt-2 break-all">
+                          {customData.payload || 'https://familyverse.app'}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -611,6 +748,15 @@ export default function QRStudioPage() {
                   ) : (
                     '🖨️ SEND TO PRINTER'
                   )}
+                </Button>
+                <Button
+                  onClick={handleDownloadSticker}
+                  disabled={generating}
+                  variant="outline"
+                  className="w-full mt-3 border-purple-500/40 text-purple-200 hover:text-white"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Download PNG
                 </Button>
                 <p className="text-center text-xs text-gray-400 mt-2">
                   Mobile: Opens Share Sheet → Tap FunPrint<br />
@@ -810,13 +956,16 @@ export default function QRStudioPage() {
                 {generatedSmartUrl && (
                   <div className="bg-green-900/30 border border-green-500/30 rounded-lg p-4 space-y-3">
                     <p className="text-green-400 text-sm font-medium">✨ QR Created!</p>
-                    <div className="flex justify-center bg-white p-4 rounded-lg">
+                    <div ref={smartQrPreviewRef} className="flex justify-center bg-white p-4 rounded-lg">
                       <QRCodeSVG value={generatedSmartUrl} size={150} level="H" />
                     </div>
                     <div className="flex gap-2">
                       <Input value={generatedSmartUrl} readOnly className="bg-black/50 text-xs" />
                       <Button size="sm" variant="outline" onClick={() => copyToClipboard(generatedSmartUrl)}>
                         <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={handleDownloadSmartQr}>
+                        <Download className="w-4 h-4" />
                       </Button>
                     </div>
                   </div>
@@ -835,6 +984,55 @@ export default function QRStudioPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {smartQrs.length > 0 && (
+                  <div className="space-y-4">
+                    <div>
+                      <Label className="text-gray-300">Select Smart QR</Label>
+                      <Select
+                        value={selectedSmartQrId || smartQrs[0]?.id}
+                        onValueChange={(value) => setSelectedSmartQrId(value)}
+                      >
+                        <SelectTrigger className="bg-black/50 border-gray-700">
+                          <SelectValue placeholder="Choose a Smart QR" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {smartQrs.map((qr) => (
+                            <SelectItem key={qr.id} value={qr.id}>
+                              {qr.title} ({qr.token})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {selectedSmartQr && (
+                      <div className="bg-black/30 border border-purple-500/20 rounded-lg p-4 space-y-3">
+                        <div ref={selectedSmartQrPreviewRef} className="flex justify-center bg-white p-4 rounded-lg">
+                          <QRCodeSVG value={getSmartQrUrl(selectedSmartQr.token)} size={150} level="H" />
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Badge variant="outline">{selectedSmartQr.type}</Badge>
+                          <span>{selectedSmartQr.points} pts</span>
+                          {selectedSmartQr.isTrap && <span className="text-red-400">Trap</span>}
+                        </div>
+                        <div className="flex gap-2">
+                          <Input
+                            value={getSmartQrUrl(selectedSmartQr.token)}
+                            readOnly
+                            className="bg-black/50 text-xs"
+                          />
+                          <Button size="sm" variant="outline" onClick={() => copyToClipboard(getSmartQrUrl(selectedSmartQr.token))}>
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={handleDownloadSelectedSmartQr}>
+                            <Download className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {smartQrs.length === 0 ? (
                   <p className="text-gray-500 text-center py-8">No Smart QRs yet. Create one!</p>
                 ) : (
@@ -842,11 +1040,12 @@ export default function QRStudioPage() {
                     {smartQrs.map((qr) => (
                       <div
                         key={qr.id}
-                        className={`p-4 rounded-lg border ${
+                        className={`p-4 rounded-lg border cursor-pointer transition ${
                           qr.isActive 
                             ? 'bg-purple-900/20 border-purple-500/30' 
                             : 'bg-gray-900/20 border-gray-700 opacity-60'
-                        }`}
+                        } ${selectedSmartQrId === qr.id ? 'ring-2 ring-purple-500/60' : 'hover:border-purple-400/60'}`}
+                        onClick={() => setSelectedSmartQrId(qr.id)}
                       >
                         <div className="flex items-start justify-between">
                           <div className="flex-1">

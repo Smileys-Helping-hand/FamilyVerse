@@ -11,7 +11,7 @@ export default function AwehChatPortal() {
   const [iframeError, setIframeError] = useState(false);
   const [storageAccessGranted, setStorageAccessGranted] = useState(false);
   const [checkingAccess, setCheckingAccess] = useState(true);
-  const [useIframe, setUseIframe] = useState(true);
+  const [useIframe, setUseIframe] = useState(false);
 
   // Check if Storage Access API is available and if we already have access
   useEffect(() => {
@@ -79,7 +79,7 @@ export default function AwehChatPortal() {
             AwehChat Portal
           </h1>
           <p className="text-sm text-gray-300 mt-2">
-            Secure messaging between clients. If login doesn't work in the embedded view, use the popup button.
+            Secure messaging between clients. Some browsers block embedded logins, so popup mode is the most reliable.
           </p>
         </div>
 
@@ -165,6 +165,15 @@ export default function AwehChatPortal() {
                   </div>
                 )}
               </div>
+              <div className="mt-4 flex gap-2">
+                <Button variant="outline" onClick={() => setUseIframe(false)}>
+                  Use Popup Mode
+                </Button>
+                <Button onClick={openChatPopup} variant="secondary">
+                  <ExternalLink className="mr-2 h-4 w-4" />
+                  Open Popup
+                </Button>
+              </div>
             </CardContent>
           </Card>
         ) : (
@@ -191,6 +200,9 @@ export default function AwehChatPortal() {
                 <MessageSquare className="mr-2 h-5 w-5" />
                 Open Chat Popup
               </Button>
+              <Button variant="outline" onClick={() => setUseIframe(true)}>
+                Try Embedded View
+              </Button>
             </CardContent>
           </Card>
         )}
@@ -202,6 +214,9 @@ export default function AwehChatPortal() {
           <Button onClick={openChatPopup} variant="secondary">
             <ExternalLink className="mr-2 h-4 w-4" />
             Open Popup
+          </Button>
+          <Button variant="ghost" onClick={() => setUseIframe(true)}>
+            Try Embedded View
           </Button>
           <a href="https://www.awehchat.co.za" target="_blank" rel="noopener noreferrer">
             <Button variant="ghost">

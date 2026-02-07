@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getPusherClient } from '@/lib/pusher/client';
 import type { Channel } from 'pusher-js';
 
@@ -8,6 +8,7 @@ export function usePartySocket(channelName: string) {
   const [lastEvent, setLastEvent] = useState<any>(null);
   const [channel, setChannel] = useState<Channel | null>(null);
   const [isConnected, setIsConnected] = useState(false);
+  const bindingsRef = useRef<Map<string, Set<(data: any) => void>>>(new Map());
 
   useEffect(() => {
     try {
@@ -23,6 +24,14 @@ export function usePartySocket(channelName: string) {
       });
       
       setChannel(subscribedChannel);
+      bindingsRef.current.forEach((callbacks, eventName) => {
+        callbacks.forEach((callback) => {
+          subscribedChannel.bind(eventName, (data: any) => {
+            setLastEvent({ event: eventName, data, timestamp: Date.now() });
+            callback(data);
+          });
+        });
+      });
       
       return () => {
         subscribedChannel.unbind_all();
@@ -35,6 +44,11 @@ export function usePartySocket(channelName: string) {
   }, [channelName]);
 
   const bind = (eventName: string, callback: (data: any) => void) => {
+    if (!bindingsRef.current.has(eventName)) {
+      bindingsRef.current.set(eventName, new Set());
+    }
+    bindingsRef.current.get(eventName)?.add(callback);
+
     if (channel) {
       channel.bind(eventName, (data: any) => {
         setLastEvent({ event: eventName, data, timestamp: Date.now() });

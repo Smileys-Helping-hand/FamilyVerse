@@ -16,7 +16,7 @@ export default async function SmartQrResolverPage({ params }: Props) {
   // Get user name from cookie if logged in
   const cookieStore = await cookies();
   const userName = cookieStore.get('partyUserName')?.value || 'Guest';
-  const userId = cookieStore.get('partyUserId')?.value;
+  const userId = cookieStore.get('party_user_id')?.value || cookieStore.get('partyUserId')?.value;
   
   // Resolve the QR with full game logic
   const result = await resolveSmartQrAction(token.toUpperCase(), userName, userAgent, userId);

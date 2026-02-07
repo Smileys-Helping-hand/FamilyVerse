@@ -4,6 +4,10 @@ import { db } from '@/lib/db';
 import { parties, partyUsers, globalSettings, systemLogs } from '@/lib/db/schema';
 import { eq, sql } from 'drizzle-orm';
 import { cookies } from 'next/headers';
+import { ensurePartySchema } from '@/lib/db/ensure-party-schema';
+import { ensureGlobalSettingsSchema } from '@/lib/db/ensure-global-settings-schema';
+import { ensureSystemLogsSchema } from '@/lib/db/ensure-system-logs-schema';
+import { ensurePartyUsersSchema } from '@/lib/db/ensure-party-users-schema';
 
 interface InitializeParams {
   adminPin: string;
@@ -17,6 +21,10 @@ interface InitializeParams {
  */
 export async function checkSystemStatusAction() {
   try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
+    await ensureGlobalSettingsSchema();
+    await ensureSystemLogsSchema();
     const existingParties = await db.select().from(parties).limit(1);
     return {
       partyExists: existingParties.length > 0,
@@ -44,6 +52,8 @@ export async function initializeSystemAction(params: InitializeParams) {
   const autoPin = Math.random().toString(36).substring(2, 10);
 
   try {
+    await ensurePartySchema();
+    await ensurePartyUsersSchema();
     // Validate inputs
     if (!hostName) {
       return { success: false, error: 'Host name is required' };
@@ -103,6 +113,7 @@ export async function initializeSystemAction(params: InitializeParams) {
     await seedDefaultSettings();
 
     // Step 6: Log the initialization
+    await ensureSystemLogsSchema();
     await db.insert(systemLogs).values({
       level: 'INFO',
       source: 'Genesis',
@@ -173,16 +184,7 @@ async function seedDefaultSettings() {
     { key: 'sys_session_timeout', value: '120', description: 'Auto-logout after X minutes idle', category: 'system', inputType: 'NUMBER', label: 'Session Timeout (mins)' },
   ];
 
-  // Try to add input_type and label columns if they don't exist
-  try {
-    await db.execute(sql`
-      ALTER TABLE global_settings 
-      ADD COLUMN IF NOT EXISTS input_type VARCHAR(20) DEFAULT 'TEXT',
-      ADD COLUMN IF NOT EXISTS label TEXT
-    `);
-  } catch {
-    // Columns might already exist
-  }
+  await ensureGlobalSettingsSchema();
 
   // Insert settings (upsert)
   for (const setting of defaultSettings) {
@@ -190,7 +192,7 @@ async function seedDefaultSettings() {
       await db.execute(sql`
         INSERT INTO global_settings (key, value, description, category, input_type, label)
         VALUES (${setting.key}, ${setting.value}, ${setting.description}, ${setting.category}, ${setting.inputType}, ${setting.label})
-        ON CONFLICT (key) DO UPDATE SET val = EXCLUDED.value
+        ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value
       `);
     } catch {
       // Try simpler insert without new columns

@@ -10,6 +10,7 @@ import {
 } from '@/lib/db/schema';
 import { eq, and } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
+import { ensureGameMasterSchema } from '@/lib/db/ensure-game-master-schema';
 
 type ServerActionResponse<T> = 
   | { success: true; data: T }
@@ -21,6 +22,7 @@ type ServerActionResponse<T> =
 
 export async function getGameConfig(eventId: number): Promise<ServerActionResponse<typeof gameConfig.$inferSelect | null>> {
   try {
+    await ensureGameMasterSchema();
     const config = await db.query.gameConfig.findFirst({
       where: eq(gameConfig.eventId, eventId),
     });
@@ -42,6 +44,7 @@ export async function upsertGameConfig(
   }
 ): Promise<ServerActionResponse<typeof gameConfig.$inferSelect>> {
   try {
+    await ensureGameMasterSchema();
     const existing = await db.query.gameConfig.findFirst({
       where: eq(gameConfig.eventId, eventId),
     });
@@ -78,6 +81,7 @@ export async function upsertGameConfig(
 
 export async function toggleGamePause(eventId: number): Promise<ServerActionResponse<boolean>> {
   try {
+    await ensureGameMasterSchema();
     const config = await db.query.gameConfig.findFirst({
       where: eq(gameConfig.eventId, eventId),
     });
@@ -105,6 +109,7 @@ export async function adjustPowerLevel(
   delta: number
 ): Promise<ServerActionResponse<number>> {
   try {
+    await ensureGameMasterSchema();
     const config = await db.query.gameConfig.findFirst({
       where: eq(gameConfig.eventId, eventId),
     });
@@ -133,6 +138,7 @@ export async function adjustPowerLevel(
 
 export async function getImposterHints(eventId: number): Promise<ServerActionResponse<typeof imposterHints.$inferSelect[]>> {
   try {
+    await ensureGameMasterSchema();
     const hints = await db.query.imposterHints.findMany({
       where: eq(imposterHints.eventId, eventId),
       orderBy: (hints, { desc }) => [desc(hints.createdAt)],
@@ -151,6 +157,7 @@ export async function addImposterHint(
   category: 'general' | 'action' | 'behavior' = 'general'
 ): Promise<ServerActionResponse<typeof imposterHints.$inferSelect>> {
   try {
+    await ensureGameMasterSchema();
     const [hint] = await db
       .insert(imposterHints)
       .values({ eventId, hintText, category })
@@ -173,6 +180,7 @@ export async function updateImposterHint(
   }
 ): Promise<ServerActionResponse<typeof imposterHints.$inferSelect>> {
   try {
+    await ensureGameMasterSchema();
     const [updated] = await db
       .update(imposterHints)
       .set(updates)
@@ -189,6 +197,7 @@ export async function updateImposterHint(
 
 export async function deleteImposterHint(hintId: number): Promise<ServerActionResponse<void>> {
   try {
+    await ensureGameMasterSchema();
     await db.delete(imposterHints).where(eq(imposterHints.id, hintId));
     revalidatePath('/admin/dashboard');
     return { success: true, data: undefined };
@@ -200,6 +209,7 @@ export async function deleteImposterHint(hintId: number): Promise<ServerActionRe
 
 export async function getCivilianTopics(eventId: number): Promise<ServerActionResponse<typeof civilianTopics.$inferSelect[]>> {
   try {
+    await ensureGameMasterSchema();
     const topics = await db.query.civilianTopics.findMany({
       where: eq(civilianTopics.eventId, eventId),
       orderBy: (topics, { desc }) => [desc(topics.createdAt)],
@@ -218,6 +228,7 @@ export async function addCivilianTopic(
   difficulty: 'easy' | 'medium' | 'hard' = 'medium'
 ): Promise<ServerActionResponse<typeof civilianTopics.$inferSelect>> {
   try {
+    await ensureGameMasterSchema();
     const [topic] = await db
       .insert(civilianTopics)
       .values({ eventId, topicText, difficulty })
@@ -240,6 +251,7 @@ export async function updateCivilianTopic(
   }
 ): Promise<ServerActionResponse<typeof civilianTopics.$inferSelect>> {
   try {
+    await ensureGameMasterSchema();
     const [updated] = await db
       .update(civilianTopics)
       .set(updates)
@@ -256,6 +268,7 @@ export async function updateCivilianTopic(
 
 export async function deleteCivilianTopic(topicId: number): Promise<ServerActionResponse<void>> {
   try {
+    await ensureGameMasterSchema();
     await db.delete(civilianTopics).where(eq(civilianTopics.id, topicId));
     revalidatePath('/admin/dashboard');
     return { success: true, data: undefined };

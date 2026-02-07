@@ -1,11 +1,11 @@
 {
-  "name": "FamilyVerse Party OS",
-  "short_name": "Party OS",
-  "description": "The ultimate party companion - Games, Racing, Tasks & More!",
-  "start_url": "/",
+  "name": "Party OS",
+  "short_name": "Party",
+  "description": "Join the Sim Racing, Spy Game, and Betting live!",
+  "start_url": "/join",
   "display": "standalone",
-  "background_color": "#9333EA",
-  "theme_color": "#9333EA",
+  "background_color": "#0a0118",
+  "theme_color": "#4c1d95",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

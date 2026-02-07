@@ -10,8 +10,9 @@ import { PWAInstallPrompt } from '@/components/pwa/PWAInstallPrompt';
 import { PWAHead } from '@/components/pwa/PWAHead';
 
 export const metadata: Metadata = {
-  title: 'FamilyVerse Party OS',
-  description: 'The ultimate party companion - Games, Racing, Tasks & More!',
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://alphatraders.co.za'),
+  title: "Mohammed's 26th Birthday! 🎂",
+  description: 'Join the Sim Racing, Spy Game, and Betting live!',
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.svg',
@@ -22,6 +23,16 @@ export const metadata: Metadata = {
     statusBarStyle: 'black-translucent',
     title: 'Party OS',
   },
+  openGraph: {
+    title: "Mohammed's 26th Birthday! 🎂",
+    description: 'Join the Sim Racing, Spy Game, and Betting live!',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: "Mohammed's 26th Birthday! 🎂",
+    description: 'Join the Sim Racing, Spy Game, and Betting live!',
+  },
 };
 
 export const viewport: Viewport = {
@@ -29,7 +40,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#9333EA',
+  themeColor: '#4c1d95',
+  viewportFit: 'cover',
 };
 
 export default function RootLayout({

@@ -3,12 +3,11 @@
 import { db } from '@/lib/db';
 import { systemLogs, globalSettings } from '@/lib/db/schema';
 import { eq, desc, sql } from 'drizzle-orm';
-import { getServerSession } from 'next-auth';
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 
 // Authorization helper
 async function isAuthorizedAdmin() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   return session?.user?.email === (process.env.ADMIN_EMAIL || 'mraaziqp@gmail.com');
 }
 

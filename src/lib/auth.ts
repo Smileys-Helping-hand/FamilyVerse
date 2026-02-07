@@ -1,9 +1,9 @@
-import NextAuth, { NextAuthOptions } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
+import NextAuth from 'next-auth';
+import Credentials from 'next-auth/providers/credentials';
 
-export const authOptions: NextAuthOptions = {
+export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-    CredentialsProvider({
+    Credentials({
       name: 'Admin Credentials',
       credentials: {
         email: { label: 'Email', type: 'text' },
@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
 
         // Minimal credential check: email must match and password must match env secret
         if (credentials.email === adminEmail && adminPassword && credentials.password === adminPassword) {
-          return { id: adminEmail, email: adminEmail } as any;
+          return { id: adminEmail, email: adminEmail };
         }
 
         return null;
@@ -27,13 +27,13 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.email = (user as any).email;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
       if (token?.email) {
-        session.user = { email: token.email } as any;
+        session.user = { email: token.email as string } as any;
       }
       return session;
     },
@@ -46,6 +46,5 @@ export const authOptions: NextAuthOptions = {
     error: '/admin/login',
   },
   secret: process.env.NEXTAUTH_SECRET,
-};
-
-export default NextAuth(authOptions);
+  trustHost: true,
+});

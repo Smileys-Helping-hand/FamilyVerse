@@ -20,7 +20,7 @@ import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Loader2, User, Mail, Lock, Sparkles, UserPlus } from 'lucide-react';
+import { Loader2, User, Mail, Lock, Sparkles, UserPlus, Eye, EyeOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { getOrCreateUserAction } from '@/app/actions/users';
 
@@ -35,6 +35,7 @@ export function SignupForm() {
   const { toast } = useToast();
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -178,14 +179,26 @@ export function SignupForm() {
                     <div className="relative">
                       <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input 
-                        type="password" 
+                        type={showPassword ? "text" : "password"} 
                         placeholder="••••••••" 
                         className={cn(
-                          "pl-10 h-11 border-2 transition-all duration-300",
+                          "pl-10 pr-10 h-11 border-2 transition-all duration-300",
                           "focus:border-primary focus:ring-2 focus:ring-primary/20"
                         )}
                         {...field} 
                       />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        tabIndex={-1}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </button>
                     </div>
                   </FormControl>
                   <FormMessage />

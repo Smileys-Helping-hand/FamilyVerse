@@ -9,6 +9,19 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: "frame-ancestors 'self' https://alphatraders.co.za https://www.alphatraders.co.za https://awehchat.co.za https://www.awehchat.co.za",
+          },
+        ],
+      },
+    ];
+  },
   images: {
     remotePatterns: [
       {

@@ -14,6 +14,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { CalendarIcon, Users } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { createGroupAction } from '@/app/actions/groups';
 
 export function CreateGroupForm({ onSuccess }: { onSuccess?: () => void }) {
   const { userProfile } = useAuth();
@@ -50,14 +51,24 @@ export function CreateGroupForm({ onSuccess }: { onSuccess?: () => void }) {
     setLoading(true);
 
     try {
-      // Here you would integrate with Firebase to create the group
-      // For now, this is a placeholder
-      const groupId = Math.random().toString(36).substring(2, 15);
-      const joinCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+      const result = await createGroupAction({
+        name: name.trim(),
+        description: description.trim() || 'Group created in FamilyVerse',
+        type,
+        creatorId: userProfile.uid,
+        memberIds: [userProfile.uid],
+        startDate,
+        endDate,
+        location: location.trim() || undefined,
+      });
+
+      if (!result.success || !result.group) {
+        throw new Error(result.error || 'Failed to create group');
+      }
 
       toast({
         title: "Group Created!",
-        description: `Your group "${name}" has been created. Share the join code: ${joinCode}`,
+        description: `Your group "${result.group.name}" has been created. Share the join code: ${result.group.joinCode}`,
       });
 
       if (onSuccess) onSuccess();

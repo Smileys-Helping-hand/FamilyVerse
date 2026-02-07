@@ -6,15 +6,14 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config({ path: '.env.local' });
 
-const DATABASE_URL = process.env.DATABASE_URL;
+const databaseUrl = process.env.DATABASE_URL;
 
-if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL is not set in .env.local');
-  process.exit(1);
+if (!databaseUrl) {
+  throw new Error('DATABASE_URL is not set in .env.local');
 }
 
 async function runMigration() {
-  const sql = neon(DATABASE_URL);
+  const sql = neon(databaseUrl!);
   
   console.log('🚀 Running users and families migration...');
   

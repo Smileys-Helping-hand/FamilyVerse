@@ -184,11 +184,7 @@ async function testLeaderboardLogic(simRacingId: number, dominoesId: number) {
   logInfo('Inserted 3 scores (Racer X: 120s, Newbie: 140s, Racer X: 115s)');
   
   // Query leaderboard using DISTINCT ON logic
-  const racingLeaderboard = await db.execute<{
-    user_id: string;
-    score_value: string;
-    rank: string;
-  }>(sql`
+  const racingLeaderboard = await db.execute(sql`
     WITH best_scores AS (
       SELECT DISTINCT ON (user_id)
         user_id,
@@ -244,11 +240,7 @@ async function testLeaderboardLogic(simRacingId: number, dominoesId: number) {
   
   logInfo('Inserted 2 scores (Domino King: 5 wins, Newbie: 1 win)');
   
-  const dominoesLeaderboard = await db.execute<{
-    user_id: string;
-    score_value: string;
-    rank: string;
-  }>(sql`
+  const dominoesLeaderboard = await db.execute(sql`
     WITH best_scores AS (
       SELECT DISTINCT ON (user_id)
         user_id,
@@ -283,10 +275,7 @@ async function testLeaderboardLogic(simRacingId: number, dominoesId: number) {
   
   logTest('Party MVP Calculation');
   
-  const mvpResults = await db.execute<{
-    user_id: string;
-    meta_points: string;
-  }>(sql`
+  const mvpResults = await db.execute(sql`
     WITH best_scores AS (
       SELECT DISTINCT ON (gs.user_id, gs.game_id)
         gs.user_id,

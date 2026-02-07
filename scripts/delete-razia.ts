@@ -3,15 +3,14 @@ import { neon } from '@neondatabase/serverless';
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  console.error('❌ DATABASE_URL environment variable is not set');
-  process.exit(1);
+  throw new Error('DATABASE_URL environment variable is not set');
 }
 
 async function deleteRaziaProfile() {
   console.log('🗑️  Deleting razia profile...');
   
   try {
-    const sql = neon(databaseUrl);
+    const sql = neon(databaseUrl!);
     
     // Delete from users table (matches raziashade4 or similar)
     await sql`DELETE FROM users WHERE email LIKE '%razia%' OR name LIKE '%razia%'`;

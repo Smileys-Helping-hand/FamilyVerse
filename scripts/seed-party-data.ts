@@ -27,7 +27,7 @@ async function seedPartyData() {
     ];
 
     console.log('\n👥 Creating demo racers...');
-    const createdRacers = [];
+    const createdRacers: Array<{ id: string; name: string }> = [];
 
     for (const racer of demoRacers) {
       // Check if already exists

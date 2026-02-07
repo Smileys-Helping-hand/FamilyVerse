@@ -146,7 +146,13 @@ export async function createExpenseFromReceipt(formData: FormData) {
     const remainder = totalInCents - (amountPerPerson * splitCount);
 
     // Create splits (payer owes 0)
-    const splits = [];
+    const splits: Array<{
+      expenseId: number;
+      userId: string;
+      amountOwed: number;
+      isPaid: boolean;
+      paidAt?: Date;
+    }> = [];
     
     // Payer's split (marked as paid)
     splits.push({

@@ -28,7 +28,7 @@ export async function createGroup(groupData: {
         joinCode: generateJoinCode(),
       })
       .returning();
-    return group.id.toString();
+    return group;
   } catch (error) {
     console.error('Error creating group:', error);
     throw error;
@@ -88,7 +88,7 @@ export async function joinGroup(joinCode: string, userId: string, userName: stri
       })
       .where(eq(groups.id, group.id));
 
-    return group.id.toString();
+    return group;
   } catch (error) {
     console.error('Error joining group:', error);
     throw error;

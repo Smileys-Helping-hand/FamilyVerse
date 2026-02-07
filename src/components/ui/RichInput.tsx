@@ -6,6 +6,7 @@ import { Smile, Rocket } from 'lucide-react';
 import { Button } from './button';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Theme } from 'emoji-picker-react';
 
 // Dynamically import emoji picker to avoid SSR issues
 const EmojiPicker = dynamic(() => import('emoji-picker-react'), {
@@ -297,7 +298,7 @@ export const RichInput = forwardRef<HTMLTextAreaElement, RichInputProps>(
             >
               <EmojiPicker
                 onEmojiClick={handleEmojiSelect}
-                theme="dark"
+                theme={Theme.DARK}
                 width={350}
                 height={450}
                 searchPlaceHolder="Search emojis..."

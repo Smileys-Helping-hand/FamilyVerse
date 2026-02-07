@@ -61,6 +61,11 @@ export function ExpenseScanner({
       return;
     }
 
+    if (availableFriends.length === 0) {
+      setError('Add party friends before splitting expenses');
+      return;
+    }
+
     if (selectedFriends.length === 0) {
       setError('Please select at least one friend to split with');
       return;
@@ -141,7 +146,13 @@ export function ExpenseScanner({
           </div>
 
           {/* Friend Selection */}
-          {file && (
+          {file && availableFriends.length === 0 && (
+            <div className="rounded-lg border border-dashed p-4 text-center text-sm text-muted-foreground">
+              No party friends yet. Invite guests to join before splitting expenses.
+            </div>
+          )}
+
+          {file && availableFriends.length > 0 && (
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}

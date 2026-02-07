@@ -1,47 +1,42 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { CreateGroupForm } from '@/components/groups/CreateGroupForm';
 import { JoinGroupForm } from '@/components/groups/JoinGroupForm';
 import { GroupCard } from '@/components/groups/GroupCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Users, Plus, UserPlus } from 'lucide-react';
-
-// Mock data - replace with Firebase data
-const mockGroups = [
-  {
-    id: 1,
-    name: 'Weekend Mountain Trip',
-    description: 'A relaxing weekend getaway to the mountains with friends',
-    type: 'trip' as const,
-    joinCode: 'MTN2024',
-    creatorId: 'user1',
-    memberIds: ['user1', 'user2', 'user3'],
-    createdAt: new Date('2024-01-15'),
-    startDate: new Date('2024-03-10'),
-    endDate: new Date('2024-03-12'),
-    location: 'Lake District, UK',
-  },
-  {
-    id: 2,
-    name: 'Summer BBQ Party',
-    description: 'Annual summer barbecue at the park',
-    type: 'event' as const,
-    joinCode: 'BBQ2024',
-    creatorId: 'user1',
-    memberIds: ['user1', 'user2', 'user3', 'user4', 'user5'],
-    createdAt: new Date('2024-02-01'),
-    startDate: new Date('2024-07-15'),
-    location: 'Central Park',
-  },
-];
+import { useAuth } from '@/context/AuthContext';
+import { getUserGroupsAction } from '@/app/actions/groups';
 
 export default function GroupsPage() {
-  const [refreshKey, setRefreshKey] = useState(0);
+  const [groups, setGroups] = useState<any[]>([]);
+  const [loading, setLoading] = useState(false);
+  const { userProfile } = useAuth();
+
+  const loadGroups = async () => {
+    if (!userProfile?.uid) {
+      setGroups([]);
+      return;
+    }
+
+    setLoading(true);
+    const result = await getUserGroupsAction(userProfile.uid);
+    if (result.success) {
+      setGroups(result.groups || []);
+    } else {
+      setGroups([]);
+    }
+    setLoading(false);
+  };
+
+  useEffect(() => {
+    loadGroups();
+  }, [userProfile?.uid]);
 
   const handleRefresh = () => {
-    setRefreshKey(prev => prev + 1);
+    loadGroups();
   };
 
   return (
@@ -70,7 +65,14 @@ export default function GroupsPage() {
         </TabsList>
 
         <TabsContent value="my-groups" className="space-y-4">
-          {mockGroups.length === 0 ? (
+          {loading ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>Loading Groups...</CardTitle>
+                <CardDescription>Fetching your latest groups.</CardDescription>
+              </CardHeader>
+            </Card>
+          ) : groups.length === 0 ? (
             <Card>
               <CardHeader>
                 <CardTitle>No Groups Yet</CardTitle>
@@ -81,7 +83,7 @@ export default function GroupsPage() {
             </Card>
           ) : (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {mockGroups.map(group => (
+              {groups.map(group => (
                 <GroupCard 
                   key={group.id} 
                   group={group} 

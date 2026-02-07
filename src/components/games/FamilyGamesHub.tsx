@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { partyGames, type PartyGame, getGamesByCategory } from "@/lib/data/games";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { 
   Users, 
@@ -29,6 +29,13 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { EnhancedGameSession } from './EnhancedGameSession';
+import { useAuth } from "@/context/AuthContext";
+import {
+  addGuestFamilyGameParticipantAction,
+  getParticipantsForGamesAction,
+  joinFamilyGameAction,
+  removeFamilyGameParticipantAction,
+} from "@/app/actions/family-games";
 
 const categoryIcons = {
   icebreaker: MessageCircle,
@@ -56,11 +63,44 @@ const difficultyColors = {
   hard: "bg-red-100 text-red-700 border-red-300",
 };
 
+type GameParticipant = {
+  id: number;
+  name: string;
+  userId?: string | null;
+  addedBy: string;
+  joinedAt: string;
+};
+
 export function FamilyGamesHub() {
   const { toast } = useToast();
+  const { userProfile } = useAuth();
   const [selectedGame, setSelectedGame] = useState<PartyGame | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [activeGameSession, setActiveGameSession] = useState<PartyGame | null>(null);
+  const [participantsByGame, setParticipantsByGame] = useState<Record<string, GameParticipant[]>>({});
+  const [newParticipantName, setNewParticipantName] = useState("");
+  const [participantsLoading, setParticipantsLoading] = useState(false);
+
+  const gameIds = useMemo(() => partyGames.map((game) => game.id), []);
+
+  useEffect(() => {
+    const loadParticipants = async () => {
+      setParticipantsLoading(true);
+      const result = await getParticipantsForGamesAction(gameIds);
+      if (result.success) {
+        setParticipantsByGame(result.participantsByGame as Record<string, GameParticipant[]>);
+      } else {
+        toast({
+          title: "Failed to load participants",
+          description: result.error || "Please try again.",
+          variant: "destructive",
+        });
+      }
+      setParticipantsLoading(false);
+    };
+
+    loadParticipants();
+  }, [gameIds, toast]);
 
   // If there's an active game session, show the game manager
   if (activeGameSession) {
@@ -86,6 +126,105 @@ export function FamilyGamesHub() {
   const filteredGames = selectedCategory === "all" 
     ? partyGames 
     : getGamesByCategory(selectedCategory as PartyGame['category']);
+
+  const getParticipants = (gameId: string) => participantsByGame[gameId] || [];
+
+  const isUserJoined = (gameId: string) =>
+    !!userProfile?.uid && getParticipants(gameId).some((p) => p.userId === userProfile.uid);
+
+  const addParticipant = (gameId: string, participant: GameParticipant) => {
+    setParticipantsByGame((prev) => {
+      const existing = prev[gameId] || [];
+      return { ...prev, [gameId]: [...existing, participant] };
+    });
+  };
+
+  const handleJoinGame = async (game: PartyGame) => {
+    if (!userProfile?.uid || !userProfile?.name) {
+      toast({
+        title: "Sign up to join",
+        description: "Create an account to track your participation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (isUserJoined(game.id)) {
+      toast({
+        title: "Already joined",
+        description: `You're already participating in ${game.name}.`,
+      });
+      return;
+    }
+
+    const result = await joinFamilyGameAction(game.id, userProfile.uid, userProfile.name);
+    if (result.success && result.participant) {
+      addParticipant(game.id, result.participant as GameParticipant);
+      toast({
+        title: "Joined game",
+        description: `You're in for ${game.name}.`,
+      });
+      return;
+    }
+
+    toast({
+      title: "Join failed",
+      description: result.error || "Please try again.",
+      variant: "destructive",
+    });
+  };
+
+  const handleAddParticipant = async () => {
+    if (!selectedGame) return;
+    const trimmed = newParticipantName.trim();
+    if (!trimmed) {
+      toast({
+        title: "Name required",
+        description: "Enter a player name to add them.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await addGuestFamilyGameParticipantAction(
+      selectedGame.id,
+      trimmed,
+      userProfile?.uid || "manual"
+    );
+
+    if (result.success && result.participant) {
+      addParticipant(selectedGame.id, result.participant as GameParticipant);
+      setNewParticipantName("");
+      toast({
+        title: "Player added",
+        description: `${trimmed} was added to ${selectedGame.name}.`,
+      });
+      return;
+    }
+
+    toast({
+      title: "Add failed",
+      description: result.error || "Please try again.",
+      variant: "destructive",
+    });
+  };
+
+  const handleRemoveParticipant = async (gameId: string, participantId: number) => {
+    const result = await removeFamilyGameParticipantAction(participantId);
+    if (result.success) {
+      setParticipantsByGame((prev) => {
+        const existing = prev[gameId] || [];
+        return { ...prev, [gameId]: existing.filter((p) => p.id !== participantId) };
+      });
+      return;
+    }
+
+    toast({
+      title: "Remove failed",
+      description: result.error || "Please try again.",
+      variant: "destructive",
+    });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-700">
@@ -145,6 +284,8 @@ export function FamilyGamesHub() {
         {filteredGames.map((game, index) => {
           const Icon = categoryIcons[game.category];
           const gradient = categoryColors[game.category];
+          const participantCount = getParticipants(game.id).length;
+          const joined = isUserJoined(game.id);
           
           return (
             <Card
@@ -192,6 +333,9 @@ export function FamilyGamesHub() {
                     <Clock className="h-3 w-3 mr-1" />
                     {game.duration}
                   </Badge>
+                  <Badge variant="secondary" className="text-xs">
+                    {participantCount} joined
+                  </Badge>
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
@@ -209,12 +353,30 @@ export function FamilyGamesHub() {
                     ))}
                     <span className="text-sm font-medium ml-1">{game.funFactor}</span>
                   </div>
-                  <Button
-                    size="sm"
-                    className="bg-gradient-to-r from-primary to-secondary hover:scale-105 transition-transform"
-                  >
-                    Play Now
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleJoinGame(game);
+                      }}
+                      className="bg-gradient-to-r from-primary to-secondary hover:scale-105 transition-transform"
+                      disabled={joined || participantsLoading}
+                    >
+                      {joined ? "Joined" : "Join"}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        setSelectedGame(game);
+                      }}
+                      disabled={participantsLoading}
+                    >
+                      Add Player
+                    </Button>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -223,7 +385,15 @@ export function FamilyGamesHub() {
       </div>
 
       {/* Game Details Dialog */}
-      <Dialog open={!!selectedGame} onOpenChange={() => setSelectedGame(null)}>
+      <Dialog
+        open={!!selectedGame}
+        onOpenChange={(open) => {
+          if (!open) {
+            setSelectedGame(null);
+            setNewParticipantName("");
+          }
+        }}
+      >
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
           {selectedGame && (
             <div className="space-y-6">
@@ -344,6 +514,64 @@ export function FamilyGamesHub() {
                       </li>
                     ))}
                   </ul>
+                </CardContent>
+              </Card>
+
+              <Card className="bg-gradient-to-br from-slate-900/60 to-slate-800/60 border-2 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-lg text-white">Participants</CardTitle>
+                  <CardDescription className="text-slate-300">
+                    Track who is playing this game.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {getParticipants(selectedGame.id).length === 0 ? (
+                    <p className="text-sm text-slate-400">
+                      No participants yet. Add players or join yourself.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {getParticipants(selectedGame.id).map((participant) => (
+                        <div
+                          key={participant.id}
+                          className="flex items-center justify-between rounded-lg border border-slate-700 bg-slate-900/60 p-3"
+                        >
+                          <div>
+                            <p className="font-medium text-slate-100">{participant.name}</p>
+                            <p className="text-xs text-slate-400">Joined {new Date(participant.joinedAt).toLocaleString()}</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleRemoveParticipant(selectedGame.id, participant.id)}
+                          >
+                            Remove
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <Input
+                      value={newParticipantName}
+                      onChange={(event) => setNewParticipantName(event.target.value)}
+                      placeholder="Add player name"
+                      className="bg-slate-900/70 border-slate-700 text-white"
+                    />
+                    <Button onClick={handleAddParticipant} className="shrink-0" disabled={participantsLoading}>
+                      Add Player
+                    </Button>
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => handleJoinGame(selectedGame)}
+                    disabled={isUserJoined(selectedGame.id) || participantsLoading}
+                  >
+                    {isUserJoined(selectedGame.id) ? "You are joined" : "Join this game"}
+                  </Button>
                 </CardContent>
               </Card>
 

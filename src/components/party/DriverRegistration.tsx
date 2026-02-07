@@ -21,32 +21,34 @@ export function DriverRegistration({ userId, gameId }: DriverRegistrationProps) 
   const [bettingOpen, setBettingOpen] = useState(false);
   const [raceStarted, setRaceStarted] = useState(false);
   const { toast } = useToast();
+  const { bind, unbind } = usePartySocket('sim-racing');
 
   // Listen for race state changes
-  usePartySocket({
-    channel: 'sim-racing',
-    event: 'betting-open',
-    callback: () => {
+  useEffect(() => {
+    const handleBettingOpen = () => {
       setBettingOpen(true);
       toast({
         title: '🎰 BETTING IS OPEN!',
         description: '60 seconds to place your bets!',
       });
-    },
-  });
+    };
 
-  usePartySocket({
-    channel: 'sim-racing',
-    event: 'race-started',
-    callback: () => {
+    const handleRaceStarted = () => {
       setRaceStarted(true);
       setBettingOpen(false);
       toast({
         title: '🏁 RACE STARTED!',
         description: 'Betting is now closed. Good luck!',
       });
-    },
-  });
+    };
+
+    bind('betting-open', handleBettingOpen);
+    bind('race-started', handleRaceStarted);
+    return () => {
+      unbind('betting-open');
+      unbind('race-started');
+    };
+  }, [bind, unbind, toast]);
 
   const handleRegister = async () => {
     const result = await registerAsDriverAction(gameId);

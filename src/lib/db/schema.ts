@@ -176,6 +176,15 @@ export const gameScores = pgTable('game_scores', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+export const familyGameParticipants = pgTable('family_game_participants', {
+  id: serial('id').primaryKey(),
+  gameId: text('game_id').notNull(),
+  userId: text('user_id'),
+  userName: text('user_name').notNull(),
+  addedBy: text('added_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // ============================================
 // MODULE 3: IMPOSTER GAME ENGINE
 // ============================================
@@ -712,6 +721,8 @@ export type Game = typeof games.$inferSelect;
 export type NewGame = typeof games.$inferInsert;
 export type GameScore = typeof gameScores.$inferSelect;
 export type NewGameScore = typeof gameScores.$inferInsert;
+export type FamilyGameParticipant = typeof familyGameParticipants.$inferSelect;
+export type NewFamilyGameParticipant = typeof familyGameParticipants.$inferInsert;
 
 // Module 3 types
 export type GameSession = typeof gameSessions.$inferSelect;

@@ -13,6 +13,11 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, ThumbsUp, ThumbsDown, ExternalLink, MapPin, DollarSign, Star, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  addRecommendationAction,
+  deleteRecommendationAction,
+  voteRecommendationAction,
+} from '@/app/actions/groups';
 
 interface RecommendationsManagerProps {
   groupId: number;
@@ -40,7 +45,7 @@ export function RecommendationsManager({
     notes: '',
   });
 
-  const handleAddRecommendation = () => {
+  const handleAddRecommendation = async () => {
     if (!newRec.title.trim()) {
       toast({
         title: "Error",
@@ -50,7 +55,36 @@ export function RecommendationsManager({
       return;
     }
 
-    // Here you would save to Firebase
+    if (!currentUserId) {
+      toast({
+        title: "Sign in required",
+        description: "You must be logged in to add recommendations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await addRecommendationAction({
+      groupId: String(groupId),
+      type: newRec.type,
+      title: newRec.title.trim(),
+      description: newRec.description.trim() || 'Recommendation',
+      location: newRec.location.trim() || undefined,
+      url: newRec.url.trim() || undefined,
+      price: newRec.price || undefined,
+      notes: newRec.notes.trim() || undefined,
+      suggestedBy: currentUserId,
+    });
+
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to add recommendation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Recommendation Added",
       description: `"${newRec.title}" has been added to recommendations.`,
@@ -69,16 +103,52 @@ export function RecommendationsManager({
     if (onUpdate) onUpdate();
   };
 
-  const handleVote = (recId: number, vote: 'up' | 'down') => {
-    // Here you would update Postgres
+  const handleVote = async (recId: number, vote: 'up' | 'down') => {
+    if (!currentUserId) {
+      toast({
+        title: "Sign in required",
+        description: "You must be logged in to vote.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await voteRecommendationAction(String(recId), currentUserId, vote);
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to update vote.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       description: vote === 'up' ? "Vote added" : "Vote removed",
     });
     if (onUpdate) onUpdate();
   };
 
-  const handleDelete = (recId: number) => {
-    // Here you would delete from Postgres
+  const handleDelete = async (recId: number) => {
+    if (!currentUserId) {
+      toast({
+        title: "Sign in required",
+        description: "You must be logged in to delete recommendations.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await deleteRecommendationAction(String(recId));
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to delete recommendation.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       description: "Recommendation deleted",
     });

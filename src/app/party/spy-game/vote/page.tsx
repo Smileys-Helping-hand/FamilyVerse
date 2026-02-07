@@ -225,7 +225,10 @@ export default function SpyGameVote() {
 
           <div className="mt-6 text-center">
             <Button
-              onClick={() => setVotingComplete(true) || triggerDrumRoll()}
+              onClick={() => {
+                setVotingComplete(true);
+                triggerDrumRoll();
+              }}
               disabled={Object.keys(votes).length < 3}
               size="lg"
               className="bg-red-600 hover:bg-red-700 text-white"

@@ -51,13 +51,7 @@ export async function getGameLeaderboard(
     // SQL query that:
     // 1. Gets best score per user using DISTINCT ON
     // 2. Ranks users using RANK() window function
-    const leaderboard = await db.execute<{
-      user_id: string;
-      score_value: string;
-      rank: string;
-      proof_image_url: string | null;
-      created_at: string;
-    }>(sql`
+    const leaderboard = await db.execute(sql`
       WITH best_scores AS (
         SELECT DISTINCT ON (user_id)
           user_id,
@@ -107,12 +101,7 @@ export async function getPartyMVP(
   eventId: number
 ): Promise<{ success: boolean; data?: PartyMVPEntry[]; error?: string }> {
   try {
-    const mvpResults = await db.execute<{
-      user_id: string;
-      meta_points: string;
-      games_won: string;
-      total_games: string;
-    }>(sql`
+    const mvpResults = await db.execute(sql`
       WITH best_scores AS (
         SELECT DISTINCT ON (gs.user_id, gs.game_id)
           gs.user_id,

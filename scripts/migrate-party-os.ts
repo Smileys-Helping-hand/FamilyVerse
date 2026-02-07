@@ -5,15 +5,14 @@ import { join } from 'path';
 const databaseUrl = process.env.DATABASE_URL;
 
 if (!databaseUrl) {
-  console.error('❌ DATABASE_URL environment variable is not set');
-  process.exit(1);
+  throw new Error('DATABASE_URL environment variable is not set');
 }
 
 async function migratePartyOS() {
   console.log('🚀 Starting Party OS migration...');
   
   try {
-    const sql = neon(databaseUrl);
+    const sql = neon(databaseUrl!);
     
     // Create tables one by one
     console.log('📋 Creating party_users table...');

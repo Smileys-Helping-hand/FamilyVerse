@@ -336,7 +336,12 @@ export async function getEducationalRecommendations(
 
   // This would integrate with an educational content API
   // For now, return sample recommendations based on age and allowed categories
-  const recommendations = [];
+  const recommendations: Array<{
+    title: string;
+    category: string;
+    ageRating: string;
+    description: string;
+  }> = [];
 
   if (policy.allowedCategories.includes("educational")) {
     recommendations.push({

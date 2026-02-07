@@ -13,12 +13,11 @@ interface DeathOverlayProps {
 export function DeathOverlay({ userId }: DeathOverlayProps) {
   const [isDead, setIsDead] = useState(false);
   const [showOverlay, setShowOverlay] = useState(false);
+  const { bind, unbind } = usePartySocket(`party-user-${userId}`);
 
   // Listen for death event on user-specific channel
-  usePartySocket({
-    channel: `party-user-${userId}`,
-    event: 'you-are-dead',
-    callback: () => {
+  useEffect(() => {
+    const handleDeath = () => {
       setIsDead(true);
       setShowOverlay(true);
 
@@ -26,8 +25,11 @@ export function DeathOverlay({ userId }: DeathOverlayProps) {
       setTimeout(() => {
         setShowOverlay(false);
       }, 5000);
-    },
-  });
+    };
+
+    bind('you-are-dead', handleDeath);
+    return () => unbind('you-are-dead');
+  }, [bind, unbind]);
 
   return (
     <>

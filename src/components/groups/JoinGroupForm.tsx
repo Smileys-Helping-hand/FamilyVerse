@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
 import { UserPlus } from 'lucide-react';
+import { joinGroupAction } from '@/app/actions/groups';
 
 export function JoinGroupForm({ onSuccess }: { onSuccess?: () => void }) {
   const { userProfile } = useAuth();
@@ -39,12 +40,21 @@ export function JoinGroupForm({ onSuccess }: { onSuccess?: () => void }) {
     setLoading(true);
 
     try {
-      // Here you would integrate with Firebase to join the group
-      // For now, this is a placeholder
-      
+      const displayName = userProfile.name || userProfile.email || 'User';
+      const result = await joinGroupAction(
+        joinCode.trim(),
+        userProfile.uid,
+        displayName,
+        userProfile.email || ''
+      );
+
+      if (!result.success || !result.group) {
+        throw new Error(result.error || 'Failed to join group');
+      }
+
       toast({
         title: "Joined Group!",
-        description: "You've successfully joined the group.",
+        description: `You've joined "${result.group.name}".`,
       });
 
       setJoinCode('');
@@ -53,7 +63,7 @@ export function JoinGroupForm({ onSuccess }: { onSuccess?: () => void }) {
       console.error('Error joining group:', error);
       toast({
         title: "Error",
-        description: "Invalid join code or group not found.",
+        description: error instanceof Error ? error.message : "Invalid join code or group not found.",
         variant: "destructive",
       });
     } finally {

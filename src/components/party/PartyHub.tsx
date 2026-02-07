@@ -6,7 +6,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Brain, Trophy, Users, Receipt } from 'lucide-react';
 import { LiveLeaderboard } from '@/components/party/LiveLeaderboard';
 import { PartyMVPLeaderboard } from '@/components/party/PartyMVPLeaderboard';
-import { ImposterDashboard } from '@/components/party/ImposterDashboard';
 import { ExpenseScanner } from '@/components/party/ExpenseScanner';
 
 interface PartyHubProps {
@@ -17,19 +16,8 @@ interface PartyHubProps {
 
 export default function PartyHub({ eventId, userId, isHost = false }: PartyHubProps) {
   const [activeTab, setActiveTab] = useState('overview');
-
-  // Mock data - replace with real data from your auth/database
-  const mockFriends = [
-    { id: 'user2', name: 'Bob Smith' },
-    { id: 'user3', name: 'Charlie Brown' },
-    { id: 'user4', name: 'Diana Prince' },
-  ];
-
-  const mockGames = [
-    { id: 1, name: 'Sim Racing', scoringType: 'TIME_ASC' as const },
-    { id: 2, name: 'Dominoes', scoringType: 'SCORE_DESC' as const },
-    { id: 3, name: 'VR Beat Saber', scoringType: 'SCORE_DESC' as const },
-  ];
+  const availableFriends: Array<{ id: string; name: string }> = [];
+  const games: Array<{ id: number; name: string; scoringType: 'TIME_ASC' | 'SCORE_DESC' }> = [];
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -127,23 +115,8 @@ export default function PartyHub({ eventId, userId, isHost = false }: PartyHubPr
               <CardDescription>Real-time party metrics</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-3xl font-bold">12</p>
-                  <p className="text-sm text-muted-foreground">Attendees</p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-3xl font-bold">8</p>
-                  <p className="text-sm text-muted-foreground">Games Played</p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-3xl font-bold">$247</p>
-                  <p className="text-sm text-muted-foreground">Total Expenses</p>
-                </div>
-                <div className="text-center p-4 bg-muted rounded-lg">
-                  <p className="text-3xl font-bold">4.5h</p>
-                  <p className="text-sm text-muted-foreground">Party Duration</p>
-                </div>
+              <div className="rounded-lg border border-dashed p-6 text-center text-muted-foreground">
+                No live stats yet. Start a game or invite guests to begin tracking.
               </div>
             </CardContent>
           </Card>
@@ -155,18 +128,29 @@ export default function PartyHub({ eventId, userId, isHost = false }: PartyHubPr
           <PartyMVPLeaderboard eventId={eventId} refreshInterval={10000} />
 
           {/* Individual Game Leaderboards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {mockGames.map((game) => (
-              <LiveLeaderboard
-                key={game.id}
-                gameId={game.id}
-                eventId={eventId}
-                gameName={game.name}
-                scoringType={game.scoringType}
-                refreshInterval={10000}
-              />
-            ))}
-          </div>
+          {games.length === 0 ? (
+            <Card>
+              <CardHeader>
+                <CardTitle>No Games Yet</CardTitle>
+                <CardDescription>
+                  Once games are created, leaderboards will appear here.
+                </CardDescription>
+              </CardHeader>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {games.map((game) => (
+                <LiveLeaderboard
+                  key={game.id}
+                  gameId={game.id}
+                  eventId={eventId}
+                  gameName={game.name}
+                  scoringType={game.scoringType}
+                  refreshInterval={10000}
+                />
+              ))}
+            </div>
+          )}
         </TabsContent>
 
         {/* Imposter Game Tab */}
@@ -214,7 +198,7 @@ export default function PartyHub({ eventId, userId, isHost = false }: PartyHubPr
           <ExpenseScanner
             eventId={eventId}
             payerId={userId}
-            availableFriends={mockFriends}
+            availableFriends={availableFriends}
             onSuccess={() => {
               console.log('Receipt processed successfully!');
             }}

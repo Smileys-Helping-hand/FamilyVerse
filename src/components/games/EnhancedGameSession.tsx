@@ -734,7 +734,7 @@ export function EnhancedGameSession({ game, onExit }: GameSessionProps) {
                 <div className="flex flex-wrap gap-4 text-sm text-slate-400">
                   <div className="flex items-center gap-2">
                     <Users className="w-4 h-4" />
-                    {game.players}
+                    {game.minPlayers}-{game.maxPlayers} players
                   </div>
                   <div className="flex items-center gap-2">
                     <Clock className="w-4 h-4" />

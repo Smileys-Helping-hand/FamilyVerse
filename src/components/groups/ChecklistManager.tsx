@@ -17,14 +17,20 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import {
+  addChecklistItemAction,
+  deleteChecklistItemAction,
+  updateChecklistItemAction,
+} from '@/app/actions/groups';
 
 interface ChecklistManagerProps {
   groupId: number;
   items: ChecklistItem[];
+  currentUserId: string;
   onUpdate?: () => void;
 }
 
-export function ChecklistManager({ groupId, items, onUpdate }: ChecklistManagerProps) {
+export function ChecklistManager({ groupId, items, currentUserId, onUpdate }: ChecklistManagerProps) {
   const { toast } = useToast();
   const [isAddingItem, setIsAddingItem] = useState(false);
   const [filter, setFilter] = useState<'all' | 'packing' | 'todo' | 'shopping' | 'other'>('all');
@@ -36,7 +42,7 @@ export function ChecklistManager({ groupId, items, onUpdate }: ChecklistManagerP
     dueDate: undefined as Date | undefined,
   });
 
-  const handleAddItem = () => {
+  const handleAddItem = async () => {
     if (!newItem.title.trim()) {
       toast({
         title: "Error",
@@ -46,7 +52,34 @@ export function ChecklistManager({ groupId, items, onUpdate }: ChecklistManagerP
       return;
     }
 
-    // Here you would save to Firebase
+    if (!currentUserId) {
+      toast({
+        title: "Sign in required",
+        description: "You must be logged in to add checklist items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await addChecklistItemAction({
+      groupId: String(groupId),
+      title: newItem.title.trim(),
+      description: newItem.description.trim() || undefined,
+      category: newItem.category,
+      priority: newItem.priority,
+      dueDate: newItem.dueDate,
+      createdBy: currentUserId,
+    });
+
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to add checklist item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: "Item Added",
       description: `"${newItem.title}" has been added to the checklist.`,
@@ -63,16 +96,57 @@ export function ChecklistManager({ groupId, items, onUpdate }: ChecklistManagerP
     if (onUpdate) onUpdate();
   };
 
-  const handleToggleComplete = (itemId: number, completed: boolean) => {
-    // Here you would update Postgres
+  const handleToggleComplete = async (itemId: number, completed: boolean) => {
+    if (!currentUserId) {
+      toast({
+        title: "Sign in required",
+        description: "You must be logged in to update checklist items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await updateChecklistItemAction(String(itemId), {
+      completed,
+      completedAt: completed ? new Date() : undefined,
+      completedBy: completed ? currentUserId : undefined,
+    });
+
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to update checklist item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       description: completed ? "Item marked as complete" : "Item marked as incomplete",
     });
     if (onUpdate) onUpdate();
   };
 
-  const handleDeleteItem = (itemId: number) => {
-    // Here you would delete from Postgres
+  const handleDeleteItem = async (itemId: number) => {
+    if (!currentUserId) {
+      toast({
+        title: "Sign in required",
+        description: "You must be logged in to delete checklist items.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const result = await deleteChecklistItemAction(String(itemId));
+    if (!result.success) {
+      toast({
+        title: "Error",
+        description: result.error || "Failed to delete checklist item.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       description: "Item deleted from checklist",
     });

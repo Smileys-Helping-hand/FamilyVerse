@@ -422,7 +422,7 @@ export async function eliminatePlayer(sessionId: string) {
     const imposterAlive = alivePlayers.some((p) => p.role === 'IMPOSTER');
     const civiliansAlive = alivePlayers.filter((p) => p.role === 'CIVILIAN').length;
 
-    let winner = null;
+    let winner: 'CIVILIANS' | 'IMPOSTER' | null = null;
     if (!imposterAlive) {
       winner = 'CIVILIANS';
       await db

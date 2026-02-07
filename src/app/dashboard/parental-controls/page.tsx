@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ChildProfileCard } from "@/components/parental-controls/ChildProfileCard";
@@ -19,9 +19,8 @@ export default function ParentalControlsPage() {
   const [selectedChild, setSelectedChild] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState("overview");
 
-  // Mock data for demonstration
-  const mockScreenTime: Record<string, number> = {};
-  const mockReports: Record<string, ActivityReport> = {};
+  const screenTimeByChild: Record<string, number> = {};
+  const activityReports: Record<string, ActivityReport> = {};
 
   const handleAddChild = (childData: Omit<ChildProfile, "id" | "createdAt">) => {
     const newChild: ChildProfile = {
@@ -109,7 +108,7 @@ export default function ParentalControlsPage() {
                 <ChildProfileCard
                   key={child.id}
                   child={child}
-                  screenTimeToday={mockScreenTime[child.id] || 45}
+                  screenTimeToday={screenTimeByChild[child.id] ?? 0}
                   screenTimeLimit={120}
                   onManage={handleManageChild}
                 />
@@ -248,9 +247,9 @@ export default function ParentalControlsPage() {
                   </Button>
                 </div>
 
-                {mockReports[selectedChild] ? (
+                {activityReports[selectedChild] ? (
                   <ActivityReportView
-                    report={mockReports[selectedChild]}
+                    report={activityReports[selectedChild]}
                     childName={children.find((c) => c.id === selectedChild)?.name || ""}
                   />
                 ) : (

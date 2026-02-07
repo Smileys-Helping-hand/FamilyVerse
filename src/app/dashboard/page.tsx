@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Share2, Users, Copy, Sparkles, Heart, Star, PartyPopper, Video, Gamepad2, Shield } from 'lucide-react';
+import { ArrowRight, Share2, Users, Copy, Sparkles, Heart, Star, PartyPopper, Video, Gamepad2, Shield, Skull, UserPlus } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -12,6 +12,7 @@ import { FamilyStats } from '@/components/dashboard/FamilyStats';
 import { ActivityFeed } from '@/components/dashboard/ActivityFeed';
 import { QuickActions } from '@/components/dashboard/QuickActions';
 import { UpcomingEvents } from '@/components/dashboard/UpcomingEvents';
+import { ImposterCard } from '@/components/party/ImposterCard';
 
 export default function DashboardPage() {
     const { userProfile, family, loading } = useAuth();
@@ -275,6 +276,74 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Imposter Dashboard */}
+            <Card className={cn(
+                "relative overflow-hidden border-2 border-red-500/40",
+                "bg-gradient-to-br from-red-950/70 via-slate-900/80 to-red-900/60",
+                "shadow-lg shadow-red-500/10"
+            )}>
+                <CardHeader>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                            <div className="p-3 rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 shadow-xl">
+                                <Skull className="h-6 w-6 text-white" />
+                            </div>
+                            <div>
+                                <CardTitle className="text-2xl text-white">Imposter HQ</CardTitle>
+                                <CardDescription className="text-red-100/80">
+                                    Live role reveal, alerts, and status for the current round.
+                                </CardDescription>
+                            </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                            <Link href="/party/join">
+                                <Button className="bg-gradient-to-r from-red-500 to-orange-500 hover:shadow-xl">
+                                    Join Party
+                                </Button>
+                            </Link>
+                            <Link href="/party/dashboard">
+                                <Button variant="outline" className="border-red-300/40 text-white hover:bg-white/10">
+                                    Open Party Dashboard
+                                </Button>
+                            </Link>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="max-w-3xl">
+                        <ImposterCard />
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Sign Up CTA */}
+            <Card className={cn(
+                "border-2 border-blue-500/30",
+                "bg-gradient-to-br from-blue-950/50 via-slate-900/70 to-cyan-900/40"
+            )}>
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2 text-white">
+                        <UserPlus className="h-5 w-5 text-cyan-300" />
+                        Invite Friends to Sign Up
+                    </CardTitle>
+                    <CardDescription className="text-blue-100/80">
+                        Get everyone an account so their games, scores, and participation are tracked.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex flex-col sm:flex-row gap-3">
+                    <Link href="/signup" className="flex-1">
+                        <Button className="w-full bg-gradient-to-r from-cyan-500 to-blue-600">
+                            Create an Account
+                        </Button>
+                    </Link>
+                    <Link href="/login" className="flex-1">
+                        <Button variant="outline" className="w-full border-blue-300/40 text-white hover:bg-white/10">
+                            Log In
+                        </Button>
+                    </Link>
+                </CardContent>
+            </Card>
 
             {/* New Groups Card */}
             <Card className={cn(

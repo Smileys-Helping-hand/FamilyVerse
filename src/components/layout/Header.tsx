@@ -10,7 +10,7 @@ import { usePathname } from 'next/navigation';
 import { ThemeSwitcher } from '../ui/theme-switcher';
 import { NotificationCenter } from '../ui/notification-center';
 import { cn } from '@/lib/utils';
-import { useSession, signIn, signOut } from 'next-auth/react';
+// next-auth removed from header controls; admin sign-in moved to /admin/login
 
 export default function Header() {
     const { userProfile, loading } = useAuth();
@@ -119,9 +119,7 @@ export default function Header() {
                         ) : (
                             <>
                                 {userProfile && <UserNav userProfile={userProfile} />}
-                                <div className="ml-2">
-                                    <AdminAuthControls />
-                                </div>
+                                {/* Admin sign-in removed from header; use /admin/login for access */}
                             </>
                         )}
                     </nav>

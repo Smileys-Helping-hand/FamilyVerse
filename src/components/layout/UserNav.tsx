@@ -86,12 +86,14 @@ export function UserNav({ userProfile }: UserNavProps) {
                             <span>Party Games 🎮</span>
                         </DropdownMenuItem>
                     </Link>
-                    <Link href="/admin/control">
-                        <DropdownMenuItem>
-                            <Shield className="mr-2 h-4 w-4" />
-                            <span>Admin Control Panel</span>
-                        </DropdownMenuItem>
-                    </Link>
+                    {(userProfile.role === 'admin' || userProfile.email === process.env.NEXT_PUBLIC_ADMIN_EMAIL) && (
+                        <Link href="/admin">
+                            <DropdownMenuItem>
+                                <Shield className="mr-2 h-4 w-4" />
+                                <span>Admin Control Panel</span>
+                            </DropdownMenuItem>
+                        </Link>
+                    )}
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>

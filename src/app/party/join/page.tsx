@@ -234,13 +234,21 @@ export default function PartyJoinPage() {
                 </Button>
 
                 {/* Host Login Link */}
-                <div className="pt-4 border-t">
+                <div className="pt-4 border-t space-y-3">
+                  <Link href="/setup/genesis" className="block">
+                    <Button 
+                      variant="outline" 
+                      className="w-full border-2 border-green-500 text-green-600 hover:bg-green-50 font-semibold"
+                    >
+                      🎉 Create New Party
+                    </Button>
+                  </Link>
                   <button
                     onClick={() => setShowAdminLogin(true)}
                     className="w-full text-sm text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center gap-2"
                   >
                     <Shield className="h-4 w-4" />
-                    Host Login
+                    Already a Host? Login
                   </button>
                 </div>
               </CardContent>

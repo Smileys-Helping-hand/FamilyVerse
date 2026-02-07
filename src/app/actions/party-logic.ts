@@ -44,9 +44,10 @@ export async function checkCodeAction(code: string) {
     }
     
     // Step 2: Check if it's an Admin PIN (SECRET)
+    // If a user has a pinCode, they're an admin/host (simplified check)
     const [user] = await db.select().from(partyUsers).where(eq(partyUsers.pinCode, code));
     
-    if (user && user.role === 'admin') {
+    if (user) {
       // Set cookie for admin session
       const cookieStore = await cookies();
       cookieStore.set('party_user_id', user.id, {

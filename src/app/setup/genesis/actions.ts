@@ -55,11 +55,7 @@ export async function initializeSystemAction(params: InitializeParams) {
     // Auto-generate join code if not provided
     const joinCode = partyJoinCode || Math.floor(1000 + Math.random() * 9000).toString();
 
-    // Step 1: Clean up existing data (if resetting)
-    await db.delete(parties);
-    await db.delete(partyUsers);
-
-    // Step 2: Create the party
+    // Create the party (no need to delete existing - just add new)
     const [party] = await db.insert(parties).values({
       name: partyName,
       joinCode: joinCode,

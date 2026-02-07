@@ -224,7 +224,7 @@ export function FamilyGamesHub() {
 
       {/* Game Details Dialog */}
       <Dialog open={!!selectedGame} onOpenChange={() => setSelectedGame(null)}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700">
           {selectedGame && (
             <div className="space-y-6">
               <DialogHeader>
@@ -239,8 +239,8 @@ export function FamilyGamesHub() {
                     })()}
                   </div>
                   <div className="flex-1">
-                    <DialogTitle className="text-3xl">{selectedGame.name}</DialogTitle>
-                    <DialogDescription className="text-base mt-2">
+                    <DialogTitle className="text-3xl text-white">{selectedGame.name}</DialogTitle>
+                    <DialogDescription className="text-base mt-2 text-slate-300">
                       {selectedGame.description}
                     </DialogDescription>
                   </div>
@@ -248,12 +248,12 @@ export function FamilyGamesHub() {
               </DialogHeader>
 
               {/* IRL Notice */}
-              <div className="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-300 rounded-lg p-4">
+              <div className="bg-gradient-to-r from-blue-900/50 to-purple-900/50 border-2 border-blue-500/50 rounded-lg p-4">
                 <div className="flex items-center gap-3">
-                  <PartyPopper className="h-6 w-6 text-blue-600" />
+                  <PartyPopper className="h-6 w-6 text-blue-400" />
                   <div>
-                    <h3 className="font-semibold text-blue-900">In-Person Game</h3>
-                    <p className="text-sm text-blue-700">
+                    <h3 className="font-semibold text-blue-100">In-Person Game</h3>
+                    <p className="text-sm text-blue-200">
                       This is a real-life party game! Read the instructions below and play together offline.
                     </p>
                   </div>
@@ -261,34 +261,34 @@ export function FamilyGamesHub() {
               </div>
 
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 border-2 border-blue-200">
-                  <Users className="h-5 w-5 text-blue-600 mb-2" />
-                  <p className="text-sm text-muted-foreground">Players</p>
-                  <p className="font-bold text-blue-700">
+                <div className="p-4 rounded-lg bg-gradient-to-br from-blue-900/50 to-blue-800/50 border-2 border-blue-500/50">
+                  <Users className="h-5 w-5 text-blue-400 mb-2" />
+                  <p className="text-sm text-slate-400">Players</p>
+                  <p className="font-bold text-blue-300">
                     {selectedGame.minPlayers}-{selectedGame.maxPlayers}
                   </p>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 border-2 border-purple-200">
-                  <Clock className="h-5 w-5 text-purple-600 mb-2" />
-                  <p className="text-sm text-muted-foreground">Duration</p>
-                  <p className="font-bold text-purple-700">{selectedGame.duration}</p>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-purple-900/50 to-purple-800/50 border-2 border-purple-500/50">
+                  <Clock className="h-5 w-5 text-purple-400 mb-2" />
+                  <p className="text-sm text-slate-400">Duration</p>
+                  <p className="font-bold text-purple-300">{selectedGame.duration}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-green-50 to-green-100 border-2 border-green-200">
-                  <Sparkles className="h-5 w-5 text-green-600 mb-2" />
-                  <p className="text-sm text-muted-foreground">Age Range</p>
-                  <p className="font-bold text-green-700">{selectedGame.ageRange}</p>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-green-900/50 to-green-800/50 border-2 border-green-500/50">
+                  <Sparkles className="h-5 w-5 text-green-400 mb-2" />
+                  <p className="text-sm text-slate-400">Age Range</p>
+                  <p className="font-bold text-green-300">{selectedGame.ageRange}</p>
                 </div>
-                <div className="p-4 rounded-lg bg-gradient-to-br from-yellow-50 to-yellow-100 border-2 border-yellow-200">
-                  <Trophy className="h-5 w-5 text-yellow-600 mb-2" />
-                  <p className="text-sm text-muted-foreground">Fun Factor</p>
-                  <p className="font-bold text-yellow-700">{selectedGame.funFactor}/5</p>
+                <div className="p-4 rounded-lg bg-gradient-to-br from-yellow-900/50 to-yellow-800/50 border-2 border-yellow-500/50">
+                  <Trophy className="h-5 w-5 text-yellow-400 mb-2" />
+                  <p className="text-sm text-slate-400">Fun Factor</p>
+                  <p className="font-bold text-yellow-300">{selectedGame.funFactor}/5</p>
                 </div>
               </div>
 
-              <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-2 border-orange-200">
+              <Card className="bg-gradient-to-br from-orange-900/50 to-red-900/50 border-2 border-orange-500/50">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-orange-600" />
+                  <CardTitle className="text-lg flex items-center gap-2 text-orange-300">
+                    <Sparkles className="h-5 w-5 text-orange-400" />
                     Materials Needed
                   </CardTitle>
                 </CardHeader>
@@ -298,7 +298,7 @@ export function FamilyGamesHub() {
                       <Badge
                         key={material}
                         variant="secondary"
-                        className="bg-white border-orange-300 text-orange-700"
+                        className="bg-orange-800/50 border-orange-500/50 text-orange-200"
                       >
                         {material}
                       </Badge>
@@ -307,10 +307,10 @@ export function FamilyGamesHub() {
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200">
+              <Card className="bg-gradient-to-br from-blue-900/50 to-indigo-900/50 border-2 border-blue-500/50">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <Lightbulb className="h-5 w-5 text-blue-600" />
+                  <CardTitle className="text-lg flex items-center gap-2 text-blue-300">
+                    <Lightbulb className="h-5 w-5 text-blue-400" />
                     How to Play
                   </CardTitle>
                 </CardHeader>
@@ -321,25 +321,25 @@ export function FamilyGamesHub() {
                         <span className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white text-sm font-bold">
                           {idx + 1}
                         </span>
-                        <p className="text-sm pt-1">{instruction}</p>
+                        <p className="text-sm pt-1 text-slate-200">{instruction}</p>
                       </li>
                     ))}
                   </ol>
                 </CardContent>
               </Card>
 
-              <Card className="bg-gradient-to-br from-purple-50 to-pink-50 border-2 border-purple-200">
+              <Card className="bg-gradient-to-br from-purple-900/50 to-pink-900/50 border-2 border-purple-500/50">
                 <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <PartyPopper className="h-5 w-5 text-purple-600" />
+                  <CardTitle className="text-lg flex items-center gap-2 text-purple-300">
+                    <PartyPopper className="h-5 w-5 text-purple-400" />
                     Fun Variations
                   </CardTitle>
                 </CardHeader>
                 <CardContent>
                   <ul className="space-y-2">
                     {selectedGame.variations.map((variation, idx) => (
-                      <li key={idx} className="flex gap-2 text-sm">
-                        <span className="text-purple-600 font-bold">•</span>
+                      <li key={idx} className="flex gap-2 text-sm text-slate-200">
+                        <span className="text-purple-400 font-bold">•</span>
                         <span>{variation}</span>
                       </li>
                     ))}

@@ -170,7 +170,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
       : 'bg-slate-600/20 text-slate-100 border-slate-300/40';
 
   return (
-    <div className={`min-h-screen text-white ${glitching ? 'glitch' : ''}`}>
+    <div className={`relative min-h-screen text-white bg-[#0b0616] ${glitching ? 'glitch' : ''}`}>
       <RaceStartSequence />
       <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0a0217] via-[#1a0633] to-[#2b0b45] aurora" />
       <div
@@ -196,7 +196,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          <Card className="border-cyan-300/25 bg-white/8 backdrop-blur">
+          <Card className="border-violet-300/25 bg-[#120a24]/70 backdrop-blur">
             <CardContent className="pt-6 space-y-3">
               <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Live Status</div>
               <div className="flex items-center justify-between text-sm">
@@ -216,7 +216,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
             </CardContent>
           </Card>
 
-          <Card className="border-cyan-300/25 bg-white/8 backdrop-blur">
+          <Card className="border-violet-300/25 bg-[#120a24]/70 backdrop-blur">
             <CardContent className="pt-6 space-y-3">
               <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Quick Actions</div>
               <Button onClick={handleCopyInvite} className="w-full h-11" variant="secondary">
@@ -235,7 +235,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
             </CardContent>
           </Card>
 
-          <Card className="border-cyan-300/25 bg-white/8 backdrop-blur">
+          <Card className="border-violet-300/25 bg-[#120a24]/70 backdrop-blur">
             <CardContent className="pt-6 space-y-3">
               <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Sound + Haptics</div>
               <Button
@@ -272,7 +272,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
           />
         )}
 
-        <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+        <Card className="border-violet-300/25 bg-[#160b2b]/80 backdrop-blur">
           <CardContent className="pt-6 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <button
@@ -320,7 +320,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
           </CardContent>
         </Card>
 
-        <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+        <Card className="border-violet-300/25 bg-[#160b2b]/80 backdrop-blur">
           <CardContent className="pt-6 space-y-2">
             <div className="text-xs uppercase tracking-[0.3em] text-cyan-100/70">Role Tips</div>
             <p className="text-sm text-white/80">Stay close to others to build trust, but avoid stacking.</p>
@@ -330,7 +330,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
         </Card>
 
         <div className="flex-1 max-h-[60vh] overflow-y-auto pr-1">
-          <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+          <Card className="border-violet-300/25 bg-[#160b2b]/80 backdrop-blur">
             <CardContent className="pt-6 space-y-4">
               <div className="flex items-center justify-between">
                 <div className="text-sm uppercase tracking-[0.3em] text-white/70">Your Mission</div>
@@ -388,7 +388,7 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
           </Card>
         </div>
 
-        <Card className="border-cyan-300/30 bg-white/10 backdrop-blur">
+        <Card className="border-violet-300/25 bg-[#160b2b]/80 backdrop-blur">
           <CardContent className="pt-6 flex flex-col gap-3">
             <p className="text-sm text-white/80">
               Found something suspicious? Call an emergency meeting.

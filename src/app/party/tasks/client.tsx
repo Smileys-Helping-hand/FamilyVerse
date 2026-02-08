@@ -172,18 +172,18 @@ export default function TaskPadClient({ user }: { user: PartyUser }) {
   return (
     <div className={`min-h-screen text-white ${glitching ? 'glitch' : ''}`}>
       <RaceStartSequence />
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#040a18] via-[#081b2d] to-[#060a22] aurora" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-[#0a0217] via-[#1a0633] to-[#2b0b45] aurora" />
       <div
         className="absolute inset-0 -z-10 opacity-45"
         style={{
           backgroundImage:
-            'radial-gradient(circle at 1px 1px, rgba(180,220,255,0.10) 1px, transparent 0), linear-gradient(120deg, rgba(40,160,220,0.20), transparent 55%)',
+            'radial-gradient(circle at 1px 1px, rgba(200,160,255,0.12) 1px, transparent 0), linear-gradient(120deg, rgba(88,52,140,0.35), transparent 55%)',
           backgroundSize: '28px 28px, 100% 100%',
         }}
       />
-      <div className="absolute -z-10 -top-24 -left-24 h-64 w-64 rounded-full bg-cyan-500/12 blur-3xl float" />
-      <div className="absolute -z-10 top-1/4 -right-10 h-72 w-72 rounded-full bg-blue-500/14 blur-3xl float-slow" />
-      <div className="absolute -z-10 bottom-0 left-1/3 h-80 w-80 rounded-full bg-teal-400/8 blur-3xl float" />
+      <div className="absolute -z-10 -top-24 -left-24 h-64 w-64 rounded-full bg-fuchsia-500/12 blur-3xl float" />
+      <div className="absolute -z-10 top-1/4 -right-10 h-72 w-72 rounded-full bg-violet-500/16 blur-3xl float-slow" />
+      <div className="absolute -z-10 bottom-0 left-1/3 h-80 w-80 rounded-full bg-indigo-500/10 blur-3xl float" />
       <div className="max-w-4xl mx-auto px-4 py-6 flex flex-col gap-6 relative">
         <div className="flex items-center justify-between">
           <Link href="/party/dashboard">

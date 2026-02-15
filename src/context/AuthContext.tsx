@@ -92,12 +92,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setLoading(false);
       } catch (error) {
         console.error('Error fetching user data:', error);
-        // If there's a database error, sign them out
-        try {
-          await signOut(auth);
-        } catch (signOutError) {
-          console.error('Error signing out:', signOutError);
-        }
+        // Keep the user signed in if the DB is temporarily unavailable.
+        // This avoids login loops when DATABASE_URL is missing or the DB is down.
         setUserProfile(null);
         setFamily(null);
         setLoading(false);

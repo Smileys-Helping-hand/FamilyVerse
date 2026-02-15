@@ -2,21 +2,28 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useSearchParams } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getEvents } from '@/app/actions/events';
 import EventsClient from '@/components/events/EventsClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar, Clock, MapPin, Plus } from 'lucide-react';
 import { format, startOfToday, endOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
 export default function EventsPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
   const searchParams = useSearchParams();
+  const router = useRouter();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [filtersReady, setFiltersReady] = useState(false);
+  const [search, setSearch] = useState('');
+  const [status, setStatus] = useState('ALL');
+  const [range, setRange] = useState('all');
 
   useEffect(() => {
     if (!authLoading && user) {
@@ -26,9 +33,58 @@ export default function EventsPage() {
     }
   }, [authLoading, user]);
 
+  useEffect(() => {
+    const paramSearch = searchParams.get('search');
+    const paramStatus = searchParams.get('status');
+    const paramRange = searchParams.get('range');
+
+    if (paramSearch || paramStatus || paramRange) {
+      setSearch(paramSearch || '');
+      setStatus((paramStatus || 'ALL').toUpperCase());
+      setRange((paramRange || 'all').toLowerCase());
+      setFiltersReady(true);
+      return;
+    }
+
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('eventsFilters');
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as { search?: string; status?: string; range?: string };
+          setSearch(parsed.search || '');
+          setStatus((parsed.status || 'ALL').toUpperCase());
+          setRange((parsed.range || 'all').toLowerCase());
+        } catch (error) {
+          console.warn('Failed to read saved event filters', error);
+        }
+      }
+    }
+
+    setFiltersReady(true);
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!filtersReady) return;
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(
+        'eventsFilters',
+        JSON.stringify({ search, status, range })
+      );
+    }
+
+    const params = new URLSearchParams();
+    if (search.trim()) params.set('search', search.trim());
+    if (status !== 'ALL') params.set('status', status);
+    if (range !== 'all') params.set('range', range);
+
+    const query = params.toString();
+    router.replace(query ? `/events?${query}` : '/events');
+  }, [filtersReady, search, status, range, router]);
+
   const loadEvents = async () => {
     setLoading(true);
-    const result = await getEvents(userProfile?.familyId);
+    const result = await getEvents(userProfile?.familyId ?? undefined);
     if (result.success) {
       setEvents(result.events || []);
     }
@@ -36,22 +92,22 @@ export default function EventsPage() {
   };
 
   const filteredEvents = useMemo(() => {
-    const searchQuery = (searchParams.get('search') || '').toLowerCase();
-    const statusFilter = (searchParams.get('status') || 'ALL').toUpperCase();
-    const range = (searchParams.get('range') || 'all').toLowerCase();
+    const searchQuery = search.trim().toLowerCase();
+    const statusFilter = status.toUpperCase();
+    const rangeFilter = range.toLowerCase();
 
-    const rangeStart = range === 'today'
+    const rangeStart = rangeFilter === 'today'
       ? startOfToday()
-      : range === 'week'
+      : rangeFilter === 'week'
       ? startOfWeek(new Date(), { weekStartsOn: 1 })
-      : range === 'month'
+      : rangeFilter === 'month'
       ? startOfMonth(new Date())
       : null;
-    const rangeEnd = range === 'today'
+    const rangeEnd = rangeFilter === 'today'
       ? endOfToday()
-      : range === 'week'
+      : rangeFilter === 'week'
       ? endOfWeek(new Date(), { weekStartsOn: 1 })
-      : range === 'month'
+      : rangeFilter === 'month'
       ? endOfMonth(new Date())
       : null;
 
@@ -70,7 +126,7 @@ export default function EventsPage() {
 
       return matchesSearch && matchesStatus && matchesRange;
     });
-  }, [events, searchParams]);
+  }, [events, range, search, status]);
 
   const { liveEvents, upcomingEvents, pastEvents } = useMemo(() => {
     return {
@@ -116,6 +172,85 @@ export default function EventsPage() {
           </Button>
         </Link>
       </div>
+
+      <Card className="border-2 border-blue-500/20">
+        <CardHeader>
+          <CardTitle className="text-lg">Find Events Fast</CardTitle>
+          <CardDescription>Search, filter, and jump straight in</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-3 md:grid-cols-[1fr,180px,180px]">
+            <Input
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by title, location, or description"
+            />
+            <Select value={status} onValueChange={setStatus}>
+              <SelectTrigger>
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ALL">All Statuses</SelectItem>
+                <SelectItem value="LIVE">Live</SelectItem>
+                <SelectItem value="UPCOMING">Upcoming</SelectItem>
+                <SelectItem value="PAST">Past</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={range} onValueChange={setRange}>
+              <SelectTrigger>
+                <SelectValue placeholder="Date Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Time</SelectItem>
+                <SelectItem value="today">Today</SelectItem>
+                <SelectItem value="week">This Week</SelectItem>
+                <SelectItem value="month">This Month</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant={range === 'today' ? 'default' : 'outline'}
+              onClick={() => setRange('today')}
+            >
+              Today
+            </Button>
+            <Button
+              type="button"
+              variant={range === 'week' ? 'default' : 'outline'}
+              onClick={() => setRange('week')}
+            >
+              This Week
+            </Button>
+            <Button
+              type="button"
+              variant={range === 'month' ? 'default' : 'outline'}
+              onClick={() => setRange('month')}
+            >
+              This Month
+            </Button>
+            <Button
+              type="button"
+              variant={range === 'all' ? 'default' : 'outline'}
+              onClick={() => setRange('all')}
+            >
+              All Time
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setSearch('');
+                setStatus('ALL');
+                setRange('all');
+              }}
+            >
+              Reset Filters
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       <EventsClient
         events={events}
@@ -193,6 +328,12 @@ function EventCard({ event }: { event: any }) {
     PAST: 'bg-gray-500',
   };
 
+  const tags = Array.isArray(event.tags)
+    ? event.tags
+    : Array.isArray(event.eventTags)
+    ? event.eventTags
+    : [];
+
   return (
     <Link href={`/events/${event.id}`} className="block h-full">
       <Card className="hover:shadow-lg transition-all cursor-pointer group h-full">
@@ -229,6 +370,15 @@ function EventCard({ event }: { event: any }) {
             <div className="flex items-center gap-2 text-sm text-muted-foreground">
               <MapPin className="h-4 w-4" />
               <span className="line-clamp-1">{event.locationName}</span>
+            </div>
+          )}
+          {tags.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {tags.slice(0, 4).map((tag: string) => (
+                <Badge key={tag} variant="secondary" className="text-xs">
+                  #{tag}
+                </Badge>
+              ))}
             </div>
           )}
         </CardContent>

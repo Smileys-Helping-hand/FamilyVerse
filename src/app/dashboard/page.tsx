@@ -112,6 +112,67 @@ export default function DashboardPage() {
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
+                    <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-4">
+                        {[
+                            {
+                                title: 'Events Hub',
+                                subtitle: 'Plan the next outing',
+                                href: '/events',
+                                icon: Calendar,
+                                gradient: 'from-blue-500 to-cyan-600',
+                                delay: '0ms',
+                            },
+                            {
+                                title: 'Family Tree',
+                                subtitle: 'Grow your roots',
+                                href: '/dashboard/tree',
+                                icon: Users,
+                                gradient: 'from-orange-500 to-pink-600',
+                                delay: '80ms',
+                            },
+                            {
+                                title: 'Party OS',
+                                subtitle: 'Games and live play',
+                                href: '/party/join',
+                                icon: PartyPopper,
+                                gradient: 'from-purple-500 to-pink-600',
+                                delay: '160ms',
+                            },
+                            {
+                                title: 'Heritage Vault',
+                                subtitle: 'Stories and recipes',
+                                href: '/family/heritage',
+                                icon: Star,
+                                gradient: 'from-amber-500 to-orange-500',
+                                delay: '240ms',
+                            },
+                        ].map((tile) => (
+                            <Link key={tile.title} href={tile.href}>
+                                <Card
+                                    className={cn(
+                                        'group transition-all duration-300 hover:shadow-2xl hover:-translate-y-1',
+                                        'border-2 border-primary/20 bg-gradient-to-br from-card via-card to-primary/10',
+                                        'animate-in fade-in slide-in-from-bottom-4'
+                                    )}
+                                    style={{ animationDelay: tile.delay }}
+                                >
+                                    <CardHeader>
+                                        <div className={cn('p-3 rounded-xl bg-gradient-to-br', tile.gradient, 'w-fit')}>
+                                            <tile.icon className="h-5 w-5 text-white" />
+                                        </div>
+                                        <CardTitle className="text-lg">{tile.title}</CardTitle>
+                                        <CardDescription>{tile.subtitle}</CardDescription>
+                                    </CardHeader>
+                                    <CardContent>
+                                        <Button variant="ghost" className="gap-2">
+                                            Open
+                                            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                                        </Button>
+                                    </CardContent>
+                                </Card>
+                            </Link>
+                        ))}
+                    </div>
                     <Collapsible open={statsOpen} onOpenChange={setStatsOpen}>
                         <Card className="border-2 border-primary/20">
                             <CardHeader className="flex flex-row items-center justify-between">

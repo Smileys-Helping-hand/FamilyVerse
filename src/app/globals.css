@@ -1,11 +1,8 @@
+@import 'leaflet/dist/leaflet.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-/* =================================================================== */
-/* Leaflet Map Styles */
-/* =================================================================== */
-@import 'leaflet/dist/leaflet.css';
 
 /* =================================================================== */
 /* PWA Mobile Physics - Dynamic Viewport Height & Touch Optimization */

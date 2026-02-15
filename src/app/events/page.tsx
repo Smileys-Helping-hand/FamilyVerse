@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getEvents } from '@/app/actions/events';
 import EventsClient from '@/components/events/EventsClient';
@@ -9,10 +10,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, MapPin, Plus } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, startOfToday, endOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
 
 export default function EventsPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
+  const searchParams = useSearchParams();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -33,13 +35,50 @@ export default function EventsPage() {
     setLoading(false);
   };
 
+  const filteredEvents = useMemo(() => {
+    const searchQuery = (searchParams.get('search') || '').toLowerCase();
+    const statusFilter = (searchParams.get('status') || 'ALL').toUpperCase();
+    const range = (searchParams.get('range') || 'all').toLowerCase();
+
+    const rangeStart = range === 'today'
+      ? startOfToday()
+      : range === 'week'
+      ? startOfWeek(new Date(), { weekStartsOn: 1 })
+      : range === 'month'
+      ? startOfMonth(new Date())
+      : null;
+    const rangeEnd = range === 'today'
+      ? endOfToday()
+      : range === 'week'
+      ? endOfWeek(new Date(), { weekStartsOn: 1 })
+      : range === 'month'
+      ? endOfMonth(new Date())
+      : null;
+
+    return events.filter((event) => {
+      const matchesSearch = !searchQuery
+        || event.title?.toLowerCase().includes(searchQuery)
+        || event.description?.toLowerCase().includes(searchQuery)
+        || event.locationName?.toLowerCase().includes(searchQuery);
+
+      const matchesStatus = statusFilter === 'ALL' || event.status === statusFilter;
+
+      const eventDate = new Date(event.startTime);
+      const matchesRange = !rangeStart || !rangeEnd
+        ? true
+        : eventDate >= rangeStart && eventDate <= rangeEnd;
+
+      return matchesSearch && matchesStatus && matchesRange;
+    });
+  }, [events, searchParams]);
+
   const { liveEvents, upcomingEvents, pastEvents } = useMemo(() => {
     return {
-      liveEvents: events.filter((event) => event.status === 'LIVE'),
-      upcomingEvents: events.filter((event) => event.status === 'UPCOMING'),
-      pastEvents: events.filter((event) => event.status === 'PAST'),
+      liveEvents: filteredEvents.filter((event) => event.status === 'LIVE'),
+      upcomingEvents: filteredEvents.filter((event) => event.status === 'UPCOMING'),
+      pastEvents: filteredEvents.filter((event) => event.status === 'PAST'),
     };
-  }, [events]);
+  }, [filteredEvents]);
 
   if (authLoading || loading) {
     return (
@@ -124,13 +163,13 @@ export default function EventsPage() {
             </section>
           )}
 
-          {events.length === 0 && (
+          {filteredEvents.length === 0 && (
             <Card className="border-dashed">
               <CardContent className="flex flex-col items-center justify-center py-16">
                 <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Events Yet</h3>
+                <h3 className="text-xl font-semibold mb-2">No Events Found</h3>
                 <p className="text-muted-foreground text-center mb-6">
-                  Create your first event to start planning amazing gatherings.
+                  Try adjusting your filters or create a new event to get started.
                 </p>
                 <Link href="/events/create">
                   <Button size="lg" className="gap-2">

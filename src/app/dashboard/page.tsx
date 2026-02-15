@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { ArrowRight, Share2, Users, Copy, Sparkles, Heart, Star, PartyPopper, Video, Gamepad2, Shield, Skull, UserPlus, LayoutGrid, Calendar, ChevronDown, Clapperboard, Wrench } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -23,6 +25,13 @@ export default function DashboardPage() {
     const [statsOpen, setStatsOpen] = useState(true);
     const [activityOpen, setActivityOpen] = useState(true);
     const [actionsOpen, setActionsOpen] = useState(true);
+    const [familyToolsOpen, setFamilyToolsOpen] = useState(true);
+    const [familyGroupsOpen, setFamilyGroupsOpen] = useState(true);
+    const [partyPortalOpen, setPartyPortalOpen] = useState(true);
+    const [partyGamesOpen, setPartyGamesOpen] = useState(true);
+    const [eventsSearch, setEventsSearch] = useState('');
+    const [eventsStatus, setEventsStatus] = useState('ALL');
+    const [eventsRange, setEventsRange] = useState('all');
 
     const copyJoinCode = () => {
         if (!family?.joinCode) return;
@@ -171,117 +180,233 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="family" className="space-y-6">
-                    <div className="grid gap-4 sm:gap-6 md:grid-cols-2 lg:grid-cols-3">
-                        <Card className={cn(
-                            "flex flex-col transition-all duration-300 hover:shadow-2xl",
-                            "hover:-translate-y-1 sm:hover:-translate-y-2 border-2 hover:border-primary/50",
-                            "bg-gradient-to-br from-card via-card to-primary/5"
-                        )}>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-secondary flex-shrink-0">
-                                        <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                                    </div>
-                                    Family Tree
-                                </CardTitle>
-                                <CardDescription className="text-sm sm:text-base">
-                                    View and manage your interactive family tree.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent className="flex-grow flex items-end">
-                                <Link href="/dashboard/tree" passHref className="w-full">
-                                    <Button className={cn(
-                                        "w-full bg-gradient-to-r from-orange-500 to-pink-600",
-                                        "hover:shadow-xl hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105",
-                                        "text-sm sm:text-base font-semibold group min-h-[48px]"
-                                    )}>
-                                        Go to Tree
-                                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                                    </Button>
-                                </Link>
-                            </CardContent>
-                        </Card>
-
-                        <Card className={cn(
-                            "transition-all duration-300 hover:shadow-2xl",
-                            "hover:-translate-y-1 sm:hover:-translate-y-2 border-2 hover:border-secondary/50",
-                            "bg-gradient-to-br from-card via-card to-secondary/5"
-                        )}>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
-                                    <div className="p-2 rounded-xl bg-gradient-to-br from-secondary to-accent flex-shrink-0">
-                                        <Share2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                                    </div>
-                                    Invite Members
-                                </CardTitle>
-                                <CardDescription className="text-sm sm:text-base">
-                                    Share this code with family members so they can join.
-                                </CardDescription>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center space-x-2">
-                                    <div className={cn(
-                                        "flex-1 rounded-xl border-2 border-dashed border-primary/30 p-4",
-                                        "text-center font-mono text-xl tracking-widest font-bold",
-                                        "bg-gradient-to-r from-primary/10 to-secondary/10",
-                                        "hover:shadow-lg transition-all duration-300"
-                                    )}>
-                                        {family?.joinCode || <Skeleton className="h-6 w-24 mx-auto" />}
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        onClick={copyJoinCode}
-                                        disabled={!family?.joinCode}
-                                        className={cn(
-                                            "hover:bg-primary hover:text-primary-foreground",
-                                            "transition-all duration-300 hover:scale-110 hover:rotate-12",
-                                            "border-2 min-h-[48px] min-w-[48px]"
-                                        )}
-                                    >
-                                        <span className="sr-only">Copy</span>
-                                        <Copy className="h-5 w-5" />
-                                    </Button>
+                    <Collapsible open={familyToolsOpen} onOpenChange={setFamilyToolsOpen}>
+                        <Card className="border-2 border-primary/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Family Essentials</CardTitle>
+                                    <CardDescription>Tree, invites, and the family core</CardDescription>
                                 </div>
-                            </CardContent>
-                        </Card>
-
-                        <Card className={cn(
-                            "transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20",
-                            "hover:-translate-y-1 border-2 border-blue-500/30 hover:border-blue-500/60",
-                            "bg-gradient-to-br from-purple-900/80 via-slate-900/80 to-blue-900/40",
-                            "backdrop-blur-sm"
-                        )}>
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-white">
-                                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/50 flex-shrink-0">
-                                        <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
-                                    </div>
-                                    Groups
-                                </CardTitle>
-                                <CardDescription className="text-sm sm:text-base text-purple-200/70">
-                                    Create groups with friends for trips, events, and projects.
-                                </CardDescription>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <ChevronDown className={cn("h-5 w-5 transition-transform", familyToolsOpen && "rotate-180")} />
+                                    </Button>
+                                </CollapsibleTrigger>
                             </CardHeader>
-                            <CardContent>
-                                <div className="flex gap-3">
-                                    <Link href="/dashboard/groups" className="flex-1">
-                                        <Button className={cn(
-                                            "w-full bg-gradient-to-r from-blue-500 to-cyan-600",
-                                            "hover:shadow-xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105",
-                                            "text-sm sm:text-base font-semibold group min-h-[48px]"
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+                                        <Card className={cn(
+                                            "flex flex-col transition-all duration-300 hover:shadow-2xl",
+                                            "hover:-translate-y-1 sm:hover:-translate-y-2 border-2 hover:border-primary/50",
+                                            "bg-gradient-to-br from-card via-card to-primary/5"
                                         )}>
-                                            View Groups
-                                            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                                        </Button>
-                                    </Link>
-                                </div>
-                            </CardContent>
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                                    <div className="p-2 rounded-xl bg-gradient-to-br from-primary to-secondary flex-shrink-0">
+                                                        <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                                    </div>
+                                                    Family Tree
+                                                </CardTitle>
+                                                <CardDescription className="text-sm sm:text-base">
+                                                    View and manage your interactive family tree.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="flex-grow flex items-end">
+                                                <Link href="/dashboard/tree" passHref className="w-full">
+                                                    <Button className={cn(
+                                                        "w-full bg-gradient-to-r from-orange-500 to-pink-600",
+                                                        "hover:shadow-xl hover:shadow-orange-500/50 transition-all duration-300 hover:scale-105",
+                                                        "text-sm sm:text-base font-semibold group min-h-[48px]"
+                                                    )}>
+                                                        Go to Tree
+                                                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                                    </Button>
+                                                </Link>
+                                            </CardContent>
+                                        </Card>
+
+                                        <Card className={cn(
+                                            "transition-all duration-300 hover:shadow-2xl",
+                                            "hover:-translate-y-1 sm:hover:-translate-y-2 border-2 hover:border-secondary/50",
+                                            "bg-gradient-to-br from-card via-card to-secondary/5"
+                                        )}>
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                                    <div className="p-2 rounded-xl bg-gradient-to-br from-secondary to-accent flex-shrink-0">
+                                                        <Share2 className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                                    </div>
+                                                    Invite Members
+                                                </CardTitle>
+                                                <CardDescription className="text-sm sm:text-base">
+                                                    Share this code with family members so they can join.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="flex items-center space-x-2">
+                                                    <div className={cn(
+                                                        "flex-1 rounded-xl border-2 border-dashed border-primary/30 p-4",
+                                                        "text-center font-mono text-xl tracking-widest font-bold",
+                                                        "bg-gradient-to-r from-primary/10 to-secondary/10",
+                                                        "hover:shadow-lg transition-all duration-300"
+                                                    )}>
+                                                        {family?.joinCode || <Skeleton className="h-6 w-24 mx-auto" />}
+                                                    </div>
+                                                    <Button
+                                                        variant="outline"
+                                                        size="icon"
+                                                        onClick={copyJoinCode}
+                                                        disabled={!family?.joinCode}
+                                                        className={cn(
+                                                            "hover:bg-primary hover:text-primary-foreground",
+                                                            "transition-all duration-300 hover:scale-110 hover:rotate-12",
+                                                            "border-2 min-h-[48px] min-w-[48px]"
+                                                        )}
+                                                    >
+                                                        <span className="sr-only">Copy</span>
+                                                        <Copy className="h-5 w-5" />
+                                                    </Button>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </CardContent>
+                            </CollapsibleContent>
                         </Card>
-                    </div>
+                    </Collapsible>
+
+                    <Collapsible open={familyGroupsOpen} onOpenChange={setFamilyGroupsOpen}>
+                        <Card className="border-2 border-blue-500/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Groups & Projects</CardTitle>
+                                    <CardDescription>Collaborate on trips, events, and tasks</CardDescription>
+                                </div>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <ChevronDown className={cn("h-5 w-5 transition-transform", familyGroupsOpen && "rotate-180")} />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </CardHeader>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+                                        <Card className={cn(
+                                            "transition-all duration-300 hover:shadow-2xl hover:shadow-blue-500/20",
+                                            "hover:-translate-y-1 border-2 border-blue-500/30 hover:border-blue-500/60",
+                                            "bg-gradient-to-br from-purple-900/80 via-slate-900/80 to-blue-900/40",
+                                            "backdrop-blur-sm"
+                                        )}>
+                                            <CardHeader>
+                                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl text-white">
+                                                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 shadow-lg shadow-blue-500/50 flex-shrink-0">
+                                                        <Users className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                                    </div>
+                                                    Groups
+                                                </CardTitle>
+                                                <CardDescription className="text-sm sm:text-base text-purple-200/70">
+                                                    Create groups with friends for trips, events, and projects.
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="flex gap-3">
+                                                    <Link href="/dashboard/groups" className="flex-1">
+                                                        <Button className={cn(
+                                                            "w-full bg-gradient-to-r from-blue-500 to-cyan-600",
+                                                            "hover:shadow-xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105",
+                                                            "text-sm sm:text-base font-semibold group min-h-[48px]"
+                                                        )}>
+                                                            View Groups
+                                                            <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                                        </Button>
+                                                    </Link>
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
                 </TabsContent>
 
                 <TabsContent value="events" className="space-y-6">
+                    <Card className="border-2 border-blue-500/20">
+                        <CardHeader>
+                            <CardTitle className="text-lg">Find Events Fast</CardTitle>
+                            <CardDescription>Search, filter, and jump straight in</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4">
+                            <div className="grid gap-3 md:grid-cols-[1fr,180px,180px]">
+                                <Input
+                                    value={eventsSearch}
+                                    onChange={(event) => setEventsSearch(event.target.value)}
+                                    placeholder="Search by title, location, or description"
+                                />
+                                <Select value={eventsStatus} onValueChange={setEventsStatus}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Status" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="ALL">All Statuses</SelectItem>
+                                        <SelectItem value="LIVE">Live</SelectItem>
+                                        <SelectItem value="UPCOMING">Upcoming</SelectItem>
+                                        <SelectItem value="PAST">Past</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                                <Select value={eventsRange} onValueChange={setEventsRange}>
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Date Range" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">All Time</SelectItem>
+                                        <SelectItem value="today">Today</SelectItem>
+                                        <SelectItem value="week">This Week</SelectItem>
+                                        <SelectItem value="month">This Month</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex flex-wrap gap-2">
+                                <Button
+                                    type="button"
+                                    variant={eventsRange === 'today' ? 'default' : 'outline'}
+                                    onClick={() => setEventsRange('today')}
+                                >
+                                    Today
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={eventsRange === 'week' ? 'default' : 'outline'}
+                                    onClick={() => setEventsRange('week')}
+                                >
+                                    This Week
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={eventsRange === 'month' ? 'default' : 'outline'}
+                                    onClick={() => setEventsRange('month')}
+                                >
+                                    This Month
+                                </Button>
+                                <Button
+                                    type="button"
+                                    variant={eventsRange === 'all' ? 'default' : 'outline'}
+                                    onClick={() => setEventsRange('all')}
+                                >
+                                    All Time
+                                </Button>
+                                <Link
+                                    href={`/events?search=${encodeURIComponent(eventsSearch)}&status=${eventsStatus}&range=${eventsRange}`}
+                                    className="ml-auto"
+                                >
+                                    <Button className="gap-2">
+                                        Open Events
+                                        <ArrowRight className="h-4 w-4" />
+                                    </Button>
+                                </Link>
+                            </div>
+                        </CardContent>
+                    </Card>
                     <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
                         <Card className={cn(
                             "transition-all duration-300 hover:shadow-2xl",
@@ -342,70 +467,104 @@ export default function DashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="party" className="space-y-6">
-                    <Card className={cn(
-                        "relative overflow-hidden transition-all duration-300 hover:shadow-2xl",
-                        "hover:-translate-y-2 border-4 border-purple-500/50",
-                        "bg-gradient-to-br from-purple-950 via-purple-900 to-violet-950"
-                    )}>
-                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-violet-600/30 rounded-full blur-[100px] animate-pulse" />
-                            <div className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-purple-600/35 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
-                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-indigo-600/25 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '1.5s' }} />
-                            <div className="absolute inset-0 bg-gradient-to-t from-purple-950/60 via-transparent to-purple-950/40" />
-                        </div>
-
-                        <div className="relative z-10">
-                            <CardHeader>
-                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                                    <div className="flex items-center gap-3 sm:gap-4">
-                                        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-orange-500 via-purple-500 to-pink-500 shadow-2xl flex-shrink-0">
-                                            <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
-                                        </div>
-                                        <div>
-                                            <CardTitle className="text-2xl sm:text-3xl text-white mb-1">
-                                                ✨ The Portal
-                                            </CardTitle>
-                                            <CardDescription className="text-base sm:text-lg text-purple-200">
-                                                Your gateway to all the lekker features
-                                            </CardDescription>
-                                        </div>
-                                    </div>
-                                    <Link href="/portal" className="w-full sm:w-auto flex-shrink-0">
-                                        <Button size="lg" className={cn(
-                                            "w-full sm:w-auto bg-gradient-to-r from-orange-500 via-purple-500 to-pink-500",
-                                            "hover:shadow-2xl transition-all duration-300 hover:scale-105 sm:hover:scale-110",
-                                            "text-base sm:text-lg font-bold shadow-orange-500/50",
-                                            "animate-pulse min-h-[48px] px-6"
-                                        )}>
-                                            Enter Portal
-                                            <Sparkles className="ml-2 h-5 w-5" />
-                                        </Button>
-                                    </Link>
+                    <Collapsible open={partyPortalOpen} onOpenChange={setPartyPortalOpen}>
+                        <Card className="border-2 border-purple-500/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Portal Access</CardTitle>
+                                    <CardDescription>Launch the Party OS and key features</CardDescription>
                                 </div>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <ChevronDown className={cn("h-5 w-5 transition-transform", partyPortalOpen && "rotate-180")} />
+                                    </Button>
+                                </CollapsibleTrigger>
                             </CardHeader>
-                            <CardContent>
-                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                                    <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-purple-500/30 hover:border-purple-500/60 transition-all cursor-pointer">
-                                        <PartyPopper className="h-8 w-8 text-purple-400 mb-2" />
-                                        <p className="text-white font-semibold">Party OS</p>
-                                        <p className="text-sm text-purple-200">Sim Racing & Games</p>
-                                    </div>
-                                    <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-green-500/30 hover:border-green-500/60 transition-all cursor-pointer">
-                                        <Share2 className="h-8 w-8 text-green-400 mb-2" />
-                                        <p className="text-white font-semibold">Flash Pay</p>
-                                        <p className="text-sm text-green-200">Bill Splitter</p>
-                                    </div>
-                                    <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/30 hover:border-blue-500/60 transition-all cursor-pointer">
-                                        <Star className="h-8 w-8 text-blue-400 mb-2" />
-                                        <p className="text-white font-semibold">More Apps</p>
-                                        <p className="text-sm text-blue-200">Coming Soon</p>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </div>
-                    </Card>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <Card className={cn(
+                                        "relative overflow-hidden transition-all duration-300 hover:shadow-2xl",
+                                        "hover:-translate-y-2 border-4 border-purple-500/50",
+                                        "bg-gradient-to-br from-purple-950 via-purple-900 to-violet-950"
+                                    )}>
+                                        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                                            <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-violet-600/30 rounded-full blur-[100px] animate-pulse" />
+                                            <div className="absolute bottom-0 left-0 w-[450px] h-[450px] bg-purple-600/35 rounded-full blur-[100px] animate-pulse" style={{ animationDelay: '1s' }} />
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[350px] h-[350px] bg-indigo-600/25 rounded-full blur-[80px] animate-pulse" style={{ animationDelay: '1.5s' }} />
+                                            <div className="absolute inset-0 bg-gradient-to-t from-purple-950/60 via-transparent to-purple-950/40" />
+                                        </div>
 
-                    <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+                                        <div className="relative z-10">
+                                            <CardHeader>
+                                                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                                                    <div className="flex items-center gap-3 sm:gap-4">
+                                                        <div className="p-3 sm:p-4 rounded-2xl bg-gradient-to-br from-orange-500 via-purple-500 to-pink-500 shadow-2xl flex-shrink-0">
+                                                            <Sparkles className="h-8 w-8 sm:h-10 sm:w-10 text-white" />
+                                                        </div>
+                                                        <div>
+                                                            <CardTitle className="text-2xl sm:text-3xl text-white mb-1">
+                                                                ✨ The Portal
+                                                            </CardTitle>
+                                                            <CardDescription className="text-base sm:text-lg text-purple-200">
+                                                                Your gateway to all the lekker features
+                                                            </CardDescription>
+                                                        </div>
+                                                    </div>
+                                                    <Link href="/portal" className="w-full sm:w-auto flex-shrink-0">
+                                                        <Button size="lg" className={cn(
+                                                            "w-full sm:w-auto bg-gradient-to-r from-orange-500 via-purple-500 to-pink-500",
+                                                            "hover:shadow-2xl transition-all duration-300 hover:scale-105 sm:hover:scale-110",
+                                                            "text-base sm:text-lg font-bold shadow-orange-500/50",
+                                                            "animate-pulse min-h-[48px] px-6"
+                                                        )}>
+                                                            Enter Portal
+                                                            <Sparkles className="ml-2 h-5 w-5" />
+                                                        </Button>
+                                                    </Link>
+                                                </div>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                                                    <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-purple-500/30 hover:border-purple-500/60 transition-all cursor-pointer">
+                                                        <PartyPopper className="h-8 w-8 text-purple-400 mb-2" />
+                                                        <p className="text-white font-semibold">Party OS</p>
+                                                        <p className="text-sm text-purple-200">Sim Racing & Games</p>
+                                                    </div>
+                                                    <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-green-500/30 hover:border-green-500/60 transition-all cursor-pointer">
+                                                        <Share2 className="h-8 w-8 text-green-400 mb-2" />
+                                                        <p className="text-white font-semibold">Flash Pay</p>
+                                                        <p className="text-sm text-green-200">Bill Splitter</p>
+                                                    </div>
+                                                    <div className="p-4 bg-white/5 backdrop-blur-sm rounded-lg border border-blue-500/30 hover:border-blue-500/60 transition-all cursor-pointer">
+                                                        <Star className="h-8 w-8 text-blue-400 mb-2" />
+                                                        <p className="text-white font-semibold">More Apps</p>
+                                                        <p className="text-sm text-blue-200">Coming Soon</p>
+                                                    </div>
+                                                </div>
+                                            </CardContent>
+                                        </div>
+                                    </Card>
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
+
+                    <Collapsible open={partyGamesOpen} onOpenChange={setPartyGamesOpen}>
+                        <Card className="border-2 border-red-500/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Party Games & HQ</CardTitle>
+                                    <CardDescription>Join live games and watch the Imposter HQ</CardDescription>
+                                </div>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <ChevronDown className={cn("h-5 w-5 transition-transform", partyGamesOpen && "rotate-180")} />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </CardHeader>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
                         <Card className={cn(
                             "transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20",
                             "hover:-translate-y-2 border-2 border-purple-500/30 hover:border-purple-500/60",
@@ -475,7 +634,11 @@ export default function DashboardPage() {
                                 </div>
                             </CardContent>
                         </Card>
-                    </div>
+                                    </div>
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
                 </TabsContent>
 
                 <TabsContent value="media" className="space-y-6">

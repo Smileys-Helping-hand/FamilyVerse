@@ -859,3 +859,518 @@ export type SmartQrScan = typeof smartQrScans.$inferSelect;
 export type NewSmartQrScan = typeof smartQrScans.$inferInsert;
 export type QrClaim = typeof qrClaims.$inferSelect;
 export type NewQrClaim = typeof qrClaims.$inferInsert;
+
+// ============================================
+// MODULE 10: EVENT HUB (Real-World Outings)
+// ============================================
+
+// Event categories - Organize events by type (must be defined before events)
+export const eventCategories = pgTable('event_categories', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull().unique(), // e.g., "Outdoor", "Sports", "Family Gathering"
+  slug: text('slug').notNull().unique(), // e.g., "outdoor", "sports"
+  icon: text('icon').notNull().default('Calendar'), // Lucide icon name
+  color: text('color').notNull().default('blue'), // Tailwind color
+  description: text('description'),
+  familyId: text('family_id'), // null = system categories
+  isSystem: boolean('is_system').notNull().default(false), // System vs custom
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Events table - for family outings, trips, and gatherings
+export const events = pgTable('events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(), // e.g., "Sunday Hike"
+  description: text('description'),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time'),
+  locationName: text('location_name'), // e.g., "Lion's Head Trail"
+  coordinates: jsonb('coordinates').$type<{ lat: number; lng: number }>(), // Lat/lng for maps
+  status: varchar('status', { length: 20 }).notNull().default('UPCOMING'), // 'UPCOMING', 'LIVE', 'PAST'
+  categoryId: uuid('category_id').references(() => eventCategories.id), // Event category
+  heroImageUrl: text('hero_image_url'), // Hero image URL (Unsplash or custom)
+  creatorId: text('creator_id').notNull(),
+  familyId: text('family_id'), // Link to family
+  isRecurring: boolean('is_recurring').notNull().default(false), // Part of recurring series
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Event attendees - who's going?
+export const eventAttendees = pgTable('event_attendees', {
+  id: serial('id').primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  userName: text('user_name').notNull(),
+  rsvpStatus: varchar('rsvp_status', { length: 20 }).notNull().default('PENDING'), // 'GOING', 'MAYBE', 'CANT_MAKE_IT', 'PENDING'
+  addedAt: timestamp('added_at').notNull().defaultNow(),
+  respondedAt: timestamp('responded_at'),
+});
+
+// Event waypoints/itinerary - timeline of activities
+export const eventWaypoints = pgTable('event_waypoints', {
+  id: serial('id').primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  time: text('time').notNull(), // e.g., "10:00 AM"
+  title: text('title').notNull(), // e.g., "Meet at Parking"
+  description: text('description'),
+  location: text('location'),
+  coordinates: jsonb('coordinates').$type<{ lat: number; lng: number }>(),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Live location tracking - the "Family Radar"
+export const liveLocations = pgTable('live_locations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  userName: text('user_name').notNull(),
+  latitude: text('latitude').notNull(), // Using text for precision
+  longitude: text('longitude').notNull(),
+  accuracy: integer('accuracy'), // GPS accuracy in meters
+  speed: integer('speed'), // Speed in km/h (for convoy feature)
+  isGhostMode: boolean('is_ghost_mode').notNull().default(false), // Privacy toggle
+  lastUpdated: timestamp('last_updated').notNull().defaultNow(),
+});
+
+// Event polls - Quick decision maker
+export const eventPolls = pgTable('event_polls', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  question: text('question').notNull(), // e.g., "Dinner Spot?"
+  options: jsonb('options').notNull().$type<string[]>(), // e.g., ["Burgers", "Sushi", "Braai"]
+  creatorId: text('creator_id').notNull(),
+  creatorName: text('creator_name').notNull(),
+  expiresAt: timestamp('expires_at'), // Auto-close time
+  isClosed: boolean('is_closed').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Poll votes
+export const pollVotes = pgTable('poll_votes', {
+  id: serial('id').primaryKey(),
+  pollId: uuid('poll_id').notNull().references(() => eventPolls.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  userName: text('user_name').notNull(),
+  optionIndex: integer('option_index').notNull(), // Index of selected option
+  votedAt: timestamp('voted_at').notNull().defaultNow(),
+});
+
+// Meet-here pins (temporary map markers)
+export const meetHerePins = pgTable('meet_here_pins', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  creatorId: text('creator_id').notNull(),
+  creatorName: text('creator_name').notNull(),
+  latitude: text('latitude').notNull(),
+  longitude: text('longitude').notNull(),
+  message: text('message'), // e.g., "Meet at the entrance!"
+  expiresAt: timestamp('expires_at'), // Auto-remove after time
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Event tags - Flexible tagging system
+export const eventTags = pgTable('event_tags', {
+  id: serial('id').primaryKey(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  tag: text('tag').notNull(), // e.g., "birthday", "kids-friendly", "outdoor"
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Event templates - Pre-configured event setups
+export const eventTemplates = pgTable('event_templates', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(), // e.g., "Birthday Party", "Beach Day", "Braai"
+  categoryId: uuid('category_id').references(() => eventCategories.id),
+  description: text('description'),
+  defaultDuration: integer('default_duration'), // Hours
+  defaultTags: jsonb('default_tags').$type<string[]>().default([]),
+  checklistItems: jsonb('checklist_items').$type<Array<{ 
+    title: string; 
+    category: string; 
+    dueBeforeHours?: number;
+  }>>().default([]),
+  suggestedSupplies: jsonb('suggested_supplies').$type<Array<{
+    itemName: string;
+    quantityNeeded: string;
+    category: string;
+  }>>().default([]),
+  waypoints: jsonb('waypoints').$type<Array<{
+    time: string;
+    title: string;
+    description?: string;
+  }>>().default([]),
+  familyId: text('family_id'), // null = system templates
+  isSystem: boolean('is_system').notNull().default(false),
+  usageCount: integer('usage_count').notNull().default(0),
+  createdBy: text('created_by'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Event planning checklist - Tasks for event preparation
+export const eventChecklists = pgTable('event_checklists', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(), // e.g., "Book venue", "Send invites"
+  description: text('description'),
+  category: varchar('category', { length: 30 }).notNull().default('GENERAL'), // 'VENUE', 'CATERING', 'SUPPLIES', 'COMMUNICATION', 'GENERAL'
+  assignedToUserId: text('assigned_to_user_id'),
+  assignedToUserName: text('assigned_to_user_name'),
+  dueDate: timestamp('due_date'), // When this should be done by
+  isCompleted: boolean('is_completed').notNull().default(false),
+  completedAt: timestamp('completed_at'),
+  completedBy: text('completed_by'),
+  sortOrder: integer('sort_order').notNull().default(0),
+  createdBy: text('created_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Event invitations - Track who's been invited
+export const eventInvitations = pgTable('event_invitations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  inviteeEmail: text('invitee_email'),
+  inviteePhone: text('invitee_phone'),
+  inviteeName: text('invitee_name').notNull(),
+  invitedBy: text('invited_by').notNull(),
+  invitedByName: text('invited_by_name').notNull(),
+  message: text('message'), // Personal invitation message
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'), // 'PENDING', 'SENT', 'VIEWED', 'RESPONDED'
+  sentAt: timestamp('sent_at'),
+  viewedAt: timestamp('viewed_at'),
+  respondedAt: timestamp('responded_at'),
+  inviteCode: text('invite_code').notNull().unique(), // Unique code for tracking
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Event reminders - Scheduled notifications
+export const eventReminders = pgTable('event_reminders', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  reminderType: varchar('reminder_type', { length: 30 }).notNull(), // 'EVENT_START', 'CHECKLIST_DUE', 'RSVP_REMINDER', 'CUSTOM'
+  reminderTime: timestamp('reminder_time').notNull(), // When to send
+  message: text('message').notNull(),
+  isSent: boolean('is_sent').notNull().default(false),
+  sentAt: timestamp('sent_at'),
+  deliveryMethod: varchar('delivery_method', { length: 20 }).notNull().default('APP'), // 'APP', 'EMAIL', 'SMS'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Recurring events - Support for repeating events
+export const recurringEvents = pgTable('recurring_events', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  masterEventId: uuid('master_event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  recurrencePattern: varchar('recurrence_pattern', { length: 20 }).notNull(), // 'DAILY', 'WEEKLY', 'MONTHLY', 'YEARLY'
+  recurrenceInterval: integer('recurrence_interval').notNull().default(1), // e.g., every 2 weeks
+  daysOfWeek: jsonb('days_of_week').$type<number[]>(), // For weekly: [0,6] = Sunday, Saturday
+  dayOfMonth: integer('day_of_month'), // For monthly: 15 = 15th of each month
+  monthsOfYear: jsonb('months_of_year').$type<number[]>(), // For yearly: [0,11] = Jan, Dec
+  startDate: timestamp('start_date').notNull(),
+  endDate: timestamp('end_date'), // null = no end date
+  maxOccurrences: integer('max_occurrences'), // Alternative to end date
+  generatedIds: jsonb('generated_ids').$type<string[]>().default([]), // Track created event instances
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Module 10 types
+export type Event = typeof events.$inferSelect;
+export type NewEvent = typeof events.$inferInsert;
+export type EventAttendee = typeof eventAttendees.$inferSelect;
+export type NewEventAttendee = typeof eventAttendees.$inferInsert;
+export type EventWaypoint = typeof eventWaypoints.$inferSelect;
+export type NewEventWaypoint = typeof eventWaypoints.$inferInsert;
+export type LiveLocation = typeof liveLocations.$inferSelect;
+export type NewLiveLocation = typeof liveLocations.$inferInsert;
+export type EventPoll = typeof eventPolls.$inferSelect;
+export type NewEventPoll = typeof eventPolls.$inferInsert;
+export type PollVote = typeof pollVotes.$inferSelect;
+export type NewPollVote = typeof pollVotes.$inferInsert;
+export type MeetHerePin = typeof meetHerePins.$inferSelect;
+export type NewMeetHerePin = typeof meetHerePins.$inferInsert;
+export type EventCategory = typeof eventCategories.$inferSelect;
+export type NewEventCategory = typeof eventCategories.$inferInsert;
+export type EventTag = typeof eventTags.$inferSelect;
+export type NewEventTag = typeof eventTags.$inferInsert;
+export type EventTemplate = typeof eventTemplates.$inferSelect;
+export type NewEventTemplate = typeof eventTemplates.$inferInsert;
+export type EventChecklist = typeof eventChecklists.$inferSelect;
+export type NewEventChecklist = typeof eventChecklists.$inferInsert;
+export type EventInvitation = typeof eventInvitations.$inferSelect;
+export type NewEventInvitation = typeof eventInvitations.$inferInsert;
+export type EventReminder = typeof eventReminders.$inferSelect;
+export type NewEventReminder = typeof eventReminders.$inferInsert;
+export type RecurringEvent = typeof recurringEvents.$inferSelect;
+export type NewRecurringEvent = typeof recurringEvents.$inferInsert;
+
+// ============================================
+// MODULE 11: EVENT HUB EXTENDED (Supply Chain, Guardian, Tactical)
+// ============================================
+
+// Event supplies - "Who's Bringing What?"
+export const eventSupplies = pgTable('event_supplies', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  itemName: text('item_name').notNull(), // e.g., "Ice", "Charcoal", "Salad"
+  quantityNeeded: text('quantity_needed').notNull().default('1'), // e.g., "2kg", "5 bottles"
+  assignedToUserId: text('assigned_to_user_id'), // Who claimed it
+  assignedToUserName: text('assigned_to_user_name'),
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'), // 'PENDING', 'CLAIMED', 'BOUGHT'
+  category: varchar('category', { length: 20 }).notNull().default('OTHER'), // 'FOOD', 'DRINK', 'EQUIPMENT', 'DECORATION', 'OTHER'
+  notes: text('notes'), // Special instructions
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  claimedAt: timestamp('claimed_at'),
+  boughtAt: timestamp('bought_at'),
+});
+
+// Children profiles - For Guardian Eye
+export const children = pgTable('children', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  name: text('name').notNull(),
+  parentId: text('parent_id').notNull(), // User ID of parent
+  parentName: text('parent_name').notNull(),
+  age: integer('age'), // Optional age
+  allergies: text('allergies'), // Comma-separated or JSON
+  emergencyNotes: text('emergency_notes'), // Medical conditions, emergency contacts
+  photoUrl: text('photo_url'), // Optional photo
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Guardian assignments - Who's watching whom
+export const guardianships = pgTable('guardianships', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  childId: uuid('child_id').notNull().references(() => children.id, { onDelete: 'cascade' }),
+  assignedAdultId: text('assigned_adult_id').notNull(),
+  assignedAdultName: text('assigned_adult_name').notNull(),
+  startTime: timestamp('start_time').notNull(),
+  endTime: timestamp('end_time'),
+  location: text('location'), // e.g., "Pool", "Park", "House"
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'), // 'ACTIVE', 'COMPLETED', 'EMERGENCY'
+  notes: text('notes'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Child check-ins - Digital roll call
+export const childCheckIns = pgTable('child_check_ins', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  childId: uuid('child_id').notNull().references(() => children.id, { onDelete: 'cascade' }),
+  guardianId: text('guardian_id').notNull(), // Who checked them in
+  guardianName: text('guardian_name').notNull(),
+  status: varchar('status', { length: 30 }).notNull(), // 'SAFE_WITH_PARENT', 'PLAYING', 'WITH_GUARDIAN', 'EATING', 'MISSING'
+  location: text('location'), // Where they are
+  notes: text('notes'),
+  checkedInAt: timestamp('checked_in_at').notNull().defaultNow(),
+});
+
+// SOS Alerts - Emergency notifications
+export const sosAlerts = pgTable('sos_alerts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  alertType: varchar('alert_type', { length: 30 }).notNull().default('LOST_CHILD'), // 'LOST_CHILD', 'MEDICAL', 'SECURITY', 'WEATHER'
+  childId: uuid('child_id').references(() => children.id), // If child-related
+  triggeredBy: text('triggered_by').notNull(), // User who triggered alert
+  triggeredByName: text('triggered_by_name').notNull(),
+  message: text('message').notNull(), // e.g., "AMY IS MISSING (Last seen: Pool)"
+  lastSeenLocation: text('last_seen_location'),
+  isResolved: boolean('is_resolved').notNull().default(false),
+  resolvedAt: timestamp('resolved_at'),
+  resolvedBy: text('resolved_by'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Dietary preferences - User food restrictions
+export const dietaryPreferences = pgTable('dietary_preferences', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull().unique(),
+  preferences: jsonb('preferences').notNull().$type<{
+    vegetarian?: boolean;
+    vegan?: boolean;
+    halal?: boolean;
+    kosher?: boolean;
+    glutenFree?: boolean;
+    dairyFree?: boolean;
+    nutAllergy?: boolean;
+    seafoodAllergy?: boolean;
+    other?: string[];
+  }>().default({}),
+  customNotes: text('custom_notes'),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Menu items - Feast Manager
+export const menuItems = pgTable('menu_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  dishName: text('dish_name').notNull(), // e.g., "Lamb Spit", "Chicken Curry"
+  description: text('description'),
+  category: varchar('category', { length: 20 }).notNull().default('MAIN'), // 'STARTER', 'MAIN', 'SIDE', 'DESSERT', 'DRINK'
+  servings: integer('servings'), // Expected servings
+  dietaryFlags: jsonb('dietary_flags').notNull().$type<{
+    vegetarian?: boolean;
+    vegan?: boolean;
+    halal?: boolean;
+    containsNuts?: boolean;
+    containsGluten?: boolean;
+    containsDairy?: boolean;
+    containsSeafood?: boolean;
+  }>().default({}),
+  ingredients: text('ingredients'), // Comma-separated or detailed list
+  preparedBy: text('prepared_by'), // Who's cooking
+  preparedByName: text('prepared_by_name'),
+  notes: text('notes'),
+  createdBy: text('created_by').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Tactical map locations - Safety and amenities
+export const tacticalLocations = pgTable('tactical_locations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  locationType: varchar('location_type', { length: 20 }).notNull(), // 'HOSPITAL', 'POLICE', 'PHARMACY', 'SUPERMARKET', 'GAS_STATION', 'PLAYGROUND'
+  name: text('name').notNull(),
+  address: text('address'),
+  latitude: text('latitude').notNull(),
+  longitude: text('longitude').notNull(),
+  phoneNumber: text('phone_number'),
+  placeId: text('place_id'), // Google Places ID
+  distance: integer('distance'), // Distance in meters from event location
+  isOpen: boolean('is_open'), // Currently open status
+  fetchedAt: timestamp('fetched_at').notNull().defaultNow(),
+});
+
+// Event media - Photo/Video gallery (+ Time Capsule)
+export const eventMedia = pgTable('event_media', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  uploaderId: text('uploader_id').notNull(), // User ID who uploaded
+  uploaderName: text('uploader_name').notNull(),
+  url: text('url').notNull(), // Storage URL
+  type: varchar('type', { length: 10 }).notNull(), // 'IMAGE' | 'VIDEO'
+  caption: text('caption'),
+  thumbnailUrl: text('thumbnail_url'), // For videos
+  mimeType: text('mime_type'), // e.g., 'image/jpeg', 'video/mp4'
+  fileSize: integer('file_size'), // In bytes
+  likes: integer('likes').notNull().default(0), // Heart count
+  likedBy: jsonb('liked_by').$type<string[]>().default([]), // Array of user IDs
+  lockedUntil: timestamp('locked_until'), // Time capsule feature - unlocks on date
+  isTimeCapsule: boolean('is_time_capsule').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Event chat messages - In-event discussion
+export const eventChatMessages = pgTable('event_chat_messages', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  senderId: text('sender_id').notNull(),
+  senderName: text('sender_name').notNull(),
+  senderAvatar: text('sender_avatar'),
+  message: text('message').notNull(),
+  replyToId: uuid('reply_to_id'), // Optional reply reference
+  attachments: jsonb('attachments').$type<Array<{ type: string; url: string }>>(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  deletedAt: timestamp('deleted_at'),
+});
+
+// ============================================================================
+// MODULE 12: FAMILY TREE & HERITAGE VAULT
+// ============================================================================
+
+// Shadow Users - Ancestors without app accounts (for complete family tree)
+export const shadowUsers = pgTable('shadow_users', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  firstName: text('first_name').notNull(),
+  lastName: text('last_name'),
+  displayName: text('display_name').notNull(),
+  birthYear: integer('birth_year'),
+  deathYear: integer('death_year'), // null if still living
+  bio: text('bio'),
+  avatarUrl: text('avatar_url'),
+  gender: varchar('gender', { length: 20 }), // 'MALE', 'FEMALE', 'OTHER', 'PREFER_NOT_TO_SAY'
+  createdById: text('created_by_id').notNull(), // Who added them to the tree
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Relationships - Parent-child and partner relationships
+export const relationships = pgTable('relationships', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  // For parent-child relationships
+  parentId: text('parent_id'), // Can be real user ID or shadow user ID
+  childId: text('child_id'), // Can be real user ID or shadow user ID
+  relationshipType: varchar('relationship_type', { length: 20 }).notNull(), // 'BIOLOGICAL', 'ADOPTED', 'STEP', 'PARTNER', 'SPOUSE'
+  // For partner/spouse relationships
+  partnerId: text('partner_id'), // For PARTNER/SPOUSE types
+  // Metadata
+  startDate: timestamp('start_date'), // Marriage date for spouses
+  endDate: timestamp('end_date'), // Divorce/separation date if applicable
+  notes: text('notes'),
+  createdById: text('created_by_id').notNull(), // Who created this connection
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Heritage Items - Recipes, stories, traditions (the family vault)
+export const heritageItems = pgTable('heritage_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: text('title').notNull(),
+  type: varchar('type', { length: 20 }).notNull(), // 'RECIPE', 'STORY', 'TRADITION', 'PHOTO', 'VIDEO'
+  content: text('content').notNull(), // Rich text content (markdown or HTML)
+  mediaUrl: text('media_url'), // Optional photo/video
+  thumbnailUrl: text('thumbnail_url'),
+  contributorId: text('contributor_id').notNull(), // Who added this
+  contributorName: text('contributor_name').notNull(),
+  visibility: varchar('visibility', { length: 20 }).notNull().default('FAMILY_ONLY'), // 'PUBLIC', 'FAMILY_ONLY', 'PRIVATE'
+  familyId: uuid('family_id').references(() => families.id, { onDelete: 'cascade' }),
+  // Recipe-specific fields
+  prepTime: integer('prep_time'), // minutes
+  cookTime: integer('cook_time'), // minutes
+  servings: integer('servings'),
+  difficulty: varchar('difficulty', { length: 20 }), // 'EASY', 'MEDIUM', 'HARD'
+  ingredients: jsonb('ingredients').$type<Array<{ item: string; amount: string }>>(),
+  steps: jsonb('steps').$type<string[]>(),
+  // Story-specific fields
+  storyDate: timestamp('story_date'), // When did this story take place
+  tags: jsonb('tags').$type<string[]>(), // e.g., ['grandmother', 'breyani', 'wedding']
+  // Engagement
+  likes: integer('likes').notNull().default(0),
+  likedBy: jsonb('liked_by').$type<string[]>().default([]),
+  views: integer('views').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Module 11 types
+export type EventSupply = typeof eventSupplies.$inferSelect;
+export type NewEventSupply = typeof eventSupplies.$inferInsert;
+export type Child = typeof children.$inferSelect;
+export type NewChild = typeof children.$inferInsert;
+export type Guardianship = typeof guardianships.$inferSelect;
+export type NewGuardianship = typeof guardianships.$inferInsert;
+export type ChildCheckIn = typeof childCheckIns.$inferSelect;
+export type NewChildCheckIn = typeof childCheckIns.$inferInsert;
+export type SosAlert = typeof sosAlerts.$inferSelect;
+export type NewSosAlert = typeof sosAlerts.$inferInsert;
+export type DietaryPreference = typeof dietaryPreferences.$inferSelect;
+export type NewDietaryPreference = typeof dietaryPreferences.$inferInsert;
+export type MenuItem = typeof menuItems.$inferSelect;
+export type NewMenuItem = typeof menuItems.$inferInsert;
+export type TacticalLocation = typeof tacticalLocations.$inferSelect;
+export type NewTacticalLocation = typeof tacticalLocations.$inferInsert;
+export type EventMedia = typeof eventMedia.$inferSelect;
+export type NewEventMedia = typeof eventMedia.$inferInsert;
+export type EventChatMessage = typeof eventChatMessages.$inferSelect;
+export type NewEventChatMessage = typeof eventChatMessages.$inferInsert;
+
+// Module 12 types
+export type ShadowUser = typeof shadowUsers.$inferSelect;
+export type NewShadowUser = typeof shadowUsers.$inferInsert;
+export type Relationship = typeof relationships.$inferSelect;
+export type NewRelationship = typeof relationships.$inferInsert;
+export type HeritageItem = typeof heritageItems.$inferSelect;
+export type NewHeritageItem = typeof heritageItems.$inferInsert;

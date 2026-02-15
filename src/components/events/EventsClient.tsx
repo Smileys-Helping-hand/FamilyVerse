@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, LayoutGrid, Calendar as CalendarIcon, Sparkles } from 'lucide-react';
@@ -16,9 +16,10 @@ interface EventsClientProps {
     name: string;
     familyId?: string;
   };
+  children?: ReactNode;
 }
 
-export default function EventsClient({ events, currentUser }: EventsClientProps) {
+export default function EventsClient({ events, currentUser, children }: EventsClientProps) {
   const [showTemplates, setShowTemplates] = useState(false);
   const [view, setView] = useState<'grid' | 'calendar'>('grid');
 
@@ -61,7 +62,7 @@ export default function EventsClient({ events, currentUser }: EventsClientProps)
 
       {/* Content */}
       {view === 'grid' ? (
-        <div>{/* Grid view content passed from parent */}</div>
+        <div>{children}</div>
       ) : (
         <EventCalendarView events={events} />
       )}

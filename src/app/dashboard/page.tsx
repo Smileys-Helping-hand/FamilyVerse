@@ -1,11 +1,13 @@
 'use client';
 
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ArrowRight, Share2, Users, Copy, Sparkles, Heart, Star, PartyPopper, Video, Gamepad2, Shield, Skull, UserPlus } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ArrowRight, Share2, Users, Copy, Sparkles, Heart, Star, PartyPopper, Video, Gamepad2, Shield, Skull, UserPlus, LayoutGrid, Calendar, ChevronDown, Clapperboard, Wrench } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
@@ -18,6 +20,9 @@ import { ImposterCard } from '@/components/party/ImposterCard';
 export default function DashboardPage() {
     const { userProfile, family, loading } = useAuth();
     const { toast } = useToast();
+    const [statsOpen, setStatsOpen] = useState(true);
+    const [activityOpen, setActivityOpen] = useState(true);
+    const [actionsOpen, setActionsOpen] = useState(true);
 
     const copyJoinCode = () => {
         if (!family?.joinCode) return;
@@ -71,20 +76,98 @@ export default function DashboardPage() {
 
             <Tabs defaultValue="overview" className="space-y-6">
                 <TabsList className="flex flex-wrap gap-2">
-                    <TabsTrigger value="overview">Overview</TabsTrigger>
-                    <TabsTrigger value="family">Family</TabsTrigger>
-                    <TabsTrigger value="party">Party</TabsTrigger>
-                    <TabsTrigger value="media">Media & Fun</TabsTrigger>
-                    <TabsTrigger value="tools">Tools</TabsTrigger>
+                    <TabsTrigger value="overview" className="gap-2">
+                        <LayoutGrid className="h-4 w-4" />
+                        Overview
+                    </TabsTrigger>
+                    <TabsTrigger value="family" className="gap-2">
+                        <Users className="h-4 w-4" />
+                        Family
+                    </TabsTrigger>
+                    <TabsTrigger value="events" className="gap-2">
+                        <Calendar className="h-4 w-4" />
+                        Events
+                    </TabsTrigger>
+                    <TabsTrigger value="party" className="gap-2">
+                        <PartyPopper className="h-4 w-4" />
+                        Party
+                    </TabsTrigger>
+                    <TabsTrigger value="media" className="gap-2">
+                        <Clapperboard className="h-4 w-4" />
+                        Media & Fun
+                    </TabsTrigger>
+                    <TabsTrigger value="tools" className="gap-2">
+                        <Wrench className="h-4 w-4" />
+                        Tools
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-6">
-                    <FamilyStats />
-                    <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
-                        <ActivityFeed />
-                        <UpcomingEvents />
-                    </div>
-                    <QuickActions />
+                    <Collapsible open={statsOpen} onOpenChange={setStatsOpen}>
+                        <Card className="border-2 border-primary/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Family Snapshot</CardTitle>
+                                    <CardDescription>Stats and progress for your family</CardDescription>
+                                </div>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <ChevronDown className={cn("h-5 w-5 transition-transform", statsOpen && "rotate-180")} />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </CardHeader>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <FamilyStats />
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
+
+                    <Collapsible open={activityOpen} onOpenChange={setActivityOpen}>
+                        <Card className="border-2 border-secondary/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Activity & Events</CardTitle>
+                                    <CardDescription>Latest family activity and upcoming plans</CardDescription>
+                                </div>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <ChevronDown className={cn("h-5 w-5 transition-transform", activityOpen && "rotate-180")} />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </CardHeader>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+                                        <ActivityFeed />
+                                        <UpcomingEvents />
+                                    </div>
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
+
+                    <Collapsible open={actionsOpen} onOpenChange={setActionsOpen}>
+                        <Card className="border-2 border-accent/20">
+                            <CardHeader className="flex flex-row items-center justify-between">
+                                <div>
+                                    <CardTitle className="text-lg">Quick Actions</CardTitle>
+                                    <CardDescription>Jump to the most-used tools</CardDescription>
+                                </div>
+                                <CollapsibleTrigger asChild>
+                                    <Button variant="ghost" size="icon">
+                                        <ChevronDown className={cn("h-5 w-5 transition-transform", actionsOpen && "rotate-180")} />
+                                    </Button>
+                                </CollapsibleTrigger>
+                            </CardHeader>
+                            <CollapsibleContent>
+                                <CardContent>
+                                    <QuickActions />
+                                </CardContent>
+                            </CollapsibleContent>
+                        </Card>
+                    </Collapsible>
                 </TabsContent>
 
                 <TabsContent value="family" className="space-y-6">
@@ -193,6 +276,66 @@ export default function DashboardPage() {
                                         </Button>
                                     </Link>
                                 </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </TabsContent>
+
+                <TabsContent value="events" className="space-y-6">
+                    <div className="grid gap-4 sm:gap-6 md:grid-cols-2">
+                        <Card className={cn(
+                            "transition-all duration-300 hover:shadow-2xl",
+                            "hover:-translate-y-1 sm:hover:-translate-y-2 border-2 hover:border-blue-500/50",
+                            "bg-gradient-to-br from-card via-card to-blue-100/10"
+                        )}>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                    <div className="p-2 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex-shrink-0">
+                                        <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                    </div>
+                                    Event Hub
+                                </CardTitle>
+                                <CardDescription className="text-sm sm:text-base">
+                                    Plan, coordinate, and manage your family outings.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="flex flex-col sm:flex-row gap-3">
+                                <Link href="/events" className="flex-1">
+                                    <Button className={cn(
+                                        "w-full bg-gradient-to-r from-blue-500 to-cyan-600",
+                                        "hover:shadow-xl hover:shadow-blue-500/50 transition-all duration-300 hover:scale-105",
+                                        "text-sm sm:text-base font-semibold group min-h-[48px]"
+                                    )}>
+                                        Open Events
+                                        <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                                    </Button>
+                                </Link>
+                                <Link href="/events/create" className="flex-1">
+                                    <Button variant="outline" className="w-full min-h-[48px]">
+                                        Create Event
+                                    </Button>
+                                </Link>
+                            </CardContent>
+                        </Card>
+
+                        <Card className={cn(
+                            "transition-all duration-300 hover:shadow-2xl",
+                            "hover:-translate-y-1 sm:hover:-translate-y-2 border-2 hover:border-purple-500/50",
+                            "bg-gradient-to-br from-card via-card to-purple-100/10"
+                        )}>
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2 text-lg sm:text-xl">
+                                    <div className="p-2 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex-shrink-0">
+                                        <Star className="h-5 w-5 sm:h-6 sm:w-6 text-white" />
+                                    </div>
+                                    Planning Highlights
+                                </CardTitle>
+                                <CardDescription className="text-sm sm:text-base">
+                                    Check what is coming up and who is joining.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <UpcomingEvents />
                             </CardContent>
                         </Card>
                     </div>

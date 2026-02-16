@@ -245,6 +245,92 @@ npx tsx scripts/seed-event-planning.ts
 5. Use "Chat" tab for coordination
 ```
 
+### 5. Friends & Family Delegation Flow (Main Focus)
+
+```
+1. Host creates event from a template and sets date/location
+2. Invite everyone; set roles:
+  - Host: final decisions
+  - Co-host: checklist owner
+  - Helpers: tasks and supplies
+  - Guests: RSVP and bring-what-you-can
+3. Pin the top 3 priorities in Chat
+4. Helpers claim tasks in "Checklist" and items in "Supplies"
+5. Co-host clears blockers and nudges unclaimed items
+6. Day-before: confirm RSVPs, lock menu, finalize roster
+7. Event day: check-ins, photos, and expenses handled live
+```
+
+### 6. Role Handoff Checklist (Host + Co-host)
+
+```
+Host (Day 7 to Day 1):
+□ Set final date/location
+□ Assign co-host and helpers
+□ Approve checklist and supplies
+□ Confirm budget and big-ticket items
+
+Co-host (Day 3 to Day 0):
+□ Ensure all tasks/items are claimed
+□ Nudge stragglers and reassign gaps
+□ Confirm menu with dietary notes
+□ Publish the final roster
+□ Pin day-before summary in Chat
+```
+
+### 7. RSVP Pin Message (Copy/Paste)
+
+```
+Friends & family quick check:
+- Please RSVP by [DATE]
+- Claim one task or item today
+- Add dietary notes if needed
+- Reply here if you need to swap
+Thanks! You're the best.
+```
+
+Swap Policy (Add to Chat if needed):
+```
+Swaps are welcome up to 24 hours before the event. Please post your swap request here.
+```
+
+Day-Before Summary (Co-host Post):
+```
+Tomorrow's plan:
+- Time/location: [TIME] at [PLACE]
+- Final roster: [NAMES]
+- Unclaimed items: [LIST]
+- Parking/entry notes: [DETAILS]
+Reply here if anything changed.
+```
+
+Who's Bringing What (Confirmation Ping):
+```
+Quick check: please confirm your item or task below.
+If you need a swap, post it now so we can reassign.
+Thank you!
+```
+
+Post-Event Debrief (2 minutes):
+```
+What worked best?
+What should we change next time?
+One shout-out for someone who helped.
+```
+
+Host Kickoff (Day-Of Opening Script):
+```
+Welcome everyone! Quick plan: [TOP 3 POINTS].
+If you have a task or item, please check in with the co-host.
+Most important: relax, connect, and have fun.
+```
+
+Thanks + Recap (Post-Event Message):
+```
+Thanks everyone for making it awesome. Highlights: [2-3 wins].
+If you have photos, please drop them here. Next time, let's: [1 change].
+```
+
 ---
 
 ## 💡 Use Cases

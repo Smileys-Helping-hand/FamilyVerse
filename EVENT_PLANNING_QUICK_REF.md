@@ -113,6 +113,64 @@ const result = await createEventFromTemplate(templateId, {
 
 ## 🎯 Workflows
 
+### Friends & Family Delegation (Quick Flow)
+
+```
+Setup:
+1. Host creates event from template and sets date/location
+2. Assign roles: Host (final call), Co-host (checklist owner), Helpers (tasks/supplies), Guests (RSVP)
+3. Pin the top 3 priorities in Chat
+
+Execution:
+4. Helpers claim tasks in "Checklist" and items in "Supplies"
+5. Co-host clears blockers and nudges unclaimed items
+6. Day-before: lock menu, confirm RSVPs, finalize roster
+7. Event day: check-ins, photos, and expenses handled live
+```
+
+Role Handoff (Mini):
+```
+Host: set date/location, assign roles, approve checklist/supplies
+Co-host: ensure claims complete, nudge gaps, pin day-before summary
+```
+
+RSVP Pin (Copy/Paste):
+```
+RSVP by [DATE]. Claim one task or item today. Add dietary notes. Reply if you need a swap.
+```
+
+Swap Policy:
+```
+Swaps welcome up to 24 hours before the event. Post your request in chat.
+```
+
+Day-Before Summary (Co-host Post):
+```
+Tomorrow: [TIME] at [PLACE]. Roster: [NAMES].
+Unclaimed: [LIST]. Notes: [DETAILS].
+```
+
+Who's Bringing What (Ping):
+```
+Please confirm your item/task. Swaps now if needed.
+```
+
+Post-Event Debrief:
+```
+What worked? What to change next time? One shout-out.
+```
+
+Host Kickoff (Day-Of):
+```
+Welcome! Plan: [TOP 3]. Check in with co-host if you have a task.
+Have fun.
+```
+
+Thanks + Recap:
+```
+Thanks all. Highlights: [WINS]. Photos welcome. Next time: [CHANGE].
+```
+
 ### Birthday Party Planning (2 Weeks Out)
 
 ```

@@ -210,6 +210,21 @@ docs/
 
 ## 🎯 Common Workflows
 
+### Friends & Family Delegation Flow
+
+```
+1. Create event from a template and set date/location
+2. Invite everyone; set roles:
+   - Host: final decisions
+   - Co-host: checklist owner
+   - Helpers: tasks and supplies
+   - Guests: RSVP and bring-what-you-can
+3. Everyone claims tasks in "Checklist" and items in "Supplies"
+4. Co-host reviews progress and clears blockers
+5. Day-before: confirm RSVPs, lock menu, finalize roster
+6. Event day: check-ins, photos, and expenses handled live
+```
+
 ### Birthday Party Planning
 
 ```

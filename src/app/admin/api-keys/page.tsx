@@ -60,29 +60,36 @@ import { getRecentLogs } from '@/app/actions/admin';
   };
 
   const handleGenerate = async () => {
-    const key = await createApiKey();
-    if (key) {
-      setNewKey(key.key);
-      setApiKeys(keys => [key, ...keys]);
+    try {
+      const key = await createApiKey();
+      if (key) {
+        setNewKey(key.key);
+        setApiKeys(keys => [key, ...keys]);
+        setToastMsg({ type: 'success', text: 'API Key generated!' });
+      }
+    } catch (e) {
+      setToastMsg({ type: 'error', text: 'Failed to generate API key.' });
     }
   };
 
   const handleCopy = () => {
     if (newKey) {
       navigator.clipboard.writeText(newKey);
-      alert("API Key copied!");
+      setToastMsg({ type: 'success', text: 'API Key copied!' });
     }
   };
-      const [apiKeys, setApiKeys] = useState([]);
-      const [newKey, setNewKey] = useState(null);
-      const [loading, setLoading] = useState(true);
-      const [search, setSearch] = useState("");
-      const [statusFilter, setStatusFilter] = useState("all");
-      const [auditLogs, setAuditLogs] = useState([]);
-      const [logUserFilter, setLogUserFilter] = useState("");
-      const [logActionFilter, setLogActionFilter] = useState("");
-      const [logsLoading, setLogsLoading] = useState(true);
-      const [toastMsg, setToastMsg] = useState(null);
+
+  const handleRevoke = async (id) => {
+    if (window.confirm("Revoke this API key?")) {
+      try {
+        await revokeApiKey(id);
+        setApiKeys(keys => keys.filter(k => k.id !== id));
+        setToastMsg({ type: 'success', text: 'API Key revoked.' });
+      } catch (e) {
+        setToastMsg({ type: 'error', text: 'Failed to revoke API key.' });
+      }
+    }
+  };
   // Filtering logic
   const filteredKeys = apiKeys.filter(k => {
     const matchesSearch = search === "" || (k.key && k.key.includes(search)) || (k.createdBy && k.createdBy.toLowerCase().includes(search.toLowerCase()));

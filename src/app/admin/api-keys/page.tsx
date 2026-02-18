@@ -112,12 +112,6 @@ import { getRecentLogs } from '@/app/actions/admin';
               className="bg-black/40 border border-purple-700/30 rounded px-2 py-1 text-purple-100"
             >
               <option value="all">All Statuses</option>
-                  // Fetch audit logs for API key actions
-                  getRecentLogs(50, undefined).then(res => {
-                    if (res.success && res.logs) {
-                      setAuditLogs(res.logs.filter(log => log.source === 'APIKey'));
-                    }
-                  });
               <option value="active">Active</option>
               <option value="revoked">Revoked</option>
             </select>

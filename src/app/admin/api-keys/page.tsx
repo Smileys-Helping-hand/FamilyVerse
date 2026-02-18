@@ -105,7 +105,9 @@ import { getRecentLogs } from '@/app/actions/admin';
             <PlusCircle className="w-6 h-6" />
             API Key Management
           </CardTitle>
-        {/* All logic removed from JSX. Only markup below. */}
+        </CardHeader>
+        <CardContent>
+          <div className="flex gap-4 items-center mt-6">
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}

@@ -5,6 +5,7 @@ import { apiKeys } from '@/lib/db/apiKeys';
 import { eq, desc } from 'drizzle-orm';
 import { cookies } from 'next/headers';
 import { randomBytes } from 'crypto';
+import { logEvent } from '@/app/actions/admin';
 
 export async function getApiKeys() {
   const cookieStore = await cookies();

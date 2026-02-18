@@ -12,11 +12,14 @@ import { cn } from '@/lib/utils';
 const ADMIN_EMAIL = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'mraaziqp@gmail.com';
 
 // Navigation items
+import { Key } from 'lucide-react';
+
 const navItems = [
   { href: '/admin', icon: LayoutDashboard, label: 'Mission Control', emoji: '📊' },
   { href: '/admin/qr-studio', icon: Printer, label: 'QR Design Studio', emoji: '🖨️' },
   { href: '/admin/logs', icon: ScrollText, label: 'System Logs', emoji: '📜' },
   { href: '/admin/settings', icon: Settings, label: 'Settings', emoji: '⚙️' },
+  { href: '/admin/api-keys', icon: Key, label: 'API Keys', emoji: '🔑' },
 ];
 
 const gameMasterItems = [

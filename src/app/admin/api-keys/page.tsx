@@ -16,6 +16,7 @@ function ApiKeysPage() {
   const [auditLogs, setAuditLogs] = useState([]);
   const [logUserFilter, setLogUserFilter] = useState("");
   const [logActionFilter, setLogActionFilter] = useState("");
+  const [toastMsg, setToastMsg] = useState(null);
 
   useEffect(() => {
     getApiKeys().then(keys => {
@@ -108,6 +109,22 @@ function ApiKeysPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Toast message */}
+          {toastMsg && (
+            <div className={`mb-4 px-4 py-2 rounded text-sm font-semibold ${toastMsg.type === 'success' ? 'bg-green-700 text-white' : 'bg-red-700 text-white'}`}>{toastMsg.text}</div>
+          )}
+          {/* Generate Key Button and new key display */}
+          <div className="flex flex-col gap-2 mb-4">
+            <Button onClick={handleGenerate} className="w-fit bg-purple-700 hover:bg-purple-600 text-white font-bold">
+              <PlusCircle className="w-4 h-4 mr-2" /> Generate New API Key
+            </Button>
+            {newKey && (
+              <div className="flex items-center gap-2 bg-black/40 border border-purple-700/30 rounded px-3 py-2 mt-2">
+                <span className="font-mono text-purple-100">{newKey}</span>
+                <Button size="sm" variant="outline" onClick={handleCopy}><Copy className="w-4 h-4" /> Copy</Button>
+              </div>
+            )}
+          </div>
           <div className="flex gap-4 items-center mt-6">
             <select
               value={statusFilter}

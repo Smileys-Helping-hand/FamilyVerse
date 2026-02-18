@@ -105,18 +105,7 @@ import { getRecentLogs } from '@/app/actions/admin';
             <PlusCircle className="w-6 h-6" />
             API Key Management
           </CardTitle>
-        if (window.confirm("Revoke this API key?")) {
-          try {
-            await revokeApiKey(id);
-            setApiKeys(keys => keys.filter(k => k.id !== id));
-            setToastMsg({ type: 'success', text: 'API Key revoked.' });
-          } catch (e) {
-            setToastMsg({ type: 'error', text: 'Failed to revoke API key.' });
-          }
-        }
-              className="bg-black/40 border border-purple-700/30 rounded px-2 py-1 text-purple-100"
-            />
-                const [auditLogs, setAuditLogs] = useState([]);
+        {/* All logic removed from JSX. Only markup below. */}
             <select
               value={statusFilter}
               onChange={e => setStatusFilter(e.target.value)}

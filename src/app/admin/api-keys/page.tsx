@@ -7,6 +7,7 @@ import { Copy, PlusCircle } from "lucide-react";
 import { getApiKeys, createApiKey, revokeApiKey } from '@/app/actions/apiKeys';
 import { getRecentLogs } from '@/app/actions/admin';
 
+function ApiKeysPage() {
   const [apiKeys, setApiKeys] = useState([]);
   const [newKey, setNewKey] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -178,3 +179,5 @@ import { getRecentLogs } from '@/app/actions/admin';
     </div>
   );
 }
+
+export default ApiKeysPage;

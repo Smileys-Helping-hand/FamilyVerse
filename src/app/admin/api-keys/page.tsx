@@ -98,26 +98,6 @@ import { getRecentLogs } from '@/app/actions/admin';
             <PlusCircle className="w-6 h-6" />
             API Key Management
           </CardTitle>
-        try {
-          const key = await createApiKey();
-          if (key) {
-            setNewKey(key.key);
-            setApiKeys(keys => [key, ...keys]);
-            setToastMsg({ type: 'success', text: 'API Key generated!' });
-          }
-        } catch (e) {
-          setToastMsg({ type: 'error', text: 'Failed to generate API key.' });
-        }
-          </Button>
-          {newKey && (
-            <div className="flex items-center gap-2 bg-black/40 border border-purple-700/30 rounded p-2 mt-2">
-        if (newKey) {
-          navigator.clipboard.writeText(newKey);
-          setToastMsg({ type: 'success', text: 'API Key copied!' });
-        }
-          <div className="flex gap-4 items-center mt-6">
-            <input
-              import { getRecentLogs } from '@/app/actions/admin';
         if (window.confirm("Revoke this API key?")) {
           try {
             await revokeApiKey(id);

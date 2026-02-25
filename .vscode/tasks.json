@@ -40,6 +40,16 @@
 				"$tsc"
 			],
 			"group": "build"
+		},
+		{
+			"label": "Install Tailwind CSS dependencies",
+			"type": "shell",
+			"command": "npm install tailwindcss postcss autoprefixer",
+			"isBackground": false,
+			"problemMatcher": [
+				"$tsc"
+			],
+			"group": "build"
 		}
 	]
 }

@@ -125,3 +125,21 @@ function isStaticAsset(pathname) {
     pathname === '/favicon.svg'
   );
 }
+// Web Push notification event handlers
+self.addEventListener('push', function (event) {
+  const data = event.data ? event.data.json() : {};
+  const title = data.title || 'Gang Gear Alert';
+  const options = {
+    body: data.body || 'You have a new squad update.',
+    icon: '/icon512_maskable.png',
+    badge: '/badge.png',
+    vibrate: [200, 100, 200, 100, 200, 100, 200],
+    data: { url: data.url || '/' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+  event.waitUntil(clients.openWindow(event.notification.data.url));
+});

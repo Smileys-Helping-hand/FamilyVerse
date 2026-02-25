@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
+import NotificationBell from "@/components/ui/NotificationBell";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import Providers from '@/components/Providers';
@@ -10,8 +11,8 @@ import ClientWidgets from '@/components/ClientWidgets';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://alphatraders.co.za'),
-  title: "Mohammed's 26th Birthday! 🎂",
-  description: 'Join the Sim Racing, Spy Game, and Betting live!',
+  title: "Gang Gear | The Ultimate Squad OS",
+  description: "Coordinate outings, track the crew, split the bill, and dominate the games.",
   manifest: '/manifest.json',
   icons: {
     icon: '/favicon.svg',
@@ -23,14 +24,14 @@ export const metadata: Metadata = {
     title: 'Party OS',
   },
   openGraph: {
-    title: "Mohammed's 26th Birthday! 🎂",
-    description: 'Join the Sim Racing, Spy Game, and Betting live!',
+    title: "Gang Gear | The Ultimate Squad OS",
+    description: "Coordinate outings, track the crew, split the bill, and dominate the games.",
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
-    title: "Mohammed's 26th Birthday! 🎂",
-    description: 'Join the Sim Racing, Spy Game, and Betting live!',
+    title: "Gang Gear | The Ultimate Squad OS",
+    description: "Coordinate outings, track the crew, split the bill, and dominate the games.",
   },
 };
 
@@ -48,6 +49,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // TODO: Replace with real userId from auth
+  const userId = "demo-user";
+  const notifications = getUserNotifications(userId);
   return (
     <html lang="en">
       <head>
@@ -61,6 +65,10 @@ export default function RootLayout({
           <Providers>
             <FirebaseClientProvider>
               <AuthProvider>
+                <div className="flex items-center justify-between px-6 py-4 bg-[#1A1A1A] border-b border-cyan-400">
+                  <div className="text-2xl font-extrabold text-[#00FF66]">Gang Gear</div>
+                  <NotificationBell notifications={notifications} />
+                </div>
                 {children}
                 <ClientWidgets />
               </AuthProvider>

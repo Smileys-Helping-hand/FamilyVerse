@@ -1,3 +1,29 @@
+// ============================================
+// WEB PUSH SUBSCRIPTIONS
+// ============================================
+
+export const pushSubscriptions = pgTable('push_subscriptions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull(),
+  endpoint: text('endpoint').notNull(),
+  p256dh: text('p256dh').notNull(),
+  auth: text('auth').notNull(),
+  userAgent: text('user_agent'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+// ============================================
+// NOTIFICATION CENTER
+// ============================================
+
+export const notifications = pgTable('notifications', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  title: text('title').notNull(),
+  message: text('message').notNull(),
+  type: varchar('type', { length: 30 }).notNull(), // e.g., 'GEAR_ASSIGNED', 'EXPENSE_ADDED', 'GAME_INVITE'
+  read: boolean('read').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
 import { pgTable, text, timestamp, boolean, integer, jsonb, varchar, serial, bigint, uuid } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
@@ -52,6 +78,28 @@ export const activityLog = pgTable('activity_log', {
   action: text('action').notNull(),
   details: text('details').notNull(),
   timestamp: timestamp('timestamp').notNull().defaultNow(),
+});
+
+
+// ============================================
+// OUTING ORGANIZER: USER INVENTORY & TEMPLATES
+// ============================================
+
+// User Inventory: Saved Preferences (Who owns what)
+export const userInventory = pgTable('user_inventory', {
+  id: serial('id').primaryKey(),
+  userId: text('user_id').notNull(),
+  itemName: text('item_name').notNull(), // e.g., "Camping Chairs", "Braai Grid"
+  autoVolunteer: boolean('auto_volunteer').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Outing Templates
+export const outingTemplates = pgTable('outing_templates', {
+  id: serial('id').primaryKey(),
+  name: text('name').notNull(), // e.g., "Beach Day", "Park Picnic", "LAN Party", "Braai"
+  defaultItems: jsonb('default_items').notNull().$type<string[]>(), // e.g., ["Sunblock", "Towels", ...]
+  createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
 // ============================================
@@ -892,6 +940,8 @@ export const events = pgTable('events', {
   creatorId: text('creator_id').notNull(),
   familyId: text('family_id'), // Link to family
   isRecurring: boolean('is_recurring').notNull().default(false), // Part of recurring series
+  venuePlaceId: text('venue_place_id'), // Google Places/Mapbox ID
+  weatherSnapshot: jsonb('weather_snapshot').$type<any>(), // Forecast at creation
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });

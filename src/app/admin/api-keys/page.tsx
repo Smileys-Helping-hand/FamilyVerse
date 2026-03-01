@@ -6,17 +6,28 @@ import { Button } from "@/components/ui/button";
 import { Copy, PlusCircle } from "lucide-react";
 import { getApiKeys, createApiKey, revokeApiKey } from '@/app/actions/apiKeys';
 import { getRecentLogs } from '@/app/actions/admin';
+import type { SystemLog } from '@/lib/db/schema';
+
+type ApiKey = {
+  id: number;
+  key: string;
+  createdAt: Date;
+  status: string;
+  createdBy: string;
+};
+
+type ToastMsg = { type: 'success' | 'error'; text: string };
 
 function ApiKeysPage() {
-  const [apiKeys, setApiKeys] = useState([]);
-  const [newKey, setNewKey] = useState(null);
+  const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
+  const [newKey, setNewKey] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [auditLogs, setAuditLogs] = useState([]);
+  const [auditLogs, setAuditLogs] = useState<SystemLog[]>([]);
   const [logUserFilter, setLogUserFilter] = useState("");
   const [logActionFilter, setLogActionFilter] = useState("");
-  const [toastMsg, setToastMsg] = useState(null);
+  const [toastMsg, setToastMsg] = useState<ToastMsg | null>(null);
 
   useEffect(() => {
     getApiKeys().then(keys => {
@@ -81,7 +92,7 @@ function ApiKeysPage() {
     }
   };
 
-  const handleRevoke = async (id) => {
+  const handleRevoke = async (id: number) => {
     if (window.confirm("Revoke this API key?")) {
       try {
         await revokeApiKey(id);

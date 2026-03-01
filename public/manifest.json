@@ -1,7 +1,7 @@
 {
-  "name": "Party OS",
-  "short_name": "Party",
-  "description": "Join the Sim Racing, Spy Game, and Betting live!",
+  "name": "Gang Gear",
+  "short_name": "GangGear",
+  "description": "The private command center for our outings, games, and logistics.",
   "start_url": "/",
   "display": "standalone",
     "background_color": "#1A1A1A",

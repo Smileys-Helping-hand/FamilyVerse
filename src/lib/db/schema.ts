@@ -970,7 +970,7 @@ export const eventWaypoints = pgTable('event_waypoints', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-// Live location tracking - the "Family Radar"
+// Live location tracking - the "Family Radar" / Overwatch
 export const liveLocations = pgTable('live_locations', {
   id: uuid('id').primaryKey().defaultRandom(),
   eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
@@ -980,6 +980,10 @@ export const liveLocations = pgTable('live_locations', {
   longitude: text('longitude').notNull(),
   accuracy: integer('accuracy'), // GPS accuracy in meters
   speed: integer('speed'), // Speed in km/h (for convoy feature)
+  batteryLevel: integer('battery_level'), // 0-100 (null = unknown / iOS)
+  isCharging: boolean('is_charging'), // null = unknown
+  speedKmh: integer('speed_kmh'), // Explicit km/h field (mirrors speed for new clients)
+  lastPingAt: timestamp('last_ping_at'), // When the last telemetry ping arrived
   isGhostMode: boolean('is_ghost_mode').notNull().default(false), // Privacy toggle
   lastUpdated: timestamp('last_updated').notNull().defaultNow(),
 });

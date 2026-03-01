@@ -44,7 +44,6 @@ export async function getForecast(lat: number, lng: number, date: string) {
   const rainChance = data.daily.precipitation_probability_max[idx];
   const code = data.daily.weathercode[idx];
   let condition = WEATHER_CODES[code] || '🌈 Unknown';
-  // Rain warning
   if (rainChance >= 60) condition = '🌧️ Rain Warning!';
   return { maxTemp, minTemp, rainChance, condition };
 }

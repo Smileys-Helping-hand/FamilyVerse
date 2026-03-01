@@ -1,9 +1,8 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useTransition } from "react";
 import dynamic from "next/dynamic";
-import LocationSearch from "../../../components/wizard/LocationSearch";
-import { useTransition } from "react";
-import { getForecast } from "../../../actions/weather";
+import LocationSearch from "@/components/wizard/LocationSearch";
+import { getForecast } from "@/actions/weather";
 
 // Step 1: Template selection
 const TEMPLATES = [
@@ -43,12 +42,20 @@ export default function OutingWizardPage() {
 
   return (
     <main className="max-w-xl mx-auto py-10 px-4">
+      <div className="mb-6">
+        <h1 className="text-3xl font-extrabold text-purple-700">Outing Wizard</h1>
+        <div className="flex gap-2 mt-3">
+          {[1, 2, 3].map(s => (
+            <div key={s} className={`h-2 flex-1 rounded-full ${step >= s ? 'bg-purple-500' : 'bg-gray-200'}`} />
+          ))}
+        </div>
+      </div>
+
       {step === 1 && (
         <Step1
           onSelect={(tpl) => {
             setSelectedTemplate(tpl);
             setStep(2);
-            // TODO: preload required items for tpl
           }}
         />
       )}
@@ -105,6 +112,7 @@ export default function OutingWizardPage() {
               min={new Date().toISOString().slice(0, 10)}
             />
           </div>
+          {isPending && <div className="text-gray-500 animate-pulse">Fetching forecast...</div>}
           {weather && (
             <div className="mt-4 p-4 rounded-lg border bg-blue-50">
               <div className="font-semibold mb-1">Forecast for {venue.place} on {date}:</div>
@@ -125,7 +133,7 @@ export default function OutingWizardPage() {
             onClick={() => setStep(4)}
             disabled={!date || !weather}
           >
-            Next: Review & Launch
+            Next: Review &amp; Launch
           </button>
           <button
             className="mt-2 text-gray-500 underline"
@@ -136,7 +144,34 @@ export default function OutingWizardPage() {
         </div>
       )}
 
-      {/* Step 4 will be added here */}
+      {step === 4 && (
+        <div className="flex flex-col gap-6">
+          <h2 className="text-2xl font-bold mb-2">Review &amp; Launch</h2>
+          <div className="bg-white rounded-xl border p-6 shadow flex flex-col gap-3">
+            <div><span className="font-semibold">Vibe:</span> {selectedTemplate}</div>
+            <div><span className="font-semibold">Venue:</span> {venue?.place}</div>
+            <div><span className="font-semibold">Date:</span> {date}</div>
+            {weather && (
+              <div><span className="font-semibold">Weather:</span> {weather.condition} — {weather.maxTemp}°C / {weather.minTemp}°C, {weather.rainChance}% rain</div>
+            )}
+          </div>
+          <button
+            className="mt-4 px-8 py-3 bg-green-600 text-white rounded-lg font-bold text-lg hover:bg-green-700 transition"
+            onClick={() => {
+              // TODO: Save outing to database
+              alert('Outing launched! 🚀');
+            }}
+          >
+            🚀 Launch Outing
+          </button>
+          <button
+            className="mt-2 text-gray-500 underline"
+            onClick={() => setStep(3)}
+          >
+            ← Back
+          </button>
+        </div>
+      )}
     </main>
   );
 }

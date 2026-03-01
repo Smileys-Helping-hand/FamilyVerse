@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -92,126 +91,156 @@ export function LoginForm() {
   }
 
   return (
-    <Card className={cn(
-      "border-2 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700",
-      "bg-gradient-to-br from-card via-card to-primary/5"
-    )}>
-      <CardHeader className="space-y-1 pb-6">
-        <CardTitle className="text-2xl font-bold flex items-center gap-2">
-          <div className="p-2 rounded-lg bg-gradient-to-br from-primary to-secondary">
-            <Lock className="h-5 w-5 text-white" />
+    <div
+      className="rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 overflow-hidden"
+      style={{
+        background: 'rgba(20, 8, 50, 0.75)',
+        backdropFilter: 'blur(24px)',
+        border: '1px solid rgba(168, 85, 247, 0.2)',
+        boxShadow: '0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07)',
+      }}
+    >
+      {/* Top gradient accent bar */}
+      <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #f97316 0%, #ec4899 50%, #a855f7 100%)' }} />
+
+      <div className="p-8 pt-7">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-1">
+            <div
+              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
+              style={{ background: 'linear-gradient(135deg, #f97316, #ec4899)' }}
+            >
+              <Lock className="h-4 w-4 text-white" />
+            </div>
+            <h2 className="text-2xl font-bold text-white tracking-tight">Sign In</h2>
           </div>
-          Sign In
-        </CardTitle>
-        <CardDescription className="text-base">
-          Enter your credentials to access your account
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+          <p className="text-sm text-purple-300/60 ml-12">Enter your credentials to access your account</p>
+        </div>
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+
+            {/* Email */}
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-medium">Email</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-purple-200/80 tracking-wide">Email</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        placeholder="name@example.com" 
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400/70" />
+                      <Input
+                        placeholder="name@example.com"
                         className={cn(
-                          "pl-10 h-11 border-2 transition-all duration-300",
-                          "focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          'pl-10 h-12 text-white text-sm placeholder:text-purple-400/40',
+                          'transition-all duration-200',
+                          'border border-purple-600/30 hover:border-purple-500/50',
+                          'focus:border-purple-400/70 focus:ring-2 focus:ring-purple-500/20 focus-visible:ring-purple-500/20',
+                          'rounded-xl'
                         )}
-                        {...field} 
+                        style={{ background: 'rgba(88, 28, 135, 0.2)' }}
+                        {...field}
                       />
                     </div>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-pink-400 text-xs" />
                 </FormItem>
               )}
             />
+
+            {/* Password */}
             <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-base font-medium">Password</FormLabel>
+                  <FormLabel className="text-sm font-semibold text-purple-200/80 tracking-wide">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input 
-                        type={showPassword ? "text" : "password"} 
-                        placeholder="••••••••" 
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400/70" />
+                      <Input
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="••••••••"
                         className={cn(
-                          "pl-10 pr-10 h-11 border-2 transition-all duration-300",
-                          "focus:border-primary focus:ring-2 focus:ring-primary/20"
+                          'pl-10 pr-10 h-12 text-white text-sm placeholder:text-purple-400/40',
+                          'transition-all duration-200',
+                          'border border-purple-600/30 hover:border-purple-500/50',
+                          'focus:border-purple-400/70 focus:ring-2 focus:ring-purple-500/20 focus-visible:ring-purple-500/20',
+                          'rounded-xl'
                         )}
-                        {...field} 
+                        style={{ background: 'rgba(88, 28, 135, 0.2)' }}
+                        {...field}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-400/70 hover:text-purple-200 transition-colors"
                         tabIndex={-1}
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-pink-400 text-xs" />
                 </FormItem>
               )}
             />
-            <Button 
-              type="submit" 
+
+            {/* Submit */}
+            <Button
+              type="submit"
               className={cn(
-                "w-full h-11 text-base font-semibold",
-                "bg-gradient-to-r from-primary to-secondary",
-                "hover:shadow-xl transition-all duration-300 hover:scale-105",
-                "disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100"
+                'w-full h-12 text-sm font-bold text-white mt-1 rounded-xl',
+                'transition-all duration-300 hover:scale-[1.02]',
+                'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
+                'border-0 shadow-lg'
               )}
+              style={{
+                background: 'linear-gradient(90deg, #f97316 0%, #ec4899 55%, #a855f7 100%)',
+                boxShadow: '0 4px 24px rgba(249,115,22,0.25)',
+              }}
               disabled={isLoading}
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Signing in...
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</>
               ) : (
-                <>
-                  <Sparkles className="mr-2 h-5 w-5" />
-                  Sign In
-                </>
+                <><Sparkles className="mr-2 h-4 w-4" />Sign In</>
               )}
             </Button>
-            <div className="relative">
+
+            {/* Divider */}
+            <div className="relative py-1">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-border" />
+                <span className="w-full border-t border-purple-700/30" />
               </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-card px-2 text-muted-foreground">
+              <div className="relative flex justify-center">
+                <span
+                  className="px-4 text-[11px] uppercase tracking-widest font-medium text-purple-400/50"
+                  style={{ background: 'rgba(20, 8, 50, 0.75)' }}
+                >
                   New to FamilyVerse?
                 </span>
               </div>
             </div>
-            <div className="text-center">
+
+            {/* Sign up link */}
+            <div className="text-center pb-1">
               <Link href="/signup" className="group inline-flex items-center gap-2">
-                <span className="text-base font-medium text-primary group-hover:underline">
+                <span
+                  className="text-sm font-semibold group-hover:opacity-80 transition-opacity"
+                  style={{ background: 'linear-gradient(90deg, #f97316, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
+                >
                   Create an account
                 </span>
-                <Sparkles className="h-4 w-4 text-accent animate-pulse" />
+                <Sparkles className="h-3.5 w-3.5 text-yellow-400 animate-pulse" />
               </Link>
             </div>
+
           </form>
         </Form>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

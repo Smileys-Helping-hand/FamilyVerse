@@ -15,14 +15,12 @@ export async function toggleGearItem({ userId, itemName, isOwned, autoVolunteer 
   autoVolunteer: boolean;
 }) {
   if (!isOwned) {
-    // Remove from inventory
     await db.delete(userInventory).where(and(
       eq(userInventory.userId, userId),
       eq(userInventory.itemName, itemName)
     ));
     return;
   }
-  // Upsert
   await db.insert(userInventory).values({
     userId,
     itemName,

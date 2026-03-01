@@ -34,7 +34,7 @@ export default function GearCard({ itemName, category, owned, autoVolunteer, onT
         </div>
       )}
       {!owned && (
-        <div className="text-xs text-gray-400 mt-2">I don't have this.</div>
+        <div className="text-xs text-gray-400 mt-2">I don&apos;t have this.</div>
       )}
     </div>
   );

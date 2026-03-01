@@ -8,6 +8,7 @@ import Providers from '@/components/Providers';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { PWAHead } from '@/components/pwa/PWAHead';
 import ClientWidgets from '@/components/ClientWidgets';
+import IOSInstallBanner from '@/components/pwa/IOSInstallBanner';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://alphatraders.co.za'),
@@ -21,7 +22,7 @@ export const metadata: Metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Party OS',
+    title: 'Gang Gear',
   },
   openGraph: {
     title: "Gang Gear | The Ultimate Squad OS",
@@ -40,7 +41,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#4c1d95',
+  themeColor: '#00FF66',
   viewportFit: 'cover',
 };
 
@@ -49,9 +50,6 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // TODO: Replace with real userId from auth
-  const userId = "demo-user";
-  const notifications = getUserNotifications(userId);
   return (
     <html lang="en">
       <head>
@@ -67,10 +65,11 @@ export default function RootLayout({
               <AuthProvider>
                 <div className="flex items-center justify-between px-6 py-4 bg-[#1A1A1A] border-b border-cyan-400">
                   <div className="text-2xl font-extrabold text-[#00FF66]">Gang Gear</div>
-                  <NotificationBell notifications={notifications} />
+                  <NotificationBell />
                 </div>
                 {children}
                 <ClientWidgets />
+                <IOSInstallBanner />
               </AuthProvider>
               <Toaster />
             </FirebaseClientProvider>

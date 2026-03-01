@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import { Icon, LatLngExpression } from 'leaflet';
@@ -25,10 +25,11 @@ import {
   ShoppingCart,
   Fuel,
   Baby,
+  Eye,
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useLocationTracker } from '@/hooks/use-location-tracker';
 import {
-  updateLiveLocation,
   toggleGhostMode,
   getEventLocations,
   addMeetHerePin,
@@ -172,11 +173,15 @@ export default function FamilyRadarClient({ event, attendees, currentUser }: Fam
   const [showTacticalMap, setShowTacticalMap] = useState(false);
   const [loadingTactical, setLoadingTactical] = useState(false);
   const [ghostMode, setGhostMode] = useState(false);
-  const [tracking, setTracking] = useState(false);
-  const [currentPosition, setCurrentPosition] = useState<[number, number] | null>(null);
   const { toast } = useToast();
-  const watchIdRef = useRef<number | null>(null);
-  const lastUpdateRef = useRef<number>(0);
+
+  const { tracking, currentPosition, startTracking, stopTracking } = useLocationTracker({
+    eventId: event.id,
+    userId: currentUser.uid,
+    userName: currentUser.name,
+    ghostMode,
+    broadcastInterval: 15_000,
+  });
 
   const eventCenter: LatLngExpression = event.coordinates
     ? [event.coordinates.lat, event.coordinates.lng]
@@ -204,7 +209,11 @@ export default function FamilyRadarClient({ event, attendees, currentUser }: Fam
                   latitude: data.latitude,
                   longitude: data.longitude,
                   speed: data.speed,
+                  speedKmh: data.speedKmh ?? data.speed,
                   accuracy: data.accuracy,
+                  batteryLevel: data.batteryLevel,
+                  isCharging: data.isCharging,
+                  lastPingAt: data.lastPingAt,
                 }
               : loc
           );
@@ -263,66 +272,7 @@ export default function FamilyRadarClient({ event, attendees, currentUser }: Fam
     }
   };
 
-  const startTracking = () => {
-    if (!navigator.geolocation) {
-      toast({
-        title: 'Error',
-        description: 'Geolocation is not supported by your browser',
-        variant: 'destructive',
-      });
-      return;
-    }
-
-    setTracking(true);
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude, speed: gpsSpeed, accuracy } = position.coords;
-        setCurrentPosition([latitude, longitude]);
-
-        // Broadcast every 30 seconds
-        const now = Date.now();
-        if (now - lastUpdateRef.current > 30000) {
-          lastUpdateRef.current = now;
-          
-          const speedKmh = gpsSpeed ? gpsSpeed * 3.6 : 0; // Convert m/s to km/h
-          
-          updateLiveLocation({
-            eventId: event.id,
-            userId: currentUser.uid,
-            userName: currentUser.name,
-            latitude: latitude.toString(),
-            longitude: longitude.toString(),
-            accuracy: Math.round(accuracy || 0),
-            speed: Math.round(speedKmh),
-            isGhostMode: ghostMode,
-          });
-        }
-      },
-      (error) => {
-        console.error('Geolocation error:', error);
-        toast({
-          title: 'Location Error',
-          description: 'Failed to get your location. Please check permissions.',
-          variant: 'destructive',
-        });
-        stopTracking();
-      },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 10000,
-        timeout: 15000,
-      }
-    );
-  };
-
-  const stopTracking = () => {
-    if (watchIdRef.current !== null) {
-      navigator.geolocation.clearWatch(watchIdRef.current);
-      watchIdRef.current = null;
-    }
-    setTracking(false);
-  };
+  // startTracking / stopTracking provided by useLocationTracker hook
 
   const handleGhostModeToggle = async (enabled: boolean) => {
     setGhostMode(enabled);
@@ -384,6 +334,14 @@ export default function FamilyRadarClient({ event, attendees, currentUser }: Fam
           </div>
 
           <div className="flex items-center gap-4">
+            {/* Overwatch link — tactical admin view */}
+            <Link href={`/events/${event.id}/overwatch`}>
+              <Button variant="outline" size="sm" className="gap-2 border-[#00F0FF] text-[#00F0FF] hover:bg-[#00F0FF]/10">
+                <Eye className="h-4 w-4" />
+                Overwatch
+              </Button>
+            </Link>
+
             {/* Tactical Map Toggle */}
             <div className="flex items-center gap-2">
               <MapPinned className={`h-5 w-5 ${showTacticalMap ? 'text-red-500' : 'text-muted-foreground'}`} />

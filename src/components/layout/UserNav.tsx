@@ -82,6 +82,12 @@ export function UserNav({ userProfile }: UserNavProps) {
                         <User className="mr-2 h-4 w-4" />
                         <span>Profile</span>
                     </DropdownMenuItem>
+                    <Link href="/profile/gear">
+                        <DropdownMenuItem>
+                            <span className="mr-2">🎒</span>
+                            <span>My Gear Bag</span>
+                        </DropdownMenuItem>
+                    </Link>
                     <Link href="/party/join">
                         <DropdownMenuItem>
                             <PartyPopper className="mr-2 h-4 w-4" />

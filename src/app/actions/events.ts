@@ -176,6 +176,7 @@ export async function addWaypoint(data: NewEventWaypoint) {
 
 export async function updateLiveLocation(data: NewLiveLocation) {
   try {
+    const now = new Date();
     // Upsert location
     const existing = await db
       .select()
@@ -185,13 +186,13 @@ export async function updateLiveLocation(data: NewLiveLocation) {
     if (existing.length > 0) {
       await db
         .update(liveLocations)
-        .set({ ...data, lastUpdated: new Date() })
+        .set({ ...data, lastUpdated: now, lastPingAt: now })
         .where(eq(liveLocations.id, existing[0].id));
     } else {
-      await db.insert(liveLocations).values(data);
+      await db.insert(liveLocations).values({ ...data, lastPingAt: now });
     }
 
-    // Broadcast via Pusher to presence channel
+    // Broadcast via Pusher to presence channel (includes full telemetry)
     if (!data.isGhostMode) {
       await triggerPartyEvent(`presence-event-${data.eventId}`, 'location-update', {
         userId: data.userId,
@@ -199,7 +200,11 @@ export async function updateLiveLocation(data: NewLiveLocation) {
         latitude: data.latitude,
         longitude: data.longitude,
         speed: data.speed,
+        speedKmh: data.speedKmh ?? data.speed,
         accuracy: data.accuracy,
+        batteryLevel: data.batteryLevel ?? null,
+        isCharging: data.isCharging ?? null,
+        lastPingAt: now.toISOString(),
       });
     }
 
@@ -517,5 +522,33 @@ export async function getWeatherForecast(lat: number, lng: number, date: Date) {
   } catch (error) {
     console.error('Failed to get weather:', error);
     return { success: false, error: 'Failed to get weather forecast' };
+  }
+}
+
+// ============================================
+// OVERWATCH: ADMIN PING
+// ============================================
+
+export async function sendAdminPing(targetUserId: string, adminName: string, eventId: string) {
+  try {
+    // Pusher real-time ping
+    await triggerPartyEvent(
+      `presence-event-${eventId}`,
+      'admin-ping',
+      { targetUserId, adminName, timestamp: new Date().toISOString() }
+    );
+
+    // Web Push notification (works even if app is closed)
+    const { sendPush } = await import('@/actions/push');
+    await sendPush(targetUserId, {
+      title: '🚨 Admin Check-In',
+      body: `${adminName} is checking in: Are you okay?`,
+      url: `/events/${eventId}`,
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Failed to send admin ping:', error);
+    return { success: false, error: 'Failed to send ping' };
   }
 }

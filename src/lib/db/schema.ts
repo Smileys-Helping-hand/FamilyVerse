@@ -1428,3 +1428,27 @@ export type Relationship = typeof relationships.$inferSelect;
 export type NewRelationship = typeof relationships.$inferInsert;
 export type HeritageItem = typeof heritageItems.$inferSelect;
 export type NewHeritageItem = typeof heritageItems.$inferInsert;
+
+// ============================================
+// MODULE 13: FAST-PASS GUEST RSVP
+// ============================================
+
+// Magic link RSVP tokens — one per guest invite, expires after use or TTL
+export const guestRsvps = pgTable('guest_rsvps', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  token: varchar('token', { length: 64 }).notNull().unique(), // The URL-safe token
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  invitedByUserId: text('invited_by_user_id').notNull(),
+  guestName: text('guest_name'), // Filled when they RSVP
+  guestEmail: text('guest_email'), // Optional contact
+  rsvpStatus: varchar('rsvp_status', { length: 20 }).notNull().default('PENDING'), // 'PENDING', 'GOING', 'CANT_MAKE_IT'
+  expiresAt: timestamp('expires_at').notNull(), // TTL for the link
+  usedAt: timestamp('used_at'), // When they first opened it
+  respondedAt: timestamp('responded_at'), // When they submitted
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Module 13 types
+export type GuestRsvp = typeof guestRsvps.$inferSelect;
+export type NewGuestRsvp = typeof guestRsvps.$inferInsert;
+

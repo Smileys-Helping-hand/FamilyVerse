@@ -14,7 +14,7 @@ html, body {
   overflow-x: hidden;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
-  background-color: #1a0b2e; /* Force dark purple everywhere */
+  background-color: #09090b; /* zinc-950 - Tactical dark */
 }
 
 /* Hide horizontal scrollbar for cleaner mobile look */
@@ -29,7 +29,7 @@ html, body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(139, 92, 246, 0.3);
+  background: rgba(0, 255, 102, 0.25);
   border-radius: 3px;
 }
 
@@ -66,35 +66,35 @@ button, a, [role="button"], input, select, textarea {
 }
 
 @layer base {
-  /* FamilyVerse - Cape Sunset Theme (Default - Dark Mode) */
+  /* Gang Gear - Tactical Minimalist Theme (Default - Dark Mode) */
   :root, [data-theme="family"] {
-    --background: 270 30% 8%;
-    --foreground: 0 0% 98%;
-    --card: 270 25% 10%;
-    --card-foreground: 0 0% 98%;
-    --popover: 270 25% 10%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 20 95% 55%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 280 85% 60%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 270 15% 15%;
-    --muted-foreground: 270 10% 65%;
-    --accent: 330 90% 60%;
-    --accent-foreground: 0 0% 100%;
+    --background: 240 10% 4%;
+    --foreground: 240 5% 96%;
+    --card: 240 6% 8%;
+    --card-foreground: 240 5% 96%;
+    --popover: 240 6% 8%;
+    --popover-foreground: 240 5% 96%;
+    --primary: 142 100% 50%;
+    --primary-foreground: 240 10% 4%;
+    --secondary: 240 5% 15%;
+    --secondary-foreground: 240 5% 96%;
+    --muted: 240 5% 12%;
+    --muted-foreground: 240 5% 55%;
+    --accent: 142 100% 50%;
+    --accent-foreground: 240 10% 4%;
     --success: 142 76% 45%;
     --success-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 270 20% 20%;
-    --input: 270 20% 15%;
-    --ring: 20 95% 55%;
-    --radius: 1rem;
-    --chart-1: 20 95% 55%;
-    --chart-2: 280 85% 60%;
-    --chart-3: 330 90% 60%;
-    --chart-4: 45 95% 58%;
-    --chart-5: 190 80% 50%;
+    --border: 240 5% 15%;
+    --input: 240 5% 12%;
+    --ring: 142 100% 50%;
+    --radius: 0.75rem;
+    --chart-1: 142 100% 50%;
+    --chart-2: 199 89% 48%;
+    --chart-3: 39 100% 57%;
+    --chart-4: 0 84% 60%;
+    --chart-5: 267 83% 60%;
   }
 
   /* KIDS THEME - Playful & Energetic */

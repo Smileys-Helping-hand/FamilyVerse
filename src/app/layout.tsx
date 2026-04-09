@@ -58,13 +58,13 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@400;500;600;700&family=Montserrat:wght@400;500;600;700&family=Playfair+Display:wght@400;500;600;700&family=Comic+Neue:wght@400;700&family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet" />
         <PWAHead />
       </head>
-      <body className="font-body antialiased min-h-screen w-full overflow-x-hidden bg-[#1a0b2e] text-white" suppressHydrationWarning>
+      <body className="font-body antialiased min-h-screen w-full overflow-x-hidden bg-zinc-950 text-zinc-100" suppressHydrationWarning>
         <ThemeProvider>
           <Providers>
             <FirebaseClientProvider>
               <AuthProvider>
-                <div className="flex items-center justify-between px-6 py-4 bg-[#1A1A1A] border-b border-cyan-400">
-                  <div className="text-2xl font-extrabold text-[#00FF66]">Gang Gear</div>
+                <div className="flex items-center justify-between px-6 py-4 bg-zinc-950 border-b border-zinc-800">
+                  <div className="text-2xl font-extrabold text-[#00FF66] tracking-tight">Gang Gear</div>
                   <NotificationBell />
                 </div>
                 {children}

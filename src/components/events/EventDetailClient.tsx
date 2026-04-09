@@ -17,6 +17,8 @@ import {
   Check,
   X,
   Clock,
+  Link2,
+  Clipboard,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -26,6 +28,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import Link from 'next/link';
 import { rsvpToEvent } from '@/app/actions/events';
+import { createMagicLink } from '@/actions/magic-link';
 import { useToast } from '@/hooks/use-toast';
 import { ExpenseTab } from './ExpenseTab';
 import { PollsTab } from './PollsTab';
@@ -128,6 +131,23 @@ export default function EventDetailClient({
         description: 'Failed to update RSVP',
         variant: 'destructive',
       });
+    }
+  };
+
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [generatingInvite, setGeneratingInvite] = useState(false);
+
+  const handleGenerateInvite = async () => {
+    setGeneratingInvite(true);
+    try {
+      const url = await createMagicLink({ eventId: event.id, invitedByUserId: currentUser.uid });
+      setInviteLink(url);
+      await navigator.clipboard.writeText(url);
+      toast({ title: 'Invite link copied!', description: 'Share it with your guest.' });
+    } catch {
+      toast({ title: 'Error', description: 'Could not generate invite link.', variant: 'destructive' });
+    } finally {
+      setGeneratingInvite(false);
     }
   };
 
@@ -243,6 +263,41 @@ export default function EventDetailClient({
                 Can't Make It
               </Button>
             </div>
+
+            {/* Invite guest link — creator only */}
+            {currentUser.uid === event.creatorId && (
+              <div className="mt-4 pt-4 border-t border-zinc-800">
+                <p className="text-xs text-zinc-500 mb-2 flex items-center gap-1.5">
+                  <Link2 className="h-3.5 w-3.5" />
+                  Invite guests without an account
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-2 border-[#00FF66]/40 text-[#00FF66] hover:bg-[#00FF66]/10"
+                    onClick={handleGenerateInvite}
+                    disabled={generatingInvite}
+                  >
+                    <Link2 className="h-4 w-4" />
+                    {generatingInvite ? 'Generating…' : 'Generate Invite Link'}
+                  </Button>
+                  {inviteLink && (
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-xs text-zinc-400 hover:text-zinc-100 transition-colors"
+                      onClick={() => { navigator.clipboard.writeText(inviteLink); toast({ title: 'Copied!' }); }}
+                    >
+                      <Clipboard className="h-3.5 w-3.5" />
+                      Copy again
+                    </button>
+                  )}
+                </div>
+                {inviteLink && (
+                  <p className="mt-2 text-xs text-zinc-500 font-mono break-all bg-zinc-900 rounded px-2 py-1.5">{inviteLink}</p>
+                )}
+              </div>
+            )}
 
             {/* Attendees List */}
             <div className="mt-6">

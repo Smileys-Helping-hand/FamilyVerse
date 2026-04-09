@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
-  throw new Error('Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable');
-}
-
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
-
 const SYSTEM_PROMPT = `You are an event-planning extraction engine for a social logistics platform called Gang Gear.
 Your only job is to parse a casual user prompt and return a single, valid JSON object.
 
@@ -43,6 +37,12 @@ export async function POST(req: NextRequest) {
   if (prompt.length > 2000) {
     return NextResponse.json({ error: 'Prompt is too long (max 2000 chars)' }, { status: 400 });
   }
+
+  const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
+  if (!apiKey) {
+    return NextResponse.json({ error: 'AI service not configured' }, { status: 503 });
+  }
+  const genAI = new GoogleGenerativeAI(apiKey);
 
   try {
     const model = genAI.getGenerativeModel({

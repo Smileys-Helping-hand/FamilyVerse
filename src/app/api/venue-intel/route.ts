@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
-if (!process.env.GOOGLE_GENAI_API_KEY) {
-  throw new Error('Missing GOOGLE_GENAI_API_KEY environment variable');
+if (!process.env.GOOGLE_GENERATIVE_AI_API_KEY) {
+  throw new Error('Missing GOOGLE_GENERATIVE_AI_API_KEY environment variable');
 }
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENAI_API_KEY);
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_GENERATIVE_AI_API_KEY);
 
 // WMO weather code → readable label
 const WMO_CODES: Record<number, string> = {

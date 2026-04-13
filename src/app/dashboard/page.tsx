@@ -1,25 +1,105 @@
 ﻿'use client';
 
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { AIDraftReview, type EventDraft } from '@/components/dashboard/AIDraftReview';
 import { cn } from '@/lib/utils';
-import { ArrowUp, Loader2, MapPin, Calendar, Users, Gamepad2, Package } from 'lucide-react';
+import {
+  ArrowUp,
+  Loader2,
+  MapPin,
+  Calendar,
+  Users,
+  Package,
+  Gamepad2,
+  Zap,
+  RefreshCw,
+} from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import {
+  getUserEventStats,
+  getPersonalizedSuggestions,
+  type PersonalizedSuggestion,
+  type UserEventStats,
+} from '@/app/actions/suggestions';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
-const QUICK_PROMPTS = [
-  'Braai this Saturday at Kirstenbosch for 8 people',
-  'Hiking trip to Table Mountain next Sunday, 6 people',
-  'Beach day at Clifton on Friday, bring the gang',
-  'Dinner in town this weekend',
+function StatSkeleton() {
+  return (
+    <div className="flex flex-col items-start gap-3 p-4 rounded-xl bg-zinc-900 border border-zinc-800 animate-pulse">
+      <div className="w-8 h-8 rounded-lg bg-zinc-800" />
+      <div className="space-y-1.5 w-full">
+        <div className="h-6 w-10 rounded bg-zinc-800" />
+        <div className="h-3 w-16 rounded bg-zinc-800" />
+      </div>
+    </div>
+  );
+}
+
+function PromptChip({
+  prompt,
+  reason,
+  onSelect,
+  disabled,
+}: {
+  prompt: string;
+  reason: string;
+  onSelect: (p: string) => void;
+  disabled: boolean;
+}) {
+  const label = `${prompt.split(' ').slice(0, 3).join(' ')}...`;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          onClick={() => onSelect(prompt)}
+          disabled={disabled}
+          title={prompt}
+          className="shrink-0 px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700
+            text-zinc-400 text-xs hover:text-zinc-200 hover:border-[#00FF66]/40 transition-colors
+            disabled:opacity-40 active:scale-95"
+        >
+          {label}
+        </button>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-[240px] border-zinc-700 bg-zinc-900 text-zinc-200 text-xs leading-relaxed">
+        <p className="font-medium text-[#00FF66] mb-1">Why this suggestion</p>
+        <p>{reason}</p>
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+const STAT_DEFS = [
+  { key: 'outings' as const, label: 'Outings', icon: MapPin, href: '/events' },
+  { key: 'upcoming' as const, label: 'Upcoming', icon: Calendar, href: '/events' },
+  { key: 'gangCount' as const, label: 'The Gang', icon: Users, href: '/dashboard/the-gang' },
+  { key: 'gearItems' as const, label: 'Gear Items', icon: Package, href: '/profile/gear' },
 ];
 
-const STAT_CARDS = [
-  { label: 'Outings',   value: '0', icon: MapPin,   href: '/events' },
-  { label: 'Upcoming',  value: '0', icon: Calendar, href: '/events' },
-  { label: 'The Gang',  value: '0', icon: Users,    href: '/dashboard/the-gang' },
-  { label: 'Gear Items',value: '0', icon: Package,  href: '/dashboard/gear' },
+const DEFAULT_PROMPTS: PersonalizedSuggestion[] = [
+  {
+    prompt: 'Braai this Saturday at Kirstenbosch for 8 people',
+    reason: 'Suggested to help you start planning quickly.',
+  },
+  {
+    prompt: 'Hiking trip to Table Mountain next Sunday, 6 people',
+    reason: 'Suggested to help you start planning quickly.',
+  },
+  {
+    prompt: 'Beach day at Clifton on Friday, bring the gang',
+    reason: 'Suggested to help you start planning quickly.',
+  },
+  {
+    prompt: 'Dinner in town this weekend, 6 people',
+    reason: 'Suggested to help you start planning quickly.',
+  },
 ];
 
 export default function DashboardPage() {
@@ -31,9 +111,14 @@ export default function DashboardPage() {
   const [isParsing, setIsParsing] = useState(false);
   const [draft, setDraft] = useState<EventDraft | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const [stats, setStats] = useState<UserEventStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+  const [quickPrompts, setQuickPrompts] = useState<PersonalizedSuggestion[]>(DEFAULT_PROMPTS);
+  const [promptsLoading, setPromptsLoading] = useState(true);
+
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Auto-resize textarea height
   useEffect(() => {
     const el = textareaRef.current;
     if (!el) return;
@@ -41,43 +126,63 @@ export default function DashboardPage() {
     el.style.height = `${el.scrollHeight}px`;
   }, [prompt]);
 
-  const handleParse = async (input: string) => {
-    const text = input.trim();
-    if (!text || isParsing) return;
-    setIsParsing(true);
-    setDraft(null);
-    try {
-      const res = await fetch('/api/plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: text }),
-      });
-      if (!res.ok) {
-        const { error } = await res.json().catch(() => ({ error: 'Request failed' }));
-        throw new Error(error || 'Unknown error');
+  useEffect(() => {
+    if (!userProfile?.uid) return;
+
+    getUserEventStats(userProfile.uid, userProfile.familyId).then((s) => {
+      setStats(s);
+      setStatsLoading(false);
+    });
+
+    getPersonalizedSuggestions(userProfile.uid).then((ps) => {
+      setQuickPrompts(ps);
+      setPromptsLoading(false);
+    });
+  }, [userProfile?.uid, userProfile?.familyId]);
+
+  const handleParse = useCallback(
+    async (input: string) => {
+      const text = input.trim();
+      if (!text || isParsing) return;
+
+      setIsParsing(true);
+      setDraft(null);
+      try {
+        const res = await fetch('/api/plan', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt: text }),
+        });
+
+        if (!res.ok) {
+          const { error } = await res.json().catch(() => ({ error: 'Request failed' }));
+          throw new Error(error || 'Unknown error');
+        }
+
+        const data: EventDraft = await res.json();
+        setDraft(data);
+      } catch (err) {
+        toast({
+          title: 'Parsing failed',
+          description: err instanceof Error ? err.message : 'Could not reach AI service.',
+          variant: 'destructive',
+        });
+      } finally {
+        setIsParsing(false);
       }
-      const data: EventDraft = await res.json();
-      setDraft(data);
-    } catch (err) {
-      toast({
-        title: 'Parsing failed',
-        description: err instanceof Error ? err.message : 'Could not reach AI service.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsParsing(false);
-    }
-  };
+    },
+    [isParsing, toast],
+  );
 
   const handleConfirm = async (confirmed: EventDraft) => {
     setIsSubmitting(true);
     try {
       const params = new URLSearchParams({
-        title:     confirmed.title,
-        location:  confirmed.location  ?? '',
-        date:      confirmed.date      ?? '',
+        title: confirmed.title,
+        location: confirmed.location ?? '',
+        date: confirmed.date ?? '',
         eventType: confirmed.eventType,
-        gear:      JSON.stringify(confirmed.requiredGear),
+        gear: JSON.stringify(confirmed.requiredGear),
       });
       router.push(`/events/new?${params.toString()}`);
     } catch {
@@ -94,18 +199,43 @@ export default function DashboardPage() {
     );
   }
 
+  const isNewUser = !statsLoading && stats !== null && stats.outings === 0;
+  const firstName = userProfile?.name?.split(' ')[0];
+
   return (
     <div className="max-w-3xl mx-auto space-y-8 py-6 px-2 sm:px-0">
-
-      {/* ── Greeting ── */}
       <div className="space-y-1">
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-zinc-100">
-          {userProfile?.name ? `Howzit, ${userProfile.name}.` : 'Welcome back.'}
+          {firstName ? `Howzit, ${firstName}.` : 'Welcome back.'}
         </h1>
-        <p className="text-zinc-500 text-base">What&apos;s the move?</p>
+        <p className="text-zinc-500 text-base">
+          {isNewUser ? 'Your first outing is one message away.' : "What's the move?"}
+        </p>
       </div>
 
-      {/* ── THE OMNIBAR ── */}
+      {isNewUser && !draft && (
+        <div className="rounded-2xl border border-[#00FF66]/20 bg-[#00FF66]/5 p-5 space-y-3">
+          <div className="flex items-center gap-2">
+            <Zap className="w-5 h-5 text-[#00FF66]" />
+            <p className="text-sm font-semibold text-zinc-200">How it works</p>
+          </div>
+          <ol className="space-y-2 text-sm text-zinc-400 list-none">
+            {[
+              'Type what you want to do into the bar below in plain English.',
+              'AI extracts the event, date, location, and gear in seconds.',
+              'Confirm the draft and your squad gets auto-assigned gear from their bags.',
+            ].map((step, i) => (
+              <li key={i} className="flex items-start gap-3">
+                <span className="shrink-0 inline-flex h-5 w-5 items-center justify-center rounded-full bg-[#00FF66]/15 text-[#00FF66] text-xs font-bold mt-0.5">
+                  {i + 1}
+                </span>
+                {step}
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
       <div
         className={cn(
           'relative rounded-2xl border transition-all duration-300 bg-zinc-900',
@@ -134,20 +264,27 @@ export default function DashboardPage() {
           disabled={isParsing}
         />
 
-        {/* Bottom toolbar */}
         <div className="absolute bottom-0 left-0 right-0 flex items-center justify-between px-4 pb-3 pointer-events-none">
-          <div className="flex gap-2 pointer-events-auto overflow-x-auto scrollbar-hide">
-            {QUICK_PROMPTS.map((q) => (
-              <button
-                key={q}
-                onClick={() => { setPrompt(q); handleParse(q); }}
-                disabled={isParsing}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-zinc-800 border border-zinc-700 text-zinc-400 text-xs hover:text-zinc-200 hover:border-zinc-500 transition-colors disabled:opacity-40"
-              >
-                {q.split(' ').slice(0, 3).join(' ')}&hellip;
-              </button>
-            ))}
-          </div>
+          <TooltipProvider>
+            <div className="flex gap-2 pointer-events-auto overflow-x-auto scrollbar-hide">
+              {promptsLoading
+                ? Array.from({ length: 4 }).map((_, i) => (
+                    <div key={i} className="h-6 w-20 rounded-full bg-zinc-800 animate-pulse shrink-0" />
+                  ))
+                : quickPrompts.map((suggestion) => (
+                    <PromptChip
+                      key={suggestion.prompt}
+                      prompt={suggestion.prompt}
+                      reason={suggestion.reason}
+                      disabled={isParsing}
+                      onSelect={(p) => {
+                        setPrompt(p);
+                        handleParse(p);
+                      }}
+                    />
+                  ))}
+            </div>
+          </TooltipProvider>
 
           <button
             onClick={() => handleParse(prompt)}
@@ -161,50 +298,100 @@ export default function DashboardPage() {
             )}
             aria-label="Parse outing"
           >
-            {isParsing
-              ? <Loader2 className="h-4 w-4 animate-spin" />
-              : <ArrowUp className="h-4 w-4" />
-            }
+            {isParsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowUp className="h-4 w-4" />}
           </button>
         </div>
       </div>
 
-      {/* ── AI Draft Review ── */}
       {draft && (
         <AIDraftReview
           draft={draft}
           onConfirm={handleConfirm}
-          onDiscard={() => { setDraft(null); setPrompt(''); }}
+          onDiscard={() => {
+            setDraft(null);
+            setPrompt('');
+          }}
           isSubmitting={isSubmitting}
         />
       )}
 
-      {/* ── Stat tiles (hidden while draft is open) ── */}
       {!draft && (
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-          {STAT_CARDS.map(({ label, value, icon: Icon, href }) => (
-            <button
-              key={label}
-              onClick={() => router.push(href)}
-              className={cn(
-                'group flex flex-col items-start gap-3 p-4 rounded-xl text-left',
-                'bg-zinc-900 border border-zinc-800',
-                'hover:border-zinc-700 hover:bg-zinc-800/50 transition-all duration-200',
-              )}
-            >
-              <div className="p-2 rounded-lg bg-zinc-800 group-hover:bg-zinc-700 transition-colors">
-                <Icon className="h-4 w-4 text-[#00FF66]" />
+        <div>
+          <div className="flex items-center justify-between mb-3 px-0.5">
+            <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600">Your stats</p>
+            {!statsLoading && (
+              <button
+                onClick={() => {
+                  setStatsLoading(true);
+                  setPromptsLoading(true);
+                  if (userProfile?.uid) {
+                    getUserEventStats(userProfile.uid, userProfile.familyId)
+                      .then(setStats)
+                      .finally(() => setStatsLoading(false));
+                    getPersonalizedSuggestions(userProfile.uid)
+                      .then(setQuickPrompts)
+                      .finally(() => setPromptsLoading(false));
+                  }
+                }}
+                className="text-zinc-600 hover:text-zinc-400 transition-colors"
+                title="Refresh"
+              >
+                <RefreshCw className="w-3.5 h-3.5" />
+              </button>
+            )}
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {statsLoading
+              ? Array.from({ length: 4 }).map((_, i) => <StatSkeleton key={i} />)
+              : STAT_DEFS.map(({ key, label, icon: Icon, href }) => (
+                  <button
+                    key={label}
+                    onClick={() => router.push(href)}
+                    className={cn(
+                      'group flex flex-col items-start gap-3 p-4 rounded-xl text-left',
+                      'bg-zinc-900 border border-zinc-800',
+                      'hover:border-zinc-700 hover:bg-zinc-800/50 transition-all duration-200',
+                    )}
+                  >
+                    <div className="p-2 rounded-lg bg-zinc-800 group-hover:bg-zinc-700 transition-colors">
+                      <Icon className="h-4 w-4 text-[#00FF66]" />
+                    </div>
+                    <div>
+                      <p className="text-2xl font-bold text-zinc-100 tabular-nums">{String(stats?.[key] ?? 0)}</p>
+                      <p className="text-xs text-zinc-500 font-medium">{label}</p>
+                    </div>
+                  </button>
+                ))}
+          </div>
+
+          {!statsLoading && stats && stats.recentEvents.length > 0 && (
+            <div className="mt-4 space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600 px-0.5">
+                Re-run a past outing
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {stats.recentEvents.slice(0, 3).map((ev, idx) => (
+                  <button
+                    key={`${ev.title}-${idx}`}
+                    onClick={() => {
+                      const p = ev.locationName ? `${ev.title} at ${ev.locationName}` : ev.title;
+                      setPrompt(p);
+                      handleParse(p);
+                    }}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 border
+                      border-zinc-800 text-xs text-zinc-400 hover:text-zinc-200 hover:border-zinc-600 transition-colors"
+                  >
+                    <MapPin className="w-3 h-3 text-[#00FF66]" />
+                    {ev.title}
+                  </button>
+                ))}
               </div>
-              <div>
-                <p className="text-2xl font-bold text-zinc-100">{value}</p>
-                <p className="text-xs text-zinc-500 font-medium">{label}</p>
-              </div>
-            </button>
-          ))}
+            </div>
+          )}
         </div>
       )}
 
-      {/* ── Arcade shortcut ── */}
       {!draft && (
         <button
           onClick={() => router.push('/game')}
@@ -224,7 +411,6 @@ export default function DashboardPage() {
           <ArrowUp className="h-4 w-4 text-zinc-600 rotate-90 group-hover:text-zinc-400 transition-colors" />
         </button>
       )}
-
     </div>
   );
 }

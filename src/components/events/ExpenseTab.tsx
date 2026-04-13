@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/select';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Plus, DollarSign, Check } from 'lucide-react';
+import { SnapAndSplit } from './SnapAndSplit';
 import { useToast } from '@/hooks/use-toast';
 import {
   addExpense,
@@ -181,6 +182,14 @@ export function ExpenseTab({ eventId, currentUser }: ExpenseTabProps) {
               <p className="text-3xl font-bold">R {(totalSpent / 100).toFixed(2)}</p>
               <p className="text-sm text-muted-foreground">Total spent</p>
             </div>
+
+            <div className="flex items-center gap-2">
+              <SnapAndSplit
+                eventId={eventId}
+                currentUser={currentUser}
+                attendees={attendees}
+                onComplete={loadData}
+              />
             
             <Dialog open={isAddingExpense} onOpenChange={setIsAddingExpense}>
               <DialogTrigger asChild>
@@ -276,6 +285,7 @@ export function ExpenseTab({ eventId, currentUser }: ExpenseTabProps) {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {/* Settlement Summary */}

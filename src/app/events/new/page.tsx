@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { Loader2, Package, UserCheck, MapPin, Calendar, Tag, Check, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { runQuartermaster, type AssignmentResult } from '@/actions/quartermaster';
+import { recordEventPreference } from '@/app/actions/suggestions';
 import Link from 'next/link';
 
 export default function NewEventPage() {
@@ -57,6 +58,9 @@ export default function NewEventPage() {
 
       if (!res.ok) throw new Error('Failed to create event');
       const { id: eventId } = await res.json();
+
+      // 1.5. Learn user preference signal from chosen event type
+      await recordEventPreference(user.uid, eventType || 'other');
 
       // 2. Run Auto-Quartermaster for the required gear
       let qResults: AssignmentResult[] = [];

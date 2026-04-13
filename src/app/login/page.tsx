@@ -1,39 +1,21 @@
 import { LoginForm } from '@/components/auth/LoginForm';
-import { Sparkles } from 'lucide-react';
+import { Zap } from 'lucide-react';
 
 export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden"
-      style={{ background: 'radial-gradient(ellipse at 60% 20%, #3b1060 0%, #1a0b2e 45%, #0d0520 100%)' }}
-    >
-      {/* Subtle ambient orbs */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] right-[-5%] w-[500px] h-[500px] rounded-full opacity-20 blur-[120px]"
-          style={{ background: 'radial-gradient(circle, #f97316 0%, transparent 70%)' }} />
-        <div className="absolute bottom-[-10%] left-[-5%] w-[400px] h-[400px] rounded-full opacity-15 blur-[100px]"
-          style={{ background: 'radial-gradient(circle, #a855f7 0%, transparent 70%)' }} />
-        <div className="absolute top-[40%] left-[10%] w-[300px] h-[300px] rounded-full opacity-10 blur-[80px]"
-          style={{ background: 'radial-gradient(circle, #ec4899 0%, transparent 70%)' }} />
-      </div>
+    <div className="flex min-h-screen items-center justify-center p-4 relative overflow-hidden bg-zinc-950">
+      <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(0,255,102,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,102,0.03)_1px,transparent_1px)] bg-[size:40px_40px]" />
+      <div className="pointer-events-none absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#00FF66]/4 blur-[80px] rounded-full" />
 
-      <div className="w-full max-w-md relative z-10">
-        {/* Logo & heading */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative mb-4">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center shadow-2xl"
-              style={{ background: 'linear-gradient(135deg, #f97316 0%, #ec4899 50%, #a855f7 100%)' }}>
-              <span className="text-3xl">🌿</span>
-            </div>
-            <Sparkles className="absolute -top-2 -right-2 h-5 w-5 text-yellow-400 animate-pulse" />
+      <div className="w-full max-w-sm relative z-10 space-y-6">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-12 h-12 rounded-2xl bg-[#00FF66] flex items-center justify-center shadow-[0_0_24px_rgba(0,255,102,0.5)]">
+            <Zap className="h-6 w-6 text-zinc-950" fill="currentColor" />
           </div>
-          <h1 className="text-4xl font-bold tracking-tight text-center text-white mb-2"
-            style={{ textShadow: '0 0 40px rgba(249,115,22,0.4)' }}>
-            Welcome back!
-          </h1>
-          <p className="text-center text-sm text-purple-300/80">
-            Sign in to continue to your{' '}
-            <span className="font-semibold" style={{ background: 'linear-gradient(90deg,#f97316,#ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>FamilyVerse</span>
-          </p>
+          <div className="text-center">
+            <h1 className="text-2xl font-extrabold text-zinc-100 tracking-tight">Gang Gear</h1>
+            <p className="text-sm text-zinc-500 mt-0.5">Sign into your squad</p>
+          </div>
         </div>
 
         <LoginForm />

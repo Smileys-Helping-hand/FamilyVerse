@@ -125,6 +125,124 @@ function isStaticAsset(pathname) {
     pathname === '/favicon.svg'
   );
 }
+// ============================================================
+// OFFLINE ACTION QUEUE — IndexedDB + Background Sync
+// ============================================================
+
+const OFFLINE_DB_NAME = 'gang-gear-offline-v1';
+const OFFLINE_STORE = 'action-queue';
+
+function openOfflineDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(OFFLINE_DB_NAME, 1);
+    req.onupgradeneeded = function (e) {
+      const db = e.target.result;
+      if (!db.objectStoreNames.contains(OFFLINE_STORE)) {
+        const store = db.createObjectStore(OFFLINE_STORE, { keyPath: 'id', autoIncrement: true });
+        store.createIndex('type', 'type', { unique: false });
+        store.createIndex('queuedAt', 'queuedAt', { unique: false });
+      }
+    };
+    req.onsuccess = function () { resolve(req.result); };
+    req.onerror = function () { reject(req.error); };
+  });
+}
+
+async function enqueueOfflineAction(action) {
+  const db = await openOfflineDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_STORE, 'readwrite');
+    tx.objectStore(OFFLINE_STORE).add({ ...action, queuedAt: Date.now(), retries: 0 });
+    tx.oncomplete = function () { resolve(); };
+    tx.onerror = function () { reject(tx.error); };
+  });
+}
+
+async function flushOfflineQueue() {
+  const db = await openOfflineDB();
+
+  const actions = await new Promise((resolve, reject) => {
+    const tx = db.transaction(OFFLINE_STORE, 'readwrite');
+    const store = tx.objectStore(OFFLINE_STORE);
+    const req = store.getAll();
+    req.onsuccess = function () {
+      store.clear();
+      tx.oncomplete = function () { resolve(req.result); };
+    };
+    req.onerror = function () { reject(req.error); };
+  });
+
+  const failed = [];
+
+  for (const action of actions) {
+    try {
+      const res = await fetch(action.url, {
+        method: action.method || 'POST',
+        headers: { 'Content-Type': 'application/json', ...(action.headers || {}) },
+        body: JSON.stringify(action.payload),
+      });
+
+      if (!res.ok && action.retries < 3) {
+        failed.push({ ...action, retries: (action.retries || 0) + 1 });
+      }
+    } catch {
+      if (action.retries < 3) {
+        failed.push({ ...action, retries: (action.retries || 0) + 1 });
+      }
+    }
+  }
+
+  // Re-queue failed actions that haven't exceeded retry limit
+  if (failed.length > 0) {
+    const db2 = await openOfflineDB();
+    await new Promise((resolve, reject) => {
+      const tx = db2.transaction(OFFLINE_STORE, 'readwrite');
+      const store = tx.objectStore(OFFLINE_STORE);
+      failed.forEach(function (a) { store.add(a); });
+      tx.oncomplete = function () { resolve(); };
+      tx.onerror = function () { reject(tx.error); };
+    });
+  }
+
+  // Notify all open pages that sync completed
+  self.clients.matchAll().then(function (clients) {
+    clients.forEach(function (client) {
+      client.postMessage({ type: 'SYNC_COMPLETE', synced: actions.length - failed.length });
+    });
+  });
+}
+
+// Background Sync handler
+self.addEventListener('sync', function (event) {
+  if (event.tag === 'gang-gear-sync') {
+    event.waitUntil(flushOfflineQueue());
+  }
+});
+
+// Message handler — pages call this to queue actions while offline
+self.addEventListener('message', function (event) {
+  if (!event.data) return;
+
+  if (event.data.type === 'QUEUE_ACTION') {
+    event.waitUntil(
+      enqueueOfflineAction(event.data.action).then(function () {
+        // Attempt immediate sync if online
+        if (navigator.onLine) {
+          return flushOfflineQueue();
+        }
+      })
+    );
+  }
+
+  if (event.data.type === 'SYNC_NOW') {
+    event.waitUntil(flushOfflineQueue());
+  }
+});
+
+// ============================================================
+// WEB PUSH NOTIFICATION HANDLERS
+// ============================================================
+
 // Web Push notification event handlers
 self.addEventListener('push', function (event) {
   const data = event.data ? event.data.json() : {};

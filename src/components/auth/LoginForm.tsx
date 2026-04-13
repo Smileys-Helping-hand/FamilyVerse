@@ -19,8 +19,7 @@ import { useAuth } from '@/firebase';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useState } from 'react';
-import { Loader2, Mail, Lock, Sparkles, Eye, EyeOff } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { Loader2, Mail, Lock, Eye, EyeOff, ArrowRight } from 'lucide-react';
 
 const formSchema = z.object({
   email: z.string().email({ message: 'Invalid email address.' }),
@@ -46,8 +45,8 @@ export function LoginForm() {
     if (!auth) {
       toast({
         variant: 'destructive',
-        title: 'Configuration Error',
-        description: 'Firebase is not properly initialized. Please refresh the page.',
+        title: 'Configuration error',
+        description: 'Firebase is not initialized. Refresh and try again.',
       });
       return;
     }
@@ -55,34 +54,31 @@ export function LoginForm() {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      
       toast({
-        title: 'Welcome back!',
-        description: 'You have successfully signed in.',
+        title: 'Signed in',
+        description: 'Welcome back. Ready to plan the next outing?',
       });
-      
       router.push('/dashboard');
     } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = 'An error occurred during login.';
-      
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        errorMessage = 'Invalid email or password. Please try again.';
+      let errorMessage = 'An error occurred during sign in.';
+
+      if (
+        error.code === 'auth/invalid-credential' ||
+        error.code === 'auth/user-not-found' ||
+        error.code === 'auth/wrong-password'
+      ) {
+        errorMessage = 'Invalid email or password.';
       } else if (error.code === 'auth/user-disabled') {
-        errorMessage = 'This account has been disabled. Please contact support.';
+        errorMessage = 'This account has been disabled.';
       } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many failed attempts. Please try again later.';
-      } else if (error.code === 'auth/configuration-not-found') {
-        errorMessage = 'Firebase project is not properly configured. Please check your Firebase Console.';
-      } else if (error.code === 'auth/api-key-not-valid') {
-        errorMessage = 'Invalid Firebase API key. Please verify your Firebase configuration.';
+        errorMessage = 'Too many attempts. Try again later.';
       } else if (error.message) {
         errorMessage = error.message;
       }
 
       toast({
         variant: 'destructive',
-        title: 'Login failed',
+        title: 'Sign in failed',
         description: errorMessage,
       });
     } finally {
@@ -91,153 +87,91 @@ export function LoginForm() {
   }
 
   return (
-    <div
-      className="rounded-2xl shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-700 overflow-hidden"
-      style={{
-        background: 'rgba(20, 8, 50, 0.75)',
-        backdropFilter: 'blur(24px)',
-        border: '1px solid rgba(168, 85, 247, 0.2)',
-        boxShadow: '0 30px 80px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.07)',
-      }}
-    >
-      {/* Top gradient accent bar */}
-      <div className="h-[3px] w-full" style={{ background: 'linear-gradient(90deg, #f97316 0%, #ec4899 50%, #a855f7 100%)' }} />
+    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-sm shadow-xl overflow-hidden">
+      <div className="h-[3px] w-full bg-gradient-to-r from-[#00FF66] via-[#00FF66]/40 to-transparent" />
 
-      <div className="p-8 pt-7">
-        {/* Header */}
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-1">
-            <div
-              className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-lg"
-              style={{ background: 'linear-gradient(135deg, #f97316, #ec4899)' }}
-            >
-              <Lock className="h-4 w-4 text-white" />
-            </div>
-            <h2 className="text-2xl font-bold text-white tracking-tight">Sign In</h2>
-          </div>
-          <p className="text-sm text-purple-300/60 ml-12">Enter your credentials to access your account</p>
+      <div className="p-6 sm:p-7">
+        <div className="mb-6">
+          <h2 className="text-xl font-bold text-zinc-100 tracking-tight">Event Command Login</h2>
+          <p className="text-sm text-zinc-500 mt-1">Sign in to open your Omnibar and launch the next move.</p>
         </div>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
-
-            {/* Email */}
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold text-purple-200/80 tracking-wide">Email</FormLabel>
+                  <FormLabel className="text-sm font-medium text-zinc-300">Email</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400/70" />
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                       <Input
                         placeholder="name@example.com"
-                        className={cn(
-                          'pl-10 h-12 text-white text-sm placeholder:text-purple-400/40',
-                          'transition-all duration-200',
-                          'border border-purple-600/30 hover:border-purple-500/50',
-                          'focus:border-purple-400/70 focus:ring-2 focus:ring-purple-500/20 focus-visible:ring-purple-500/20',
-                          'rounded-xl'
-                        )}
-                        style={{ background: 'rgba(88, 28, 135, 0.2)' }}
+                        className="pl-10 h-11 border-zinc-700 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600 focus:border-[#00FF66]/60 focus:ring-[#00FF66]/20"
                         {...field}
                       />
                     </div>
                   </FormControl>
-                  <FormMessage className="text-pink-400 text-xs" />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
 
-            {/* Password */}
             <FormField
               control={form.control}
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-semibold text-purple-200/80 tracking-wide">Password</FormLabel>
+                  <FormLabel className="text-sm font-medium text-zinc-300">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-purple-400/70" />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
                       <Input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="••••••••"
-                        className={cn(
-                          'pl-10 pr-10 h-12 text-white text-sm placeholder:text-purple-400/40',
-                          'transition-all duration-200',
-                          'border border-purple-600/30 hover:border-purple-500/50',
-                          'focus:border-purple-400/70 focus:ring-2 focus:ring-purple-500/20 focus-visible:ring-purple-500/20',
-                          'rounded-xl'
-                        )}
-                        style={{ background: 'rgba(88, 28, 135, 0.2)' }}
+                        placeholder="........"
+                        className="pl-10 pr-10 h-11 border-zinc-700 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600 focus:border-[#00FF66]/60 focus:ring-[#00FF66]/20"
                         {...field}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-purple-400/70 hover:text-purple-200 transition-colors"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
                         tabIndex={-1}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                       </button>
                     </div>
                   </FormControl>
-                  <FormMessage className="text-pink-400 text-xs" />
+                  <FormMessage className="text-xs" />
                 </FormItem>
               )}
             />
 
-            {/* Submit */}
             <Button
               type="submit"
-              className={cn(
-                'w-full h-12 text-sm font-bold text-white mt-1 rounded-xl',
-                'transition-all duration-300 hover:scale-[1.02]',
-                'disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100',
-                'border-0 shadow-lg'
-              )}
-              style={{
-                background: 'linear-gradient(90deg, #f97316 0%, #ec4899 55%, #a855f7 100%)',
-                boxShadow: '0 4px 24px rgba(249,115,22,0.25)',
-              }}
+              className="w-full h-11 text-sm font-semibold bg-[#00FF66] text-zinc-950 hover:bg-[#00FF66]/90 shadow-[0_0_18px_rgba(0,255,102,0.35)]"
               disabled={isLoading}
             >
               {isLoading ? (
-                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Signing in...</>
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Signing in...
+                </>
               ) : (
-                <><Sparkles className="mr-2 h-4 w-4" />Sign In</>
+                <>
+                  Open Dashboard
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </>
               )}
             </Button>
 
-            {/* Divider */}
-            <div className="relative py-1">
-              <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-purple-700/30" />
-              </div>
-              <div className="relative flex justify-center">
-                <span
-                  className="px-4 text-[11px] uppercase tracking-widest font-medium text-purple-400/50"
-                  style={{ background: 'rgba(20, 8, 50, 0.75)' }}
-                >
-                  New to FamilyVerse?
-                </span>
-              </div>
-            </div>
-
-            {/* Sign up link */}
-            <div className="text-center pb-1">
-              <Link href="/signup" className="group inline-flex items-center gap-2">
-                <span
-                  className="text-sm font-semibold group-hover:opacity-80 transition-opacity"
-                  style={{ background: 'linear-gradient(90deg, #f97316, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}
-                >
-                  Create an account
-                </span>
-                <Sparkles className="h-3.5 w-3.5 text-yellow-400 animate-pulse" />
+            <div className="pt-2 border-t border-zinc-800 text-center">
+              <Link href="/signup" className="text-sm text-zinc-400 hover:text-[#00FF66] transition-colors">
+                New here? Create your Gang Gear account
               </Link>
             </div>
-
           </form>
         </Form>
       </div>

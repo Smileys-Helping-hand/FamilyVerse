@@ -80,7 +80,7 @@ const STAT_DEFS = [
   { key: 'outings' as const, label: 'Outings', icon: MapPin, href: '/events' },
   { key: 'upcoming' as const, label: 'Upcoming', icon: Calendar, href: '/events' },
   { key: 'gangCount' as const, label: 'The Gang', icon: Users, href: '/dashboard/the-gang' },
-  { key: 'gearItems' as const, label: 'Gear Items', icon: Package, href: '/profile/gear' },
+  { key: 'gearItems' as const, label: 'Gear Items', icon: Package, href: '/dashboard/gear' },
 ];
 
 const DEFAULT_PROMPTS: PersonalizedSuggestion[] = [

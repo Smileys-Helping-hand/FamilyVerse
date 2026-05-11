@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
         try {
           await db.execute(sql`
             UPDATE events SET ${setClauses}
-            WHERE id = ${createdId}::text
+            WHERE id = ${createdId}::uuid
           `);
           break;
         } catch (updateErr) {

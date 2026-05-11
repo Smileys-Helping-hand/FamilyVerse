@@ -62,14 +62,22 @@ export default function NewEventPage() {
       }
       const { id: eventId } = await res.json();
 
-      // 1.5. Learn user preference signal from chosen event type
-      await recordEventPreference(user.uid, eventType || 'other');
+      // 1.5. Learn user preference signal from chosen event type (non-blocking)
+      try {
+        await recordEventPreference(user.uid, eventType || 'other');
+      } catch (prefErr) {
+        console.warn('[events/new] preference signal failed:', prefErr);
+      }
 
-      // 2. Run Auto-Quartermaster for the required gear
+      // 2. Run Auto-Quartermaster for the required gear (non-blocking)
       let qResults: AssignmentResult[] = [];
       if (gear.length) {
-        qResults = await runQuartermaster(eventId, gear, [user.uid]);
-        setAssignments(qResults);
+        try {
+          qResults = await runQuartermaster(eventId, gear, [user.uid]);
+          setAssignments(qResults);
+        } catch (qmErr) {
+          console.warn('[events/new] quartermaster failed:', qmErr);
+        }
       }
 
       const autoCount = qResults.filter((r) => r.status === 'AUTO_ASSIGNED').length;

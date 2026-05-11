@@ -4,7 +4,18 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Menu, X, Shield, Settings, Gamepad2, Printer, ScrollText, LayoutDashboard, ChevronLeft } from 'lucide-react';
+import {
+  Menu,
+  X,
+  Shield,
+  Settings,
+  Gamepad2,
+  Printer,
+  ScrollText,
+  LayoutDashboard,
+  ChevronLeft,
+  Leaf,
+} from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';

@@ -56,7 +56,10 @@ export default function NewEventPage() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to create event');
+      if (!res.ok) {
+        const payload = await res.json().catch(() => null);
+        throw new Error(payload?.error || 'Failed to create event');
+      }
       const { id: eventId } = await res.json();
 
       // 1.5. Learn user preference signal from chosen event type

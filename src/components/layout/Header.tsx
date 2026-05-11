@@ -32,7 +32,7 @@ export default function Header() {
                 </Link>
 
                 {/* Primary nav */}
-                <nav className="flex flex-1 items-center gap-1 overflow-x-auto scrollbar-hide">
+                <nav className="flex flex-1 min-w-0 items-center gap-1 overflow-x-auto pr-2 scrollbar-hide">
                     {NAV_ITEMS.map(({ label, href, icon: Icon, match }) => {
                         const active = pathname === match || pathname?.startsWith(match + '/');
                         return (

@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { Leaf, Menu, X, Shield, Settings, Gamepad2, Printer, ScrollText, LayoutDashboard, ChevronLeft } from 'lucide-react';
+import { Menu, X, Shield, Settings, Gamepad2, Printer, ScrollText, LayoutDashboard, ChevronLeft } from 'lucide-react';
 import { Sheet, SheetContent, SheetTrigger, SheetClose } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -71,12 +71,12 @@ function NavContent({ onClose }: { onClose?: () => void }) {
 
       <div className="pt-6 mt-6 border-t border-red-500/30">
         <Link 
-          href="/" 
+          href="/dashboard"
           onClick={onClose}
           className="flex items-center gap-2 px-3 py-2 text-sm text-gray-400 hover:text-white hover:bg-white/5 rounded transition"
         >
           <ChevronLeft className="h-4 w-4" />
-          Back to FamilyVerse
+          Back to Dashboard
         </Link>
       </div>
     </nav>

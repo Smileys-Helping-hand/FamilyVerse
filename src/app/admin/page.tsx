@@ -1,15 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
+import { motion } from 'framer-motion';
 import { getDashboardStats, forceResetRound, logEvent } from '@/app/actions/admin';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { 
   Users, Gamepad2, Car, Bell, Coins, 
   RefreshCw, AlertTriangle, Activity, 
-  Zap, Send, QrCode, Shield
+  Zap, Send, QrCode, Shield, Clock
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -20,10 +27,33 @@ interface Stats {
   activeParties: number;
   totalPoints: number;
   errorRate: number;
-  activeUsers?: number;
-  spyGameActive?: boolean;
-  currentDriver?: string;
+  activeUsers: number;
+  spyGameActive: boolean;
+  currentDriver: string;
 }
+
+type DataQuality = 'db-live' | 'stale' | 'unavailable';
+
+const BADGE_META: Record<DataQuality, { label: string; dot: string; text: string; tooltip: string }> = {
+  'db-live': {
+    label: 'DB LIVE',
+    dot: 'bg-emerald-400',
+    text: 'text-emerald-300',
+    tooltip: 'Data pulled live from the database — fully up-to-date.',
+  },
+  stale: {
+    label: 'STALE',
+    dot: 'bg-amber-400',
+    text: 'text-amber-300',
+    tooltip: 'Last fetch failed. Showing cached values — may be outdated. Check DB connection or auth.',
+  },
+  unavailable: {
+    label: 'UNAVAILABLE',
+    dot: 'bg-red-400',
+    text: 'text-red-400',
+    tooltip: 'Could not reach the database. Check server logs, DB credentials, or admin session.',
+  },
+};
 
 // =============================================================================
 // Mission Control Dashboard
@@ -32,31 +62,37 @@ export default function MissionControlPage() {
   const { toast } = useToast();
   const [stats, setStats] = useState<Stats | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dataQuality, setDataQuality] = useState<DataQuality>('db-live');
+  const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
   const [notificationText, setNotificationText] = useState('');
   const [sendingNotification, setSendingNotification] = useState(false);
+  const statsRef = useRef<Stats | null>(null);
+  statsRef.current = stats;
 
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async (manual = false) => {
+    if (manual) setRefreshing(true);
     try {
       const result = await getDashboardStats();
       if (result.success && result.stats) {
-        setStats({
-          ...result.stats,
-          activeUsers: Math.floor(Math.random() * 20) + 5, // Simulated for now
-          spyGameActive: Math.random() > 0.5,
-          currentDriver: ['Uncle Mo', 'Aunty Sarah', 'Cousin Jake', 'None'][Math.floor(Math.random() * 4)],
-        });
+        setStats(result.stats);
+        setDataQuality('db-live');
+        setLastRefreshed(new Date());
+      } else {
+        setDataQuality(statsRef.current ? 'stale' : 'unavailable');
       }
-    } catch (error) {
-      console.error('Failed to fetch stats:', error);
+    } catch {
+      setDataQuality(statsRef.current ? 'stale' : 'unavailable');
     }
     setLoading(false);
-  };
+    if (manual) setRefreshing(false);
+  }, []);
 
   useEffect(() => {
     fetchStats();
-    const interval = setInterval(fetchStats, 10000); // Refresh every 10s
+    const interval = setInterval(() => fetchStats(), 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchStats]);
 
   // =============================================================================
   // Action Handlers
@@ -70,7 +106,7 @@ export default function MissionControlPage() {
     if (result.success) {
       toast({ title: '✅ Game Reset', description: result.message });
       await logEvent('INFO', 'Admin', `Force reset ${gameType} game from Mission Control`);
-      fetchStats();
+      fetchStats(true);
     } else {
       toast({ title: '❌ Reset Failed', description: result.error, variant: 'destructive' });
     }
@@ -116,74 +152,91 @@ export default function MissionControlPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-white text-xl animate-pulse flex items-center gap-2">
-          <RefreshCw className="w-6 h-6 animate-spin" />
-          Loading Mission Control...
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-10 h-10 rounded-full border-2 border-green-400 border-t-transparent animate-spin" />
+          <p className="text-zinc-400 text-sm animate-pulse">Connecting to Mission Control…</p>
         </div>
       </div>
     );
   }
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.08, duration: 0.35, ease: 'easeOut' },
+    }),
+  };
+
   return (
+    <TooltipProvider>
     <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-            <Activity className="w-8 h-8 text-green-400" />
+          <h2 className="text-3xl font-bold text-white mb-1 flex items-center gap-3">
+            <Activity className="w-8 h-8 text-green-400 drop-shadow-[0_0_8px_rgba(74,222,128,0.6)]" />
             Mission Control
           </h2>
-          <p className="text-gray-400">Real-time monitoring and god-mode controls</p>
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <span>Real-time monitoring and god-mode controls</span>
+            {lastRefreshed && (
+              <span className="flex items-center gap-1 text-xs text-gray-500 border border-zinc-700 rounded px-1.5 py-0.5">
+                <Clock className="w-3 h-3" />
+                {lastRefreshed.toLocaleTimeString()}
+              </span>
+            )}
+          </div>
         </div>
-        <Button variant="outline" size="sm" onClick={fetchStats}>
-          <RefreshCw className="w-4 h-4 mr-2" />
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => fetchStats(true)}
+          disabled={refreshing}
+          className="border-zinc-700 hover:border-green-500/50 hover:text-green-400"
+        >
+          <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
           Refresh
         </Button>
       </div>
 
-      {/* =================================================================== */}
       {/* Live Metrics Grid */}
-      {/* =================================================================== */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Headcount */}
-        <MetricCard
-          icon={<Users className="w-6 h-6" />}
-          title="Headcount"
-          value={stats?.activeUsers || 0}
-          subtitle="Active users"
-          color="blue"
-          live
-        />
-
-        {/* Imposter Status */}
-        <MetricCard
-          icon={<Gamepad2 className="w-6 h-6" />}
-          title="Spy Game"
-          value={stats?.spyGameActive ? 'ACTIVE' : 'WAITING'}
-          subtitle={stats?.spyGameActive ? 'Game in progress' : 'Ready to start'}
-          color={stats?.spyGameActive ? 'green' : 'gray'}
-          live
-        />
-
-        {/* Sim Rig */}
-        <MetricCard
-          icon={<Car className="w-6 h-6" />}
-          title="Sim Rig"
-          value={stats?.currentDriver || 'Empty'}
-          subtitle="Current driver"
-          color={stats?.currentDriver && stats.currentDriver !== 'None' ? 'purple' : 'gray'}
-          live
-        />
-
-        {/* System Health */}
-        <MetricCard
-          icon={stats && stats.errorRate > 0 ? <AlertTriangle className="w-6 h-6" /> : <Activity className="w-6 h-6" />}
-          title="Errors (1hr)"
-          value={stats?.errorRate || 0}
-          subtitle={stats && stats.errorRate > 0 ? 'Check logs!' : 'All systems go'}
-          color={stats && stats.errorRate > 0 ? 'red' : 'green'}
-          live
-        />
+        {[
+          {
+            icon: <Users className="w-6 h-6" />,
+            title: 'Headcount',
+            value: stats?.activeUsers ?? 0,
+            subtitle: 'Active users',
+            color: 'blue' as const,
+          },
+          {
+            icon: <Gamepad2 className="w-6 h-6" />,
+            title: 'Spy Game',
+            value: stats?.spyGameActive ? 'ACTIVE' : 'WAITING',
+            subtitle: stats?.spyGameActive ? 'Game in progress' : 'Ready to start',
+            color: (stats?.spyGameActive ? 'green' : 'gray') as 'green' | 'gray',
+          },
+          {
+            icon: <Car className="w-6 h-6" />,
+            title: 'Sim Rig',
+            value: stats?.currentDriver || 'Empty',
+            subtitle: 'Current driver',
+            color: (stats?.currentDriver && stats.currentDriver !== 'None' ? 'purple' : 'gray') as 'purple' | 'gray',
+          },
+          {
+            icon: stats && stats.errorRate > 0 ? <AlertTriangle className="w-6 h-6" /> : <Activity className="w-6 h-6" />,
+            title: 'Errors (1hr)',
+            value: stats?.errorRate ?? 0,
+            subtitle: stats && stats.errorRate > 0 ? 'Check logs!' : 'All systems go',
+            color: (stats && stats.errorRate > 0 ? 'red' : 'green') as 'red' | 'green',
+          },
+        ].map((card, i) => (
+          <motion.div key={card.title} custom={i} variants={cardVariants} initial="hidden" animate="visible">
+            <MetricCard {...card} dataQuality={dataQuality} />
+          </motion.div>
+        ))}
       </div>
 
       {/* =================================================================== */}
@@ -281,6 +334,7 @@ export default function MissionControlPage() {
         />
       </div>
     </div>
+    </TooltipProvider>
   );
 }
 
@@ -293,41 +347,59 @@ function MetricCard({
   value,
   subtitle,
   color,
-  live,
+  dataQuality,
 }: {
   icon: React.ReactNode;
   title: string;
   value: string | number;
   subtitle: string;
   color: 'blue' | 'green' | 'purple' | 'red' | 'gray';
-  live?: boolean;
+  dataQuality: DataQuality;
 }) {
   const colorClasses = {
-    blue: 'from-blue-500/20 to-blue-600/20 border-blue-500/40 text-blue-400',
-    green: 'from-green-500/20 to-green-600/20 border-green-500/40 text-green-400',
-    purple: 'from-purple-500/20 to-purple-600/20 border-purple-500/40 text-purple-400',
-    red: 'from-red-500/20 to-red-600/20 border-red-500/40 text-red-400',
-    gray: 'from-gray-500/20 to-gray-600/20 border-gray-500/40 text-gray-400',
+    blue:   'from-blue-500/20 to-blue-600/20 border-blue-500/40 text-blue-400 hover:border-blue-400/60 hover:shadow-blue-500/20',
+    green:  'from-green-500/20 to-green-600/20 border-green-500/40 text-green-400 hover:border-green-400/60 hover:shadow-green-500/20',
+    purple: 'from-purple-500/20 to-purple-600/20 border-purple-500/40 text-purple-400 hover:border-purple-400/60 hover:shadow-purple-500/20',
+    red:    'from-red-500/20 to-red-600/20 border-red-500/40 text-red-400 hover:border-red-400/60 hover:shadow-red-500/20',
+    gray:   'from-gray-500/20 to-gray-600/20 border-gray-500/40 text-gray-400 hover:border-gray-400/60 hover:shadow-gray-500/20',
   };
 
-  const split = colorClasses[color].split(' ');
-  const bgClasses = split.slice(0, 3).join(' ');
-  const textClass = split[3];
+  const parts = colorClasses[color].split(' ');
+  const bgClasses = `${parts[0]} ${parts[1]} ${parts[2]}`;
+  const textClass = parts[3];
+  const hoverBorder = parts[4];
+  const hoverShadow = parts[5];
+
+  const badge = BADGE_META[dataQuality];
 
   return (
-    <Card className={`bg-gradient-to-br ${bgClasses} border-2 backdrop-blur-sm`}>
+    <Card
+      className={`bg-gradient-to-br ${bgClasses} border-2 backdrop-blur-sm transition-all duration-300 ${hoverBorder} hover:shadow-lg ${hoverShadow}`}
+    >
       <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between mb-3">
           <span className={textClass}>{icon}</span>
-          {live && (
-            <span className="flex items-center gap-1 text-xs text-gray-400">
-              <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              LIVE
-            </span>
-          )}
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <span
+                className={`flex items-center gap-1 text-xs font-medium ${badge.text} cursor-help select-none`}
+              >
+                <span
+                  className={`w-2 h-2 rounded-full ${badge.dot} ${dataQuality === 'db-live' ? 'animate-pulse' : ''}`}
+                />
+                {badge.label}
+              </span>
+            </TooltipTrigger>
+            <TooltipContent
+              side="top"
+              className="max-w-[220px] text-xs bg-zinc-900 border-zinc-700 text-zinc-200"
+            >
+              {badge.tooltip}
+            </TooltipContent>
+          </Tooltip>
         </div>
-        <div className="text-2xl font-bold text-white">{value}</div>
-        <div className="text-xs text-gray-400">{title}</div>
+        <div className="text-2xl font-extrabold text-white tracking-tight">{value}</div>
+        <div className="text-xs font-semibold text-gray-300 mt-0.5">{title}</div>
         <div className="text-xs text-gray-500 mt-1">{subtitle}</div>
       </CardContent>
     </Card>

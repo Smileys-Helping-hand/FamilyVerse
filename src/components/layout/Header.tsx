@@ -21,12 +21,12 @@ export default function Header() {
     const pathname = usePathname();
 
     return (
-        <header className="sticky top-0 z-40 w-full border-b border-zinc-800 bg-zinc-950/90 backdrop-blur-xl overflow-x-hidden">
+        <header className="sticky top-0 z-40 w-full border-b border-zinc-800/80 bg-zinc-950/95 backdrop-blur-xl overflow-x-hidden">
             <div className="container flex h-16 items-center gap-4 px-4">
                 {/* Logo */}
                 <Link href="/dashboard" className="flex items-center gap-2 group shrink-0">
-                    <Zap className="h-6 w-6 text-[#00FF66] drop-shadow-[0_0_8px_#00FF66]" />
-                    <span className="font-extrabold text-xl tracking-tight text-[#00FF66] drop-shadow-[0_0_12px_rgba(0,255,102,0.5)]">
+                    <Zap className="h-6 w-6 text-[#00FF66] drop-shadow-[0_0_8px_#00FF66] group-hover:drop-shadow-[0_0_14px_#00FF66] transition-all duration-200" />
+                    <span className="font-extrabold text-xl tracking-tight text-[#00FF66] drop-shadow-[0_0_12px_rgba(0,255,102,0.5)] group-hover:drop-shadow-[0_0_20px_rgba(0,255,102,0.7)] transition-all duration-200">
                         Gang Gear
                     </span>
                 </Link>
@@ -40,14 +40,17 @@ export default function Header() {
                                 key={href}
                                 href={href}
                                 className={cn(
-                                    'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 whitespace-nowrap',
+                                    'relative flex items-center gap-1.5 px-3 py-1.5 rounded-md text-sm font-semibold transition-all duration-200 whitespace-nowrap',
                                     active
                                         ? 'bg-[#00FF66]/10 text-[#00FF66] shadow-[0_0_12px_rgba(0,255,102,0.2)]'
-                                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800'
+                                        : 'text-zinc-400 hover:text-zinc-100 hover:bg-zinc-800/80'
                                 )}
                             >
-                                <Icon className="h-4 w-4 shrink-0" />
+                                <Icon className={cn('h-4 w-4 shrink-0', active && 'drop-shadow-[0_0_6px_rgba(0,255,102,0.6)]')} />
                                 {label}
+                                {active && (
+                                    <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-[#00FF66] shadow-[0_0_6px_rgba(0,255,102,0.8)]" />
+                                )}
                             </Link>
                         );
                     })}

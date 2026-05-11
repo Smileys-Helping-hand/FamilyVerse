@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { MapPin, ShoppingCart, DollarSign, Gamepad2, ChevronRight, Zap } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 // ── Animated grid canvas (tactical background) ────────────────────────────
 function TacticalGrid() {
@@ -191,15 +192,19 @@ export default function HomePage() {
           Stop juggling five WhatsApp threads and a shared Google Sheet.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FEATURES.map(f => (
-            <div
+          {FEATURES.map((f, i) => (
+            <motion.div
               key={f.title}
+              initial={{ opacity: 0, y: 32 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.2 }}
+              transition={{ duration: 0.45, delay: i * 0.1, ease: 'easeOut' }}
               className={`relative flex flex-col gap-3 p-6 rounded-2xl bg-[#1A1A1A] border ${f.color} transition-all hover:-translate-y-1 hover:scale-[1.02]`}
             >
               <div className="text-3xl">{f.emoji}</div>
               <h3 className={`text-lg font-bold ${f.accent}`}>{f.title}</h3>
               <p className="text-sm text-gray-400 leading-relaxed">{f.desc}</p>
-            </div>
+            </motion.div>
           ))}
         </div>
       </section>

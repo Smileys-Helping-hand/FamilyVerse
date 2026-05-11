@@ -51,7 +51,6 @@ export function PWAInstallPrompt() {
 
     // Listen for the beforeinstallprompt event (Chrome/Edge/Android)
     const handler = (e: Event) => {
-      e.preventDefault();
       setDeferredPrompt(e as BeforeInstallPromptEvent);
       
       // Show prompt after a short delay (5 seconds) so user can see the app first

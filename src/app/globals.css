@@ -194,6 +194,12 @@ button, a, [role="button"], input, select, textarea {
 @layer base {
   * {
     border-color: hsl(var(--border));
+  }
+
+  /* Scope theme transitions to interactive elements only for better performance */
+  a, button, input, select, textarea,
+  [role="button"], [role="tab"], [role="menuitem"],
+  .transition-theme {
     transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
   }
   
@@ -232,11 +238,6 @@ button, a, [role="button"], input, select, textarea {
   .animate-gradient {
     background-size: 200% 200%;
     animation: gradient 6s ease infinite;
-  }
-
-  @keyframes gradient {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
   }
 
   /* Bounce animations for kids theme */

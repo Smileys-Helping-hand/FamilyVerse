@@ -33,37 +33,17 @@ const notificationIcons = {
 };
 
 const notificationColors = {
-  info: 'text-blue-500 bg-blue-50 border-blue-200',
-  success: 'text-green-500 bg-green-50 border-green-200',
-  warning: 'text-yellow-500 bg-yellow-50 border-yellow-200',
-  error: 'text-red-500 bg-red-50 border-red-200',
+  info:    'text-blue-400 bg-blue-500/10 border-blue-500/30',
+  success: 'text-green-400 bg-green-500/10 border-green-500/30',
+  warning: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
+  error:   'text-red-400 bg-red-500/10 border-red-500/30',
 };
 
 export function NotificationCenter() {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
-    // Simulate loading notifications
-    setNotifications([
-      {
-        id: '1',
-        type: 'info',
-        title: 'Welcome to FamilyVerse',
-        message: 'Start building your family tree today!',
-        timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-        read: false,
-      },
-      {
-        id: '2',
-        type: 'success',
-        title: 'Member Added',
-        message: 'You successfully added Emma to the family tree.',
-        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-        read: false,
-      },
-    ]);
-  }, []);
+  // Notifications start empty; future push/pull integration should populate them.
 
   const unreadCount = notifications.filter(n => !n.read).length;
 

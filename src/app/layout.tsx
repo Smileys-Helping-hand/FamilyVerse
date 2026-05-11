@@ -1,7 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
-import NotificationBell from "@/components/ui/NotificationBell";
 import { FirebaseClientProvider } from '@/firebase/client-provider';
 import { AuthProvider } from '@/context/AuthContext';
 import Providers from '@/components/Providers';
@@ -63,10 +62,6 @@ export default function RootLayout({
           <Providers>
             <FirebaseClientProvider>
               <AuthProvider>
-                <div className="flex items-center justify-between px-6 py-4 bg-zinc-950 border-b border-zinc-800">
-                  <div className="text-2xl font-extrabold text-[#00FF66] tracking-tight">Gang Gear</div>
-                  <NotificationBell />
-                </div>
                 {children}
                 <ClientWidgets />
                 <IOSInstallBanner />

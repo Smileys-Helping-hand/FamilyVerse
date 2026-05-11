@@ -151,14 +151,35 @@ export async function getDashboardStats() {
   }
 
   try {
+    await ensureSystemLogsSchema();
+
     // Count active parties
     const activeParties = await db.execute(
-      sql`SELECT COUNT(DISTINCT party_code) as count FROM party_users WHERE status = 'active'`
+      sql`SELECT COUNT(*) as count FROM parties WHERE is_active = true`
+    );
+
+    // Count active/approved users
+    const activeUsers = await db.execute(
+      sql`SELECT COUNT(*) as count FROM party_users WHERE status IN ('approved', 'active')`
     );
 
     // Sum total points
     const totalPoints = await db.execute(
       sql`SELECT COALESCE(SUM(wallet_balance), 0) as total FROM party_users`
+    );
+
+    // Check if a spy/imposter game is currently active
+    const spyGameState = await db.execute(
+      sql`SELECT COUNT(*) as count FROM party_games WHERE type IN ('IMPOSTER', 'SPY') AND status IN ('OPEN', 'LOCKED')`
+    );
+
+    // Get current driver from active sim race registration list
+    const simDriver = await db.execute(
+      sql`SELECT COALESCE(NULLIF(registered_drivers->>0, ''), 'None') as current_driver
+          FROM party_games
+          WHERE type = 'SIM_RACE' AND status IN ('OPEN', 'LOCKED')
+          ORDER BY created_at DESC
+          LIMIT 1`
     );
 
     // Count errors in last hour
@@ -171,7 +192,10 @@ export async function getDashboardStats() {
       success: true,
       stats: {
         activeParties: Number(activeParties.rows[0]?.count) || 0,
+        activeUsers: Number(activeUsers.rows[0]?.count) || 0,
         totalPoints: Number(totalPoints.rows[0]?.total) || 0,
+        spyGameActive: (Number(spyGameState.rows[0]?.count) || 0) > 0,
+        currentDriver: String(simDriver.rows[0]?.current_driver || 'None'),
         errorRate: Number(recentErrors.rows[0]?.count) || 0,
       },
     };

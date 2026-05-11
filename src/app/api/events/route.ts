@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
-import { events } from '@/lib/db/schema';
 import { sql } from 'drizzle-orm';
 import { createHash } from 'node:crypto';
 
@@ -26,6 +25,56 @@ function toRows<T>(result: unknown): T[] {
 function uidToDeterministicUuid(uid: string) {
   const hex = createHash('md5').update(uid).digest('hex');
   return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error);
+}
+
+async function getEventColumns() {
+  try {
+    const result = await db.execute(sql`
+      select column_name, udt_name
+      from information_schema.columns
+      where table_schema = 'public' and table_name = 'events'
+    `);
+    return toRows<ColumnMeta>(result);
+  } catch {
+    return [] as ColumnMeta[];
+  }
+}
+
+async function tryMapCreatorId(firebaseUid: string) {
+  try {
+    const result = await db.execute(sql`
+      select id
+      from users
+      where uid = ${firebaseUid}
+      limit 1
+    `);
+    const rows = toRows<{ id: string }>(result);
+    if (rows[0]?.id && isUuid(rows[0].id)) {
+      return rows[0].id;
+    }
+  } catch {
+    // Ignore mapping errors; fallback will be used.
+  }
+
+  return uidToDeterministicUuid(firebaseUid);
+}
+
+async function insertEventDynamic(values: Record<string, unknown>) {
+  const columns = Object.keys(values);
+  const columnsSql = sql.raw(columns.map((col) => `"${col}"`).join(', '));
+  const valueSql = sql.join(columns.map((col) => sql`${values[col]}`), sql`, `);
+  const result = await db.execute(sql`
+    insert into "events" (${columnsSql})
+    values (${valueSql})
+    returning "id"
+  `);
+
+  const rows = toRows<{ id?: string }>(result);
+  return rows[0]?.id ?? null;
 }
 
 export async function POST(req: NextRequest) {
@@ -78,98 +127,93 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'coordinates must be { lat: number, lng: number }' }, { status: 400 });
     }
 
-    const baseValues = {
+    const eventColumns = await getEventColumns();
+    const creatorCol = eventColumns.find((c) => c.column_name === 'creator_id');
+    const familyCol = eventColumns.find((c) => c.column_name === 'family_id');
+
+    let candidateCreatorId = normalizedCreatorId;
+    let candidateFamilyId: string | null = normalizedFamilyId || null;
+
+    if (creatorCol?.udt_name === 'uuid' && !isUuid(candidateCreatorId)) {
+      candidateCreatorId = await tryMapCreatorId(candidateCreatorId);
+    }
+    if (familyCol?.udt_name === 'uuid' && candidateFamilyId && !isUuid(candidateFamilyId)) {
+      candidateFamilyId = null;
+    }
+
+    const insertValues: Record<string, unknown> = {
       title: normalizedTitle,
-      locationName: typeof locationName === 'string' && locationName.trim() ? locationName.trim() : null,
-      startTime: parsedStartTime,
+      start_time: parsedStartTime,
+      location_name: typeof locationName === 'string' && locationName.trim() ? locationName.trim() : null,
       coordinates: hasCoordinates ? coordinates : null,
+      creator_id: candidateCreatorId,
+      family_id: candidateFamilyId,
       status: typeof status === 'string' && status.trim() ? status.trim() : 'UPCOMING',
-      updatedAt: new Date(),
+      is_recurring: false,
+      created_at: new Date(),
+      updated_at: new Date(),
     };
 
-    let event: { id?: string } | undefined;
-    let candidateCreatorId = normalizedCreatorId;
-    let candidateFamilyId = normalizedFamilyId || null;
-
-    try {
-      const [inserted] = await db
-        .insert(events)
-        .values({
-          ...baseValues,
-          creatorId: candidateCreatorId,
-          familyId: candidateFamilyId,
-        })
-        .returning({ id: events.id });
-      event = inserted;
-    } catch (insertErr) {
-      const message = insertErr instanceof Error ? insertErr.message : String(insertErr);
-
-      if (message.includes('relation "events" does not exist')) {
-        return NextResponse.json({ error: 'Events table is missing in production DB. Run migrations.' }, { status: 500 });
+    // If schema info is available, pre-trim to known columns only.
+    if (eventColumns.length > 0) {
+      const allowed = new Set(eventColumns.map((c) => c.column_name));
+      for (const key of Object.keys(insertValues)) {
+        if (!allowed.has(key)) {
+          delete insertValues[key];
+        }
       }
+    }
 
-      // Some environments use UUID for creator_id/family_id while app uses Firebase/text IDs.
-      if (message.includes('invalid input syntax for type uuid')) {
-        const eventColsResult = await db.execute(sql`
-          select column_name, udt_name
-          from information_schema.columns
-          where table_schema = 'public' and table_name = 'events'
-        `);
-        const eventCols = toRows<ColumnMeta>(eventColsResult);
-        const creatorCol = eventCols.find((c) => c.column_name === 'creator_id');
-        const familyCol = eventCols.find((c) => c.column_name === 'family_id');
+    let createdId: string | null = null;
+    let lastError = '';
 
-        if (creatorCol?.udt_name === 'uuid' && !isUuid(candidateCreatorId)) {
-          const usersColsResult = await db.execute(sql`
-            select column_name, udt_name
-            from information_schema.columns
-            where table_schema = 'public' and table_name = 'users'
-          `);
-          const usersCols = toRows<ColumnMeta>(usersColsResult);
-          const hasUid = usersCols.some((c) => c.column_name === 'uid');
-          const hasUuidId = usersCols.some((c) => c.column_name === 'id' && c.udt_name === 'uuid');
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      try {
+        createdId = await insertEventDynamic(insertValues);
+        if (createdId) break;
+      } catch (insertError) {
+        const message = getErrorMessage(insertError);
+        lastError = message;
 
-          if (hasUid && hasUuidId) {
-            const mappedUserResult = await db.execute(sql`
-              select id
-              from users
-              where uid = ${candidateCreatorId}
-              limit 1
-            `);
-            const mappedRows = toRows<{ id: string }>(mappedUserResult);
-            if (mappedRows[0]?.id && isUuid(mappedRows[0].id)) {
-              candidateCreatorId = mappedRows[0].id;
-            } else {
-              candidateCreatorId = uidToDeterministicUuid(candidateCreatorId);
-            }
-          } else {
-            candidateCreatorId = uidToDeterministicUuid(candidateCreatorId);
+        if (message.includes('relation "events" does not exist')) {
+          return NextResponse.json({ error: 'Events table is missing in production DB. Run migrations.' }, { status: 500 });
+        }
+
+        const missingColumn = message.match(/column "([^"]+)" of relation "events" does not exist/i)?.[1];
+        if (missingColumn && missingColumn in insertValues) {
+          delete insertValues[missingColumn];
+          continue;
+        }
+
+        if (message.includes('invalid input syntax for type uuid')) {
+          if (insertValues.creator_id && typeof insertValues.creator_id === 'string' && !isUuid(insertValues.creator_id)) {
+            insertValues.creator_id = await tryMapCreatorId(insertValues.creator_id);
+            continue;
+          }
+
+          if (insertValues.family_id && typeof insertValues.family_id === 'string' && !isUuid(insertValues.family_id)) {
+            insertValues.family_id = null;
+            continue;
           }
         }
 
-        if (familyCol?.udt_name === 'uuid' && candidateFamilyId && !isUuid(candidateFamilyId)) {
-          candidateFamilyId = null;
+        if (message.toLowerCase().includes('coordinates')) {
+          insertValues.coordinates = null;
+          continue;
         }
 
-        const [fallbackInserted] = await db
-          .insert(events)
-          .values({
-            ...baseValues,
-            creatorId: candidateCreatorId,
-            familyId: candidateFamilyId,
-          })
-          .returning({ id: events.id });
-        event = fallbackInserted;
-      } else {
-        throw insertErr;
+        throw insertError;
       }
     }
 
-    if (!event?.id) {
+    if (!createdId) {
+      if (lastError) {
+        return NextResponse.json({ error: `Failed to create event: ${lastError}` }, { status: 500 });
+      }
       return NextResponse.json({ error: 'Event creation failed' }, { status: 500 });
     }
 
-    return NextResponse.json({ id: event.id }, { status: 201 });
+    return NextResponse.json({ id: createdId }, { status: 201 });
   } catch (err) {
     console.error('[api/events POST]', err);
     if (err instanceof Error) {

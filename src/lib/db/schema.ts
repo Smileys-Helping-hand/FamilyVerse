@@ -955,6 +955,10 @@ export const eventAttendees = pgTable('event_attendees', {
   rsvpStatus: varchar('rsvp_status', { length: 20 }).notNull().default('PENDING'), // 'GOING', 'MAYBE', 'CANT_MAKE_IT', 'PENDING'
   addedAt: timestamp('added_at').notNull().defaultNow(),
   respondedAt: timestamp('responded_at'),
+  plusOnes: integer('plus_ones').notNull().default(0), // Number of additional guests
+  dietaryNotes: text('dietary_notes'), // Allergies, restrictions, preferences
+  needsTransport: boolean('needs_transport').notNull().default(false),
+  specialNeeds: text('special_needs'), // Accessibility requirements
 });
 
 // Event waypoints/itinerary - timeline of activities
@@ -1430,6 +1434,91 @@ export type HeritageItem = typeof heritageItems.$inferSelect;
 export type NewHeritageItem = typeof heritageItems.$inferInsert;
 
 // ============================================
+// MODULE 13: APP INTEGRATIONS & AUTHENTICATION
+// ============================================
+
+// App integrations - Store API credentials for connected apps
+export const appIntegrations = pgTable('app_integrations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => users.uid, { onDelete: 'cascade' }),
+  appId: varchar('app_id', { length: 50 }).notNull(), // 'LIFESTACK', 'NEXUS_OS', 'CUSTOM'
+  appName: text('app_name').notNull(), // Display name
+  credentials: text('credentials').notNull(), // Encrypted API key/token
+  isEncrypted: boolean('is_encrypted').notNull().default(true),
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'), // 'ACTIVE', 'REVOKED', 'EXPIRED'
+  connectionUrl: text('connection_url'), // OAuth redirect URL if applicable
+  metadata: jsonb('metadata').$type<Record<string, any>>(), // App-specific config
+  lastUsedAt: timestamp('last_used_at'),
+  expiresAt: timestamp('expires_at'), // Token expiration
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// App integration logs - Audit trail
+export const appIntegrationLogs = pgTable('app_integration_logs', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  integrationId: uuid('integration_id').notNull().references(() => appIntegrations.id, { onDelete: 'cascade' }),
+  action: varchar('action', { length: 30 }).notNull(), // 'CREATED', 'REVOKED', 'ACCESSED', 'FAILED'
+  details: jsonb('details').$type<Record<string, any>>(), // Error message, status code, etc.
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Claude Auth sessions - For multi-device auth
+export const claudeAuthSessions = pgTable('claude_auth_sessions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => users.uid, { onDelete: 'cascade' }),
+  claudeAuthId: text('claude_auth_id').unique(), // Claude's user ID
+  sessionToken: text('session_token').notNull().unique(), // For device sync
+  deviceId: text('device_id').notNull(), // Device identifier
+  isActive: boolean('is_active').notNull().default(true),
+  expiresAt: timestamp('expires_at').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at').notNull().defaultNow(),
+});
+
+// Auth linked accounts - Migration from Firebase to Claude
+export const authLinkedAccounts = pgTable('auth_linked_accounts', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().unique().references(() => users.uid, { onDelete: 'cascade' }),
+  firebaseUid: text('firebase_uid'), // Old Firebase UID
+  claudeAuthId: text('claude_auth_id'), // New Claude Auth ID
+  migrationStatus: varchar('migration_status', { length: 20 }).notNull().default('PENDING'), // 'PENDING', 'MIGRATED', 'MERGED'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  migratedAt: timestamp('migrated_at'),
+});
+
+// Event comments - Public discussion on events
+export const eventComments = pgTable('event_comments', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id'), // NULL for anonymous
+  userName: text('user_name').notNull(), // Display name
+  content: text('content').notNull(),
+  isAnonymous: boolean('is_anonymous').notNull().default(false),
+  isApproved: boolean('is_approved').notNull().default(false),
+  parentCommentId: uuid('parent_comment_id').references(() => eventComments.id, { onDelete: 'cascade' }), // For replies
+  likesCount: integer('likes_count').notNull().default(0),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Comment likes - Engagement tracking
+export const commentLikes = pgTable('comment_likes', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  commentId: uuid('comment_id').notNull().references(() => eventComments.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Comment approvals - Admin moderation log
+export const commentApprovals = pgTable('comment_approvals', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  commentId: uuid('comment_id').notNull().references(() => eventComments.id, { onDelete: 'cascade' }),
+  approvedBy: text('approved_by').notNull(),
+  approvedAt: timestamp('approved_at').notNull().defaultNow(),
+});
+
+// ============================================
 // MODULE 13: FAST-PASS GUEST RSVP
 // ============================================
 
@@ -1448,7 +1537,23 @@ export const guestRsvps = pgTable('guest_rsvps', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
-// Module 13 types
+// Module 13 types - App Integrations & Auth
+export type AppIntegration = typeof appIntegrations.$inferSelect;
+export type NewAppIntegration = typeof appIntegrations.$inferInsert;
+export type AppIntegrationLog = typeof appIntegrationLogs.$inferSelect;
+export type NewAppIntegrationLog = typeof appIntegrationLogs.$inferInsert;
+export type ClaudeAuthSession = typeof claudeAuthSessions.$inferSelect;
+export type NewClaudeAuthSession = typeof claudeAuthSessions.$inferInsert;
+export type AuthLinkedAccount = typeof authLinkedAccounts.$inferSelect;
+export type NewAuthLinkedAccount = typeof authLinkedAccounts.$inferInsert;
+export type EventComment = typeof eventComments.$inferSelect;
+export type NewEventComment = typeof eventComments.$inferInsert;
+export type CommentLike = typeof commentLikes.$inferSelect;
+export type NewCommentLike = typeof commentLikes.$inferInsert;
+export type CommentApproval = typeof commentApprovals.$inferSelect;
+export type NewCommentApproval = typeof commentApprovals.$inferInsert;
+
+// Module 14 types - Guest RSVP
 export type GuestRsvp = typeof guestRsvps.$inferSelect;
 export type NewGuestRsvp = typeof guestRsvps.$inferInsert;
 

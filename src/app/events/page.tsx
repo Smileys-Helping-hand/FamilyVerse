@@ -336,7 +336,7 @@ function EventCard({ event }: { event: any }) {
 
   return (
     <Link href={`/events/${event.id}`} className="block h-full">
-      <Card className="hover:shadow-lg transition-all cursor-pointer group h-full">
+      <Card className="glass-card card-hover cursor-pointer group h-full">
         <div className="relative h-48 overflow-hidden rounded-t-lg">
           {event.heroImageUrl ? (
             <img

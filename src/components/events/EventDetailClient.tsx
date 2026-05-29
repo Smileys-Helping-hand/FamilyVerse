@@ -37,6 +37,8 @@ import GuardianTab from './GuardianTab';
 import MenuTab from './MenuTab';
 import GalleryTab from './GalleryTab';
 import EventChatTab from './EventChatTab';
+import BookingWidget from './BookingWidget';
+import MosWordsBoard from './MosWordsBoard';
 import { getPusherClient } from '@/lib/pusher/client';
 
 interface EventDetailClientProps {
@@ -189,7 +191,7 @@ export default function EventDetailClient({
 
       <div className="container mx-auto px-4 py-8 max-w-6xl">
         {/* Quick Info Bar */}
-        <Card className="mb-8">
+        <Card className="glass-card mb-8 border-none">
           <CardContent className="pt-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="flex items-center gap-3">
@@ -232,7 +234,7 @@ export default function EventDetailClient({
         </Card>
 
         {/* RSVP Section */}
-        <Card className="mb-8">
+        <Card className="glass-card mb-8 border-none">
           <CardHeader>
             <CardTitle>Are you going?</CardTitle>
           </CardHeader>
@@ -323,7 +325,7 @@ export default function EventDetailClient({
 
         {/* Weather Widget */}
         {weather && (
-          <Card className="mb-8">
+          <Card className="glass-card mb-8 border-orange-500/30 shadow-[0_0_15px_rgba(249,115,22,0.1)]">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Cloud className="h-5 w-5" />
@@ -353,8 +355,10 @@ export default function EventDetailClient({
 
         {/* Main Tabs */}
         <Tabs defaultValue="itinerary" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-5 lg:grid-cols-9">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-11">
             <TabsTrigger value="itinerary">📋 Plan</TabsTrigger>
+            <TabsTrigger value="booking">⚡ Booking</TabsTrigger>
+            <TabsTrigger value="moswords">🔥 Slang</TabsTrigger>
             <TabsTrigger value="map">📍 Radar</TabsTrigger>
             <TabsTrigger value="supplies">🛒 Supplies</TabsTrigger>
             <TabsTrigger value="expenses">💰 Kitty</TabsTrigger>
@@ -367,7 +371,7 @@ export default function EventDetailClient({
 
           {/* Itinerary Tab */}
           <TabsContent value="itinerary">
-            <Card>
+            <Card className="glass-card border-none">
               <CardHeader>
                 <CardTitle>Event Timeline</CardTitle>
                 <CardDescription>The plan for the day</CardDescription>
@@ -414,7 +418,7 @@ export default function EventDetailClient({
 
           {/* Map Tab */}
           <TabsContent value="map">
-            <Card>
+            <Card className="glass-card border-none">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Navigation className="h-5 w-5" />
@@ -471,6 +475,16 @@ export default function EventDetailClient({
           {/* Chat Tab */}
           <TabsContent value="chat">
             <EventChatTab eventId={event.id} />
+          </TabsContent>
+
+          {/* Booking Tab */}
+          <TabsContent value="booking">
+            <BookingWidget eventId={event.id} />
+          </TabsContent>
+
+          {/* MosWords Tab */}
+          <TabsContent value="moswords">
+            <MosWordsBoard />
           </TabsContent>
         </Tabs>
       </div>

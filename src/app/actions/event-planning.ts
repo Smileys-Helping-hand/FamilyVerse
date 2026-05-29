@@ -6,6 +6,7 @@ import {
   eventTags,
   eventTemplates,
   eventChecklists,
+  eventSupplies,
   eventInvitations,
   eventReminders,
   recurringEvents,
@@ -14,11 +15,14 @@ import {
   type NewEventTag, 
   type NewEventTemplate,
   type NewEventChecklist,
+  type NewEventSupply,
   type NewEventInvitation,
   type NewEventReminder,
   type NewRecurringEvent,
   type NewEvent,
 } from '@/lib/db/schema';
+import { ai } from '@/ai/genkit';
+import { z } from 'zod';
 import { eq, and, desc, sql, inArray } from 'drizzle-orm';
 import { revalidatePath } from 'next/cache';
 import { triggerPartyEvent } from '@/lib/pusher/server';
@@ -543,5 +547,66 @@ export async function quickCreateEvent(data: {
   } catch (error) {
     console.error('Failed to quick create event:', error);
     return { success: false, error: 'Failed to quick create event' };
+  }
+}
+
+// ============================================
+// AI EVENT RESEARCH & PLANNING
+// ============================================
+
+const AiResearchSchema = z.object({
+  placeDetails: z.string().describe("Venue accessibility and highlight"),
+  weatherAdvice: z.string().describe("Precise weather considerations"),
+  suggestedSupplies: z.array(z.string()).describe("List of 3-5 supplies to auto-insert"),
+  suggestedTasks: z.array(z.string()).describe("List of 3-5 planning tasks to auto-insert"),
+});
+
+export async function generateAiEventPlanAction(eventId: string, locationName: string, description: string) {
+  try {
+    const prompt = `Research and plan an event at ${locationName}. Context: ${description}. 
+    Provide place details, weather advice for the current season, suggested supplies to bring, and planning tasks.`;
+
+    const { output } = await ai.generate({
+      model: 'googleai/gemini-2.5-flash',
+      prompt: prompt,
+      output: { schema: AiResearchSchema }
+    });
+
+    if (!output) throw new Error("Failed to generate AI plan");
+
+    // 1. Save research to event
+    await db.update(events).set({
+      aiResearch: output
+    }).where(eq(events.id, eventId));
+
+    // 2. Insert Tasks into eventChecklists
+    if (output.suggestedTasks && output.suggestedTasks.length > 0) {
+      const taskInserts = output.suggestedTasks.map((task, i) => ({
+        eventId,
+        title: task,
+        category: 'AI_SUGGESTION',
+        sortOrder: i,
+        createdBy: 'system'
+      }));
+      await db.insert(eventChecklists).values(taskInserts);
+    }
+
+    // 3. Insert Supplies into eventSupplies
+    if (output.suggestedSupplies && output.suggestedSupplies.length > 0) {
+      const supplyInserts = output.suggestedSupplies.map(supply => ({
+        eventId,
+        itemName: supply,
+        quantityNeeded: '1',
+        category: 'AI_SUGGESTION',
+        status: 'NEEDED'
+      }));
+      await db.insert(eventSupplies).values(supplyInserts);
+    }
+
+    revalidatePath(`/events/${eventId}`);
+    return { success: true, research: output };
+  } catch (error: any) {
+    console.error('AI Research Error:', error);
+    return { success: false, error: error.message };
   }
 }

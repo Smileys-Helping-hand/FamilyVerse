@@ -41,9 +41,10 @@ html, body {
   height: 100dvh !important;
 }
 
-/* Remove 300ms tap delay on all interactive elements */
+/* Remove 300ms tap delay and tap-highlight on all interactive elements */
 button, a, [role="button"], input, select, textarea {
   touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Safe area insets for notched phones */
@@ -53,6 +54,13 @@ button, a, [role="button"], input, select, textarea {
 
 .safe-area-inset-bottom {
   padding-bottom: env(safe-area-inset-bottom);
+}
+
+.mobile-safe-container {
+  padding-top: max(env(safe-area-inset-top), 1.5rem);
+  padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
+  padding-left: max(env(safe-area-inset-left), 1rem);
+  padding-right: max(env(safe-area-inset-right), 1rem);
 }
 
 /* Hide scrollbar utility */
@@ -66,33 +74,33 @@ button, a, [role="button"], input, select, textarea {
 }
 
 @layer base {
-  /* Gang Gear - Tactical Minimalist Theme (Default - Dark Mode) */
+  /* Cape Sunset Theme (Default - Dark Mode) */
   :root, [data-theme="family"] {
-    --background: 240 10% 4%;
-    --foreground: 240 5% 96%;
-    --card: 240 6% 8%;
-    --card-foreground: 240 5% 96%;
-    --popover: 240 6% 8%;
-    --popover-foreground: 240 5% 96%;
-    --primary: 142 100% 50%;
-    --primary-foreground: 240 10% 4%;
-    --secondary: 240 5% 15%;
-    --secondary-foreground: 240 5% 96%;
-    --muted: 240 5% 12%;
-    --muted-foreground: 240 5% 55%;
-    --accent: 142 100% 50%;
-    --accent-foreground: 240 10% 4%;
+    --background: 222 47% 11%; /* Slate */
+    --foreground: 210 40% 98%;
+    --card: 222 47% 11%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 11%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 24 95% 53%; /* Orange */
+    --primary-foreground: 210 40% 98%;
+    --secondary: 346 77% 50%; /* Rose */
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 32% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 43 96% 58%; /* Gold */
+    --accent-foreground: 210 40% 98%;
     --success: 142 76% 45%;
     --success-foreground: 0 0% 100%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 240 5% 15%;
-    --input: 240 5% 12%;
-    --ring: 142 100% 50%;
+    --border: 217 32% 17%;
+    --input: 217 32% 17%;
+    --ring: 24 95% 53%;
     --radius: 0.75rem;
-    --chart-1: 142 100% 50%;
-    --chart-2: 199 89% 48%;
-    --chart-3: 39 100% 57%;
+    --chart-1: 24 95% 53%;
+    --chart-2: 346 77% 50%;
+    --chart-3: 43 96% 58%;
     --chart-4: 0 84% 60%;
     --chart-5: 267 83% 60%;
   }
@@ -210,7 +218,7 @@ button, a, [role="button"], input, select, textarea {
 
   /* Fun background patterns for each theme */
   [data-theme="family"] body {
-    background: linear-gradient(135deg, #1a0b2e 0%, #2d1252 50%, #1a0b2e 100%);
+    background: linear-gradient(135deg, #0f172a 0%, #4c0519 50%, #7c2d12 100%);
   }
 
   [data-theme="kids"] body {
@@ -298,6 +306,14 @@ button, a, [role="button"], input, select, textarea {
     animation: gradient 3s linear infinite;
   }
 
+  /* Glassmorphism effects */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.03);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
   /* Card hover effects */
   .card-hover {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
@@ -306,6 +322,10 @@ button, a, [role="button"], input, select, textarea {
   .card-hover:hover {
     transform: translateY(-4px) scale(1.02);
     box-shadow: 0 20px 40px -10px hsl(var(--primary) / 0.2);
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   /* Button animations */

@@ -8,6 +8,7 @@ import { ThemeProvider } from '@/context/ThemeContext';
 import { PWAHead } from '@/components/pwa/PWAHead';
 import ClientWidgets from '@/components/ClientWidgets';
 import IOSInstallBanner from '@/components/pwa/IOSInstallBanner';
+import PageTransition from '@/components/ui/PageTransition';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://alphatraders.co.za'),
@@ -40,7 +41,10 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: '#00FF66',
+  themeColor: [
+    { media: '(prefers-color-scheme: dark)', color: '#0F172A' },
+    { media: '(prefers-color-scheme: light)', color: '#0F172A' },
+  ],
   viewportFit: 'cover',
 };
 
@@ -62,7 +66,9 @@ export default function RootLayout({
           <Providers>
             <FirebaseClientProvider>
               <AuthProvider>
-                {children}
+                <PageTransition>
+                  {children}
+                </PageTransition>
                 <ClientWidgets />
                 <IOSInstallBanner />
               </AuthProvider>

@@ -43,6 +43,19 @@ export const users = pgTable('users', {
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
+// Friends table (Cross-app integration)
+export const friends = pgTable('friends', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  userId: text('user_id').notNull().references(() => users.uid, { onDelete: 'cascade' }),
+  friendName: text('friend_name').notNull(),
+  friendEmail: text('friend_email'),
+  avatarEmoji: varchar('avatar_emoji', { length: 10 }).default('😎'),
+  apiKey: text('api_key'), // Maps to external app API keys
+  externalAppUrl: text('external_app_url'), // e.g. "https://awehchat.co.za"
+  status: varchar('status', { length: 20 }).notNull().default('ACTIVE'), // 'ACTIVE', 'PENDING'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // Families table
 export const families = pgTable('families', {
   id: text('id').primaryKey(),
@@ -741,6 +754,8 @@ export const partyImposterRoundsRelations = relations(partyImposterRounds, ({ on
 // User & Family types
 export type User = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
+export type Friend = typeof friends.$inferSelect;
+export type NewFriend = typeof friends.$inferInsert;
 export type Family = typeof families.$inferSelect;
 export type NewFamily = typeof families.$inferInsert;
 export type FamilyMember = typeof familyMembers.$inferSelect;
@@ -942,6 +957,8 @@ export const events = pgTable('events', {
   isRecurring: boolean('is_recurring').notNull().default(false), // Part of recurring series
   venuePlaceId: text('venue_place_id'), // Google Places/Mapbox ID
   weatherSnapshot: jsonb('weather_snapshot').$type<any>(), // Forecast at creation
+  aiResearch: jsonb('ai_research').$type<{ placeDetails: string; weatherAdvice: string; suggestedSupplies: string[]; suggestedTasks: string[] }>(),
+  bookingDetails: jsonb('booking_details').$type<{ isBooked: boolean; venueName: string; guests: number; estimatedPrice: number; reference: string; date: string }>(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
@@ -1384,7 +1401,7 @@ export const heritageItems = pgTable('heritage_items', {
   contributorId: text('contributor_id').notNull(), // Who added this
   contributorName: text('contributor_name').notNull(),
   visibility: varchar('visibility', { length: 20 }).notNull().default('FAMILY_ONLY'), // 'PUBLIC', 'FAMILY_ONLY', 'PRIVATE'
-  familyId: uuid('family_id').references(() => families.id, { onDelete: 'cascade' }),
+  familyId: text('family_id').references(() => families.id, { onDelete: 'cascade' }),
   // Recipe-specific fields
   prepTime: integer('prep_time'), // minutes
   cookTime: integer('cook_time'), // minutes
@@ -1556,4 +1573,10 @@ export type NewCommentApproval = typeof commentApprovals.$inferInsert;
 // Module 14 types - Guest RSVP
 export type GuestRsvp = typeof guestRsvps.$inferSelect;
 export type NewGuestRsvp = typeof guestRsvps.$inferInsert;
+
+// ============================================
+// SYSTEM API KEYS (Imported from apiKeys.ts for Drizzle tracking)
+// ============================================
+export { apiKeys } from './apiKeys';
+
 

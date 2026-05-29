@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">FamilyVerse</string>
+    <string name="title_activity_main">FamilyVerse</string>
+    <string name="package_name">com.ganggear.familyverse</string>
+    <string name="custom_url_scheme">com.ganggear.familyverse</string>
+</resources>

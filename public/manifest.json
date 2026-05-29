@@ -4,8 +4,8 @@
   "description": "The private command center for our outings, games, and logistics.",
   "start_url": "/",
   "display": "standalone",
-    "background_color": "#1A1A1A",
-    "theme_color": "#00FF66",
+    "background_color": "#0F172A",
+    "theme_color": "#F97316",
   "orientation": "portrait",
   "scope": "/",
   "icons": [

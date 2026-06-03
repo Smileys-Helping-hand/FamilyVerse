@@ -4,14 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmailAndPassword } from 'firebase/auth';
@@ -35,65 +28,38 @@ export function LoginForm() {
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      email: '',
-      password: '',
-    },
+    defaultValues: { email: '', password: '' },
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!auth) {
-      toast({
-        variant: 'destructive',
-        title: 'Configuration error',
-        description: 'Firebase is not initialized. Refresh and try again.',
-      });
+      toast({ variant: 'destructive', title: 'Configuration error', description: 'Firebase not initialized.' });
       return;
     }
-
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, values.email, values.password);
-      toast({
-        title: 'Signed in',
-        description: 'Welcome back. Ready to plan the next outing?',
-      });
+      toast({ title: '👋 Welcome back!', description: 'Ready to plan something amazing?' });
       router.push('/dashboard');
     } catch (error: any) {
-      let errorMessage = 'An error occurred during sign in.';
-
-      if (
-        error.code === 'auth/invalid-credential' ||
-        error.code === 'auth/user-not-found' ||
-        error.code === 'auth/wrong-password'
-      ) {
-        errorMessage = 'Invalid email or password.';
-      } else if (error.code === 'auth/user-disabled') {
-        errorMessage = 'This account has been disabled.';
-      } else if (error.code === 'auth/too-many-requests') {
-        errorMessage = 'Too many attempts. Try again later.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-
-      toast({
-        variant: 'destructive',
-        title: 'Sign in failed',
-        description: errorMessage,
-      });
+      let msg = 'An error occurred during sign in.';
+      if (['auth/invalid-credential', 'auth/user-not-found', 'auth/wrong-password'].includes(error.code)) msg = 'Invalid email or password.';
+      else if (error.code === 'auth/user-disabled') msg = 'This account has been disabled.';
+      else if (error.code === 'auth/too-many-requests') msg = 'Too many attempts. Try again later.';
+      else if (error.message) msg = error.message;
+      toast({ variant: 'destructive', title: 'Sign in failed', description: msg });
     } finally {
       setIsLoading(false);
     }
   }
 
   return (
-    <div className="rounded-2xl border border-zinc-800 bg-zinc-900/90 backdrop-blur-sm shadow-xl overflow-hidden">
-      <div className="h-[3px] w-full bg-gradient-to-r from-[#00FF66] via-[#00FF66]/40 to-transparent" />
-
+    <div className="rounded-2xl border-2 border-border bg-card shadow-xl overflow-hidden">
+      <div className="h-1 w-full bg-gradient-to-r from-primary via-accent to-secondary" />
       <div className="p-6 sm:p-7">
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-zinc-100 tracking-tight">Event Command Login</h2>
-          <p className="text-sm text-zinc-500 mt-1">Sign in to open your Omnibar and launch the next move.</p>
+          <h2 className="text-xl font-bold tracking-tight">Sign In</h2>
+          <p className="text-sm text-foreground/50 mt-1">Plan your next family event in minutes.</p>
         </div>
 
         <Form {...form}>
@@ -103,15 +69,11 @@ export function LoginForm() {
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-zinc-300">Email</FormLabel>
+                  <FormLabel className="text-sm font-semibold">Email</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
-                      <Input
-                        placeholder="name@example.com"
-                        className="pl-10 h-11 border-zinc-700 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600 focus:border-[#00FF66]/60 focus:ring-[#00FF66]/20"
-                        {...field}
-                      />
+                      <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/35" />
+                      <Input placeholder="name@example.com" className="pl-10 h-11" {...field} />
                     </div>
                   </FormControl>
                   <FormMessage className="text-xs" />
@@ -124,20 +86,20 @@ export function LoginForm() {
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm font-medium text-zinc-300">Password</FormLabel>
+                  <FormLabel className="text-sm font-semibold">Password</FormLabel>
                   <FormControl>
                     <div className="relative">
-                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-zinc-500" />
+                      <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-foreground/35" />
                       <Input
                         type={showPassword ? 'text' : 'password'}
-                        placeholder="........"
-                        className="pl-10 pr-10 h-11 border-zinc-700 bg-zinc-950 text-zinc-100 placeholder:text-zinc-600 focus:border-[#00FF66]/60 focus:ring-[#00FF66]/20"
+                        placeholder="••••••••"
+                        className="pl-10 pr-10 h-11"
                         {...field}
                       />
                       <button
                         type="button"
                         onClick={() => setShowPassword(!showPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-foreground/35 hover:text-foreground/60 transition-colors"
                         tabIndex={-1}
                       >
                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -151,25 +113,19 @@ export function LoginForm() {
 
             <Button
               type="submit"
-              className="w-full h-11 text-sm font-semibold bg-[#00FF66] text-zinc-950 hover:bg-[#00FF66]/90 shadow-[0_0_18px_rgba(0,255,102,0.35)]"
+              className="w-full h-11 text-sm font-bold bg-primary text-white hover:bg-primary/90 shadow-md glow-primary"
               disabled={isLoading}
             >
               {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Signing in...
-                </>
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Signing in...</>
               ) : (
-                <>
-                  Open Dashboard
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+                <>Sign In <ArrowRight className="ml-2 h-4 w-4" /></>
               )}
             </Button>
 
-            <div className="pt-2 border-t border-zinc-800 text-center">
-              <Link href="/signup" className="text-sm text-zinc-400 hover:text-[#00FF66] transition-colors">
-                New here? Create your Gang Gear account
+            <div className="pt-2 border-t border-border text-center">
+              <Link href="/signup" className="text-sm text-foreground/50 hover:text-primary transition-colors">
+                New here? Create a FamilyVerse account →
               </Link>
             </div>
           </form>

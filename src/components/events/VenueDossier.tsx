@@ -2,10 +2,9 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { MapPin, Cloud, Thermometer, Droplets, Loader2, Lightbulb, Search, X } from 'lucide-react';
+import { MapPin, Cloud, Droplets, Loader2, Lightbulb, Search, X, Sparkles } from 'lucide-react';
 import type { WeatherDay } from '@/app/api/venue-intel/route';
 
-// ── Mapbox Geocoding (REST, no npm package needed) ───────────────────────────
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? '';
 
 async function geocodeSearch(query: string): Promise<MapboxFeature[]> {
@@ -20,7 +19,7 @@ async function geocodeSearch(query: string): Promise<MapboxFeature[]> {
 interface MapboxFeature {
   id: string;
   place_name: string;
-  center: [number, number]; // [lng, lat]
+  center: [number, number];
 }
 
 export interface VenueSelection {
@@ -54,20 +53,16 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Auto-search if initialVenue provided but no token (just skip to show placeholder)
   useEffect(() => {
     if (initialVenue && !MAPBOX_TOKEN) {
-      // No token — skip geocoding, use location name as-is without coords
+      // No token — skip geocoding, use location name as-is
     }
   }, [initialVenue]);
 
   const onQueryChange = (value: string) => {
     setQuery(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    if (!value.trim()) {
-      setSuggestions([]);
-      return;
-    }
+    if (!value.trim()) { setSuggestions([]); return; }
     debounceRef.current = setTimeout(async () => {
       setSearching(true);
       const results = await geocodeSearch(value);
@@ -85,7 +80,6 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
       setSuggestions([]);
       onVenueChange?.(venue);
 
-      // Fetch venue intelligence
       setLoading(true);
       setWeather([]);
       setActivities([]);
@@ -101,7 +95,7 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
           setActivities(data.suggestions ?? []);
         }
       } catch {
-        // silently fail - venue intelligence is non-critical
+        // silently fail
       } finally {
         setLoading(false);
       }
@@ -125,12 +119,10 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
     <div className={cn('space-y-3', className)}>
       {/* Search input */}
       <div className="relative">
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-          {searching ? (
-            <Loader2 className="h-4 w-4 text-zinc-500 animate-spin" />
-          ) : (
-            <Search className="h-4 w-4 text-zinc-500" />
-          )}
+        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
+          {searching
+            ? <Loader2 className="h-4 w-4 text-foreground/35 animate-spin" />
+            : <Search className="h-4 w-4 text-foreground/35" />}
         </div>
         <input
           ref={inputRef}
@@ -139,18 +131,18 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
           onChange={(e) => onQueryChange(e.target.value)}
           placeholder="Search for a venue or location..."
           className={cn(
-            'w-full rounded-lg border bg-zinc-900 px-4 py-2.5 pl-9 text-sm text-zinc-100',
-            'placeholder:text-zinc-600 focus:outline-none transition-colors',
+            'w-full rounded-xl border-2 bg-card px-4 py-2.5 pl-10 text-sm',
+            'placeholder:text-foreground/35 focus:outline-none transition-colors',
             selected
-              ? 'border-[#00FF66]/40 pr-9'
-              : 'border-zinc-700 focus:border-zinc-500',
+              ? 'border-secondary/40 pr-9'
+              : 'border-border focus:border-primary/40',
           )}
         />
         {selected && (
           <button
             type="button"
             onClick={clearVenue}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300 transition-colors"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-foreground/35 hover:text-foreground transition-colors"
             aria-label="Clear venue"
           >
             <X className="h-4 w-4" />
@@ -159,16 +151,16 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
 
         {/* Autocomplete dropdown */}
         {suggestions.length > 0 && (
-          <ul className="absolute z-50 mt-1 w-full rounded-xl border border-zinc-700 bg-zinc-900 shadow-2xl overflow-hidden">
+          <ul className="absolute z-50 mt-1 w-full rounded-2xl border-2 border-border bg-card shadow-xl overflow-hidden">
             {suggestions.map((feat) => (
               <li key={feat.id}>
                 <button
                   type="button"
                   onClick={() => selectVenue(feat)}
-                  className="flex items-start gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-zinc-800 transition-colors"
+                  className="flex items-start gap-2.5 w-full px-4 py-3 text-sm text-left hover:bg-muted transition-colors"
                 >
-                  <MapPin className="h-3.5 w-3.5 text-[#00FF66] shrink-0 mt-0.5" />
-                  <span className="text-zinc-200 line-clamp-2">{feat.place_name}</span>
+                  <MapPin className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" />
+                  <span className="line-clamp-2">{feat.place_name}</span>
                 </button>
               </li>
             ))}
@@ -176,21 +168,21 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
         )}
       </div>
 
-      {/* Venue Dossier card */}
+      {/* Loading state */}
       {loading && (
-        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-zinc-900 border border-zinc-800 text-zinc-500 text-sm">
-          <Loader2 className="h-4 w-4 animate-spin text-[#00FF66]" />
-          Loading venue intelligence...
+        <div className="flex items-center gap-2 px-4 py-3 rounded-xl bg-muted border border-border text-foreground/50 text-sm">
+          <Sparkles className="h-4 w-4 animate-pulse text-primary" />
+          Researching venue details...
         </div>
       )}
 
+      {/* Venue Dossier card */}
       {hasDossier && !loading && (
-        <div className="rounded-2xl border border-zinc-700/60 bg-zinc-900/60 backdrop-blur-md overflow-hidden">
-          {/* Dossier header */}
-          <div className="px-4 py-3 border-b border-zinc-800 flex items-center gap-2">
-            <MapPin className="h-3.5 w-3.5 text-[#00FF66]" />
-            <p className="text-xs font-semibold uppercase tracking-widest text-[#00FF66]/80">
-              Venue Dossier
+        <div className="rounded-2xl border-2 border-border bg-card overflow-hidden shadow-sm">
+          <div className="px-4 py-3 border-b border-border flex items-center gap-2 bg-muted/40">
+            <Sparkles className="h-3.5 w-3.5 text-primary" />
+            <p className="text-xs font-bold uppercase tracking-widest text-primary">
+              Venue Insights
             </p>
           </div>
 
@@ -198,27 +190,25 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
             {/* 5-day weather */}
             {weather.length > 0 && (
               <div>
-                <p className="text-xs text-zinc-500 font-medium mb-2 flex items-center gap-1">
+                <p className="text-xs text-foreground/45 font-semibold mb-2 flex items-center gap-1">
                   <Cloud className="h-3 w-3" /> 5-Day Forecast
                 </p>
                 <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1">
                   {weather.map((day) => (
                     <div
                       key={day.date}
-                      className="shrink-0 flex flex-col items-center gap-1 bg-zinc-800 border border-zinc-700 rounded-xl px-3 py-2.5 min-w-[72px]"
+                      className="shrink-0 flex flex-col items-center gap-1 bg-muted/60 border border-border rounded-xl px-3 py-2.5 min-w-[72px]"
                     >
-                      <span className="text-[10px] text-zinc-500 font-medium">
-                        {new Date(day.date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' }).split(',')[0]}
+                      <span className="text-[10px] text-foreground/40 font-medium">
+                        {new Date(day.date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' })}
                       </span>
-                      <span className="text-xl leading-none">
-                        {WMO_EMOJI[day.weatherCode] ?? '🌡️'}
-                      </span>
+                      <span className="text-xl leading-none">{WMO_EMOJI[day.weatherCode] ?? '🌡️'}</span>
                       <div className="flex items-center gap-1 text-xs">
-                        <span className="text-zinc-100 font-semibold">{day.maxTemp}°</span>
-                        <span className="text-zinc-500">{day.minTemp}°</span>
+                        <span className="font-semibold">{day.maxTemp}°</span>
+                        <span className="text-foreground/40">{day.minTemp}°</span>
                       </div>
                       {day.precipMm > 0 && (
-                        <div className="flex items-center gap-0.5 text-[10px] text-blue-400">
+                        <div className="flex items-center gap-0.5 text-[10px] text-sky-500">
                           <Droplets className="h-2.5 w-2.5" />
                           {day.precipMm}mm
                         </div>
@@ -232,13 +222,13 @@ export function VenueDossier({ initialVenue = '', eventType, onVenueChange, clas
             {/* AI activity suggestions */}
             {activities.length > 0 && (
               <div>
-                <p className="text-xs text-zinc-500 font-medium mb-2 flex items-center gap-1">
-                  <Lightbulb className="h-3 w-3 text-[#00FF66]" /> Suggested Activities
+                <p className="text-xs text-foreground/45 font-semibold mb-2 flex items-center gap-1">
+                  <Lightbulb className="h-3 w-3 text-accent" /> Suggested Activities
                 </p>
                 <ul className="space-y-1.5">
                   {activities.map((act, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-zinc-300">
-                      <span className="text-[#00FF66] font-bold shrink-0">{i + 1}.</span>
+                    <li key={i} className="flex items-start gap-2 text-sm text-foreground/70">
+                      <span className="text-primary font-bold shrink-0">{i + 1}.</span>
                       {act}
                     </li>
                   ))}

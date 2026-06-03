@@ -3,9 +3,9 @@ import { triggerPartyEvent } from '@/lib/pusher/server';
 
 export async function POST(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const eventId = params.id;
+  const { id: eventId } = await params;
 
   let assignments: Record<number, string[]>;
   try {

@@ -5,14 +5,75 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { getEvents } from '@/app/actions/events';
-import EventsClient from '@/components/events/EventsClient';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, MapPin, Plus } from 'lucide-react';
 import { format, startOfToday, endOfToday, startOfWeek, endOfWeek, startOfMonth, endOfMonth } from 'date-fns';
+import { Calendar, Clock, MapPin, Plus, Search, Filter, Sparkles } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+
+function EventCard({ event }: { event: any }) {
+  const statusConfig = {
+    UPCOMING: { label: 'Upcoming', class: 'bg-primary/10 text-primary border-primary/20' },
+    LIVE: { label: '🔴 Live now', class: 'bg-red-50 text-red-600 border-red-200 animate-pulse' },
+    PAST: { label: 'Past', class: 'bg-muted text-foreground/50 border-border' },
+  };
+  const status = statusConfig[event.status as keyof typeof statusConfig] ?? statusConfig.UPCOMING;
+
+  const purposeEmojis: Record<string, string> = {
+    'games-day': '🎮', braai: '🍖', birthday: '🎂',
+    'family-reunion': '👨‍👩‍👧‍👦', outing: '🌳', dinner: '🍽️', work: '💼', other: '✨',
+  };
+  const emoji = purposeEmojis[event.eventType] || '🎉';
+
+  return (
+    <Link href={`/events/${event.id}`} className="block">
+      <div className="rounded-2xl bg-card border-2 border-border hover:border-primary/30 shadow-sm hover:shadow-md transition-all duration-200 overflow-hidden group card-hover h-full">
+        {event.heroImageUrl ? (
+          <div className="relative h-44 overflow-hidden">
+            <img src={event.heroImageUrl} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+          </div>
+        ) : (
+          <div className="h-20 bg-gradient-to-r from-primary/20 via-accent/10 to-secondary/20 flex items-center justify-center">
+            <span className="text-5xl">{emoji}</span>
+          </div>
+        )}
+
+        <div className="p-5 space-y-3">
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-bold text-base leading-tight line-clamp-2">{event.title}</h3>
+            <span className={cn('shrink-0 text-xs px-2.5 py-1 rounded-full border font-semibold', status.class)}>
+              {status.label}
+            </span>
+          </div>
+
+          <div className="space-y-1.5 text-sm text-foreground/55">
+            <div className="flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5 text-primary/70" />
+              <span>{format(new Date(event.startTime), 'EEE, d MMM yyyy · h:mm a')}</span>
+            </div>
+            {event.locationName && (
+              <div className="flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-primary/70" />
+                <span className="line-clamp-1">{event.locationName}</span>
+              </div>
+            )}
+          </div>
+
+          {event.description && (
+            <p className="text-xs text-foreground/45 line-clamp-2">{event.description}</p>
+          )}
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+const RANGE_OPTIONS = [
+  { label: 'All time', value: 'all' },
+  { label: 'Today', value: 'today' },
+  { label: 'This week', value: 'week' },
+  { label: 'This month', value: 'month' },
+];
 
 export default function EventsPage() {
   const { user, userProfile, loading: authLoading } = useAuth();
@@ -20,369 +81,204 @@ export default function EventsPage() {
   const router = useRouter();
   const [events, setEvents] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filtersReady, setFiltersReady] = useState(false);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState('ALL');
   const [range, setRange] = useState('all');
 
   useEffect(() => {
-    if (!authLoading && user) {
-      loadEvents();
-    } else if (!authLoading && !user) {
-      setLoading(false);
-    }
-  }, [authLoading, user]);
-
-  useEffect(() => {
     const paramSearch = searchParams.get('search');
     const paramStatus = searchParams.get('status');
     const paramRange = searchParams.get('range');
-
-    if (paramSearch || paramStatus || paramRange) {
-      setSearch(paramSearch || '');
-      setStatus((paramStatus || 'ALL').toUpperCase());
-      setRange((paramRange || 'all').toLowerCase());
-      setFiltersReady(true);
-      return;
-    }
-
-    if (typeof window !== 'undefined') {
-      const stored = window.localStorage.getItem('eventsFilters');
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored) as { search?: string; status?: string; range?: string };
-          setSearch(parsed.search || '');
-          setStatus((parsed.status || 'ALL').toUpperCase());
-          setRange((parsed.range || 'all').toLowerCase());
-        } catch (error) {
-          console.warn('Failed to read saved event filters', error);
-        }
-      }
-    }
-
-    setFiltersReady(true);
+    if (paramSearch) setSearch(paramSearch);
+    if (paramStatus) setStatus(paramStatus.toUpperCase());
+    if (paramRange) setRange(paramRange.toLowerCase());
   }, [searchParams]);
 
   useEffect(() => {
-    if (!filtersReady) return;
-
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(
-        'eventsFilters',
-        JSON.stringify({ search, status, range })
-      );
+    if (!authLoading && user) {
+      setLoading(true);
+      getEvents(userProfile?.familyId ?? undefined).then((result) => {
+        if (result.success) setEvents(result.events || []);
+        setLoading(false);
+      });
+    } else if (!authLoading && !user) {
+      setLoading(false);
     }
-
-    const params = new URLSearchParams();
-    if (search.trim()) params.set('search', search.trim());
-    if (status !== 'ALL') params.set('status', status);
-    if (range !== 'all') params.set('range', range);
-
-    const query = params.toString();
-    router.replace(query ? `/events?${query}` : '/events');
-  }, [filtersReady, search, status, range, router]);
-
-  const loadEvents = async () => {
-    setLoading(true);
-    const result = await getEvents(userProfile?.familyId ?? undefined);
-    if (result.success) {
-      setEvents(result.events || []);
-    }
-    setLoading(false);
-  };
+  }, [authLoading, user, userProfile?.familyId]);
 
   const filteredEvents = useMemo(() => {
-    const searchQuery = search.trim().toLowerCase();
-    const statusFilter = status.toUpperCase();
-    const rangeFilter = range.toLowerCase();
+    const q = search.trim().toLowerCase();
+    const s = status.toUpperCase();
+    const rangeStart = range === 'today' ? startOfToday() : range === 'week' ? startOfWeek(new Date(), { weekStartsOn: 1 }) : range === 'month' ? startOfMonth(new Date()) : null;
+    const rangeEnd = range === 'today' ? endOfToday() : range === 'week' ? endOfWeek(new Date(), { weekStartsOn: 1 }) : range === 'month' ? endOfMonth(new Date()) : null;
 
-    const rangeStart = rangeFilter === 'today'
-      ? startOfToday()
-      : rangeFilter === 'week'
-      ? startOfWeek(new Date(), { weekStartsOn: 1 })
-      : rangeFilter === 'month'
-      ? startOfMonth(new Date())
-      : null;
-    const rangeEnd = rangeFilter === 'today'
-      ? endOfToday()
-      : rangeFilter === 'week'
-      ? endOfWeek(new Date(), { weekStartsOn: 1 })
-      : rangeFilter === 'month'
-      ? endOfMonth(new Date())
-      : null;
-
-    return events.filter((event) => {
-      const matchesSearch = !searchQuery
-        || event.title?.toLowerCase().includes(searchQuery)
-        || event.description?.toLowerCase().includes(searchQuery)
-        || event.locationName?.toLowerCase().includes(searchQuery);
-
-      const matchesStatus = statusFilter === 'ALL' || event.status === statusFilter;
-
-      const eventDate = new Date(event.startTime);
-      const matchesRange = !rangeStart || !rangeEnd
-        ? true
-        : eventDate >= rangeStart && eventDate <= rangeEnd;
-
-      return matchesSearch && matchesStatus && matchesRange;
+    return events.filter((ev) => {
+      const matchSearch = !q || ev.title?.toLowerCase().includes(q) || ev.locationName?.toLowerCase().includes(q);
+      const matchStatus = s === 'ALL' || ev.status === s;
+      const evDate = new Date(ev.startTime);
+      const matchRange = !rangeStart || !rangeEnd ? true : evDate >= rangeStart && evDate <= rangeEnd;
+      return matchSearch && matchStatus && matchRange;
     });
-  }, [events, range, search, status]);
+  }, [events, search, status, range]);
 
-  const { liveEvents, upcomingEvents, pastEvents } = useMemo(() => {
-    return {
-      liveEvents: filteredEvents.filter((event) => event.status === 'LIVE'),
-      upcomingEvents: filteredEvents.filter((event) => event.status === 'UPCOMING'),
-      pastEvents: filteredEvents.filter((event) => event.status === 'PAST'),
-    };
-  }, [filteredEvents]);
+  const { liveEvents, upcomingEvents, pastEvents } = useMemo(() => ({
+    liveEvents: filteredEvents.filter(e => e.status === 'LIVE'),
+    upcomingEvents: filteredEvents.filter(e => e.status === 'UPCOMING'),
+    pastEvents: filteredEvents.filter(e => e.status === 'PAST'),
+  }), [filteredEvents]);
 
   if (authLoading || loading) {
     return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
-      </div>
-    );
-  }
-
-  if (!user) {
-    return (
-      <div className="container mx-auto px-4 py-16 text-center">
-        <h1 className="text-3xl font-bold mb-4">Please Sign In</h1>
-        <p className="text-muted-foreground mb-6">You need to be signed in to view events</p>
-        <Link href="/login">
-          <Button>Go to Login</Button>
-        </Link>
+      <div className="max-w-6xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="rounded-2xl bg-card border-2 border-border overflow-hidden animate-pulse">
+              <div className="h-20 bg-muted" />
+              <div className="p-5 space-y-3">
+                <div className="h-5 bg-muted rounded-lg w-3/4" />
+                <div className="h-4 bg-muted rounded-lg w-1/2" />
+                <div className="h-4 bg-muted rounded-lg w-2/3" />
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 space-y-8 max-w-7xl">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="max-w-6xl mx-auto px-4 py-8 space-y-8">
+
+      {/* Header */}
+      <motion.div
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
+      >
         <div>
-          <h1 className="text-3xl sm:text-4xl font-bold">Event Hub</h1>
-          <p className="text-muted-foreground mt-2">
-            Organize family outings, track RSVPs, and coordinate everything in one place.
+          <h1 className="text-3xl sm:text-4xl font-extrabold mb-1">Your Events 🗓️</h1>
+          <p className="text-foreground/50">
+            {events.length > 0
+              ? `${events.length} event${events.length !== 1 ? 's' : ''} — all your family moments in one place`
+              : 'No events yet — plan something amazing!'}
           </p>
         </div>
-        <Link href="/events/create">
-          <Button size="lg" className="gap-2">
-            <Plus className="h-5 w-5" />
-            Create Event
-          </Button>
+        <Link
+          href="/events/new"
+          className="flex items-center gap-2 px-5 py-3 rounded-xl font-bold bg-primary text-white shadow-md hover:bg-primary/90 glow-primary transition-all shrink-0"
+        >
+          <Plus className="h-4 w-4" /> Plan Event
         </Link>
+      </motion.div>
+
+      {/* Search & filters */}
+      <div className="rounded-2xl bg-card border-2 border-border p-5 space-y-4">
+        <div className="flex gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/35" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search events..."
+              className="w-full rounded-xl bg-muted border border-border pl-9 pr-4 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+            />
+          </div>
+          <select
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+            className="rounded-xl bg-muted border border-border px-3 py-2.5 text-sm focus:outline-none focus:border-primary/50 transition-colors"
+          >
+            <option value="ALL">All</option>
+            <option value="LIVE">Live</option>
+            <option value="UPCOMING">Upcoming</option>
+            <option value="PAST">Past</option>
+          </select>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {RANGE_OPTIONS.map(opt => (
+            <button
+              key={opt.value}
+              onClick={() => setRange(opt.value)}
+              className={cn(
+                'px-4 py-2 rounded-xl text-sm font-semibold transition-all',
+                range === opt.value ? 'bg-primary text-white shadow-sm' : 'bg-muted hover:bg-muted/80 text-foreground/60',
+              )}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <Card className="border-2 border-blue-500/20">
-        <CardHeader>
-          <CardTitle className="text-lg">Find Events Fast</CardTitle>
-          <CardDescription>Search, filter, and jump straight in</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid gap-3 md:grid-cols-[1fr,180px,180px]">
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title, location, or description"
-            />
-            <Select value={status} onValueChange={setStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="ALL">All Statuses</SelectItem>
-                <SelectItem value="LIVE">Live</SelectItem>
-                <SelectItem value="UPCOMING">Upcoming</SelectItem>
-                <SelectItem value="PAST">Past</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select value={range} onValueChange={setRange}>
-              <SelectTrigger>
-                <SelectValue placeholder="Date Range" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="week">This Week</SelectItem>
-                <SelectItem value="month">This Month</SelectItem>
-              </SelectContent>
-            </Select>
+      {/* Live events */}
+      {liveEvents.length > 0 && (
+        <section>
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse" />
+            <h2 className="text-xl font-extrabold">Happening now</h2>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              type="button"
-              variant={range === 'today' ? 'default' : 'outline'}
-              onClick={() => setRange('today')}
-            >
-              Today
-            </Button>
-            <Button
-              type="button"
-              variant={range === 'week' ? 'default' : 'outline'}
-              onClick={() => setRange('week')}
-            >
-              This Week
-            </Button>
-            <Button
-              type="button"
-              variant={range === 'month' ? 'default' : 'outline'}
-              onClick={() => setRange('month')}
-            >
-              This Month
-            </Button>
-            <Button
-              type="button"
-              variant={range === 'all' ? 'default' : 'outline'}
-              onClick={() => setRange('all')}
-            >
-              All Time
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => {
-                setSearch('');
-                setStatus('ALL');
-                setRange('all');
-              }}
-            >
-              Reset Filters
-            </Button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {liveEvents.map((ev, i) => (
+              <motion.div key={ev.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}>
+                <EventCard event={ev} />
+              </motion.div>
+            ))}
           </div>
-        </CardContent>
-      </Card>
+        </section>
+      )}
 
-      <EventsClient
-        events={events}
-        currentUser={{
-          uid: user.uid,
-          email: user.email || '',
-          name: userProfile?.name || user.displayName || user.email?.split('@')[0] || 'User',
-          familyId: userProfile?.familyId || undefined,
-        }}
-      >
-        <div className="space-y-8">
-          {liveEvents.length > 0 && (
-            <section>
-              <div className="flex items-center gap-2 mb-4">
-                <Badge variant="destructive" className="animate-pulse">LIVE NOW</Badge>
-                <h2 className="text-2xl font-bold">Happening Now</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {liveEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
-            </section>
-          )}
+      {/* Upcoming events */}
+      {upcomingEvents.length > 0 && (
+        <section>
+          <h2 className="text-xl font-extrabold mb-4">Upcoming 🎉</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {upcomingEvents.map((ev, i) => (
+              <motion.div key={ev.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+                <EventCard event={ev} />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
-          {upcomingEvents.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-bold mb-4">Upcoming Events</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {upcomingEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
-            </section>
-          )}
+      {/* Past events */}
+      {pastEvents.length > 0 && (
+        <section>
+          <h2 className="text-xl font-extrabold mb-4 text-foreground/50">Past events</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {pastEvents.map((ev, i) => (
+              <motion.div key={ev.id} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}>
+                <EventCard event={ev} />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+      )}
 
-          {pastEvents.length > 0 && (
-            <section>
-              <h2 className="text-2xl font-bold mb-4 text-muted-foreground">Past Events</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {pastEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {filteredEvents.length === 0 && (
-            <Card className="border-dashed">
-              <CardContent className="flex flex-col items-center justify-center py-16">
-                <Calendar className="h-16 w-16 text-muted-foreground mb-4" />
-                <h3 className="text-xl font-semibold mb-2">No Events Found</h3>
-                <p className="text-muted-foreground text-center mb-6">
-                  Try adjusting your filters or create a new event to get started.
-                </p>
-                <Link href="/events/create">
-                  <Button size="lg" className="gap-2">
-                    <Plus className="h-5 w-5" />
-                    Create Your First Event
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-      </EventsClient>
+      {/* Empty state */}
+      {filteredEvents.length === 0 && !loading && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="text-center py-20 rounded-2xl border-2 border-dashed border-border"
+        >
+          <span className="text-6xl mb-4 block">🗓️</span>
+          <h3 className="text-xl font-bold mb-2">
+            {events.length === 0 ? 'No events yet' : 'No events match your filters'}
+          </h3>
+          <p className="text-foreground/50 mb-6 max-w-sm mx-auto">
+            {events.length === 0
+              ? 'Plan your first family event — it takes less than 2 minutes!'
+              : 'Try adjusting your search or filters.'}
+          </p>
+          <Link
+            href="/events/new"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold bg-primary text-white shadow-md hover:bg-primary/90 transition-all glow-primary"
+          >
+            <Sparkles className="w-4 h-4" /> Plan Your First Event
+          </Link>
+        </motion.div>
+      )}
     </div>
-  );
-}
-
-function EventCard({ event }: { event: any }) {
-  const statusColors = {
-    UPCOMING: 'bg-blue-500',
-    LIVE: 'bg-red-500 animate-pulse',
-    PAST: 'bg-gray-500',
-  };
-
-  const tags = Array.isArray(event.tags)
-    ? event.tags
-    : Array.isArray(event.eventTags)
-    ? event.eventTags
-    : [];
-
-  return (
-    <Link href={`/events/${event.id}`} className="block h-full">
-      <Card className="glass-card card-hover cursor-pointer group h-full">
-        <div className="relative h-48 overflow-hidden rounded-t-lg">
-          {event.heroImageUrl ? (
-            <img
-              src={event.heroImageUrl}
-              alt={event.title}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600" />
-          )}
-          <div className="absolute top-4 right-4">
-            <Badge className={statusColors[event.status as keyof typeof statusColors]}>
-              {event.status}
-            </Badge>
-          </div>
-        </div>
-
-        <CardHeader>
-          <CardTitle className="line-clamp-1">{event.title}</CardTitle>
-          {event.description && (
-            <CardDescription className="line-clamp-2">{event.description}</CardDescription>
-          )}
-        </CardHeader>
-
-        <CardContent className="space-y-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Clock className="h-4 w-4" />
-            <span>{format(new Date(event.startTime), 'PPP p')}</span>
-          </div>
-          {event.locationName && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span className="line-clamp-1">{event.locationName}</span>
-            </div>
-          )}
-          {tags.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {tags.slice(0, 4).map((tag: string) => (
-                <Badge key={tag} variant="secondary" className="text-xs">
-                  #{tag}
-                </Badge>
-              ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
   );
 }

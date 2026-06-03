@@ -30,7 +30,7 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-zinc-950 w-full max-w-[100vw] overflow-x-hidden">
+    <div className="flex min-h-screen flex-col bg-background w-full max-w-[100vw] overflow-x-hidden">
       <Header />
       <main className="flex-1 container py-4 sm:py-8 px-4 relative z-10 max-w-full overflow-x-hidden">{children}</main>
     </div>

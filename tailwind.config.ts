@@ -80,65 +80,78 @@ export default {
       },
       keyframes: {
         'accordion-down': {
-          from: {
-            height: '0',
-          },
-          to: {
-            height: 'var(--radix-accordion-content-height)',
-          },
+          from: { height: '0' },
+          to: { height: 'var(--radix-accordion-content-height)' },
         },
         'accordion-up': {
-          from: {
-            height: 'var(--radix-accordion-content-height)',
-          },
-          to: {
-            height: '0',
-          },
-        },
-        'bounce-slow': {
-          '0%, 100%': { 
-            transform: 'translateY(-5%)',
-            animationTimingFunction: 'cubic-bezier(0.8, 0, 1, 1)',
-          },
-          '50%': { 
-            transform: 'translateY(0)',
-            animationTimingFunction: 'cubic-bezier(0, 0, 0.2, 1)',
-          },
+          from: { height: 'var(--radix-accordion-content-height)' },
+          to: { height: '0' },
         },
         float: {
           '0%, 100%': { transform: 'translateY(0px)' },
-          '50%': { transform: 'translateY(-20px)' },
+          '50%': { transform: 'translateY(-14px)' },
+        },
+        'float-slow': {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-8px)' },
         },
         wiggle: {
           '0%, 100%': { transform: 'rotate(-3deg)' },
           '50%': { transform: 'rotate(3deg)' },
         },
-        'pulse-glow': {
-          '0%, 100%': { 
-            boxShadow: '0 0 5px hsl(var(--primary) / 0.5), 0 0 10px hsl(var(--primary) / 0.3)',
-          },
-          '50%': { 
-            boxShadow: '0 0 20px hsl(var(--primary) / 0.8), 0 0 30px hsl(var(--primary) / 0.6)',
-          },
-        },
-        gradient: {
+        'gradient-shift': {
           '0%, 100%': { backgroundPosition: '0% 50%' },
           '50%': { backgroundPosition: '100% 50%' },
         },
         shimmer: {
-          '0%': { backgroundPosition: '-1000px 0' },
-          '100%': { backgroundPosition: '1000px 0' },
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        'scale-in': {
+          from: { opacity: '0', transform: 'scale(0.88)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
+        'fade-up': {
+          from: { opacity: '0', transform: 'translateY(18px)' },
+          to: { opacity: '1', transform: 'translateY(0)' },
+        },
+        'fade-in': {
+          from: { opacity: '0' },
+          to: { opacity: '1' },
+        },
+        'bounce-soft': {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-8px)' },
+        },
+        'pulse-warm': {
+          '0%, 100%': { boxShadow: '0 0 8px hsl(var(--primary) / 0.4)' },
+          '50%': { boxShadow: '0 0 24px hsl(var(--primary) / 0.7), 0 0 48px hsl(var(--primary) / 0.3)' },
+        },
+        morph: {
+          '0%, 100%': { borderRadius: '40% 60% 70% 30% / 40% 50% 60% 50%' },
+          '34%': { borderRadius: '70% 30% 50% 50% / 30% 30% 70% 70%' },
+          '67%': { borderRadius: '100% 60% 60% 100% / 100% 100% 60% 60%' },
+        },
+        'slide-in-right': {
+          from: { opacity: '0', transform: 'translateX(24px)' },
+          to: { opacity: '1', transform: 'translateX(0)' },
         },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
         'accordion-up': 'accordion-up 0.2s ease-out',
-        'bounce-slow': 'bounce-slow 3s infinite',
-        float: 'float 6s ease-in-out infinite',
+        float: 'float 5s ease-in-out infinite',
+        'float-slow': 'float-slow 8s ease-in-out infinite',
         wiggle: 'wiggle 1s ease-in-out infinite',
-        'pulse-glow': 'pulse-glow 2s ease-in-out infinite',
-        gradient: 'gradient 6s ease infinite',
-        shimmer: 'shimmer 3s linear infinite',
+        gradient: 'gradient-shift 6s ease infinite',
+        shimmer: 'shimmer 1.5s infinite',
+        'scale-in': 'scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+        'fade-up': 'fade-up 0.5s ease forwards',
+        'fade-in': 'fade-in 0.4s ease forwards',
+        'bounce-soft': 'bounce-soft 2.5s ease-in-out infinite',
+        'pulse-warm': 'pulse-warm 2s ease-in-out infinite',
+        morph: 'morph 8s ease-in-out infinite',
+        'slide-in-right': 'slide-in-right 0.4s ease forwards',
       },
     },
   },

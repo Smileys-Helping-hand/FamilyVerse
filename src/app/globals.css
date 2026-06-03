@@ -5,8 +5,9 @@
 @tailwind utilities;
 
 /* =================================================================== */
-/* PWA Mobile Physics - Dynamic Viewport Height & Touch Optimization */
+/* FamilyVerse — Warm, welcoming, family-first design system           */
 /* =================================================================== */
+
 html, body {
   height: 100%;
   min-height: 100dvh;
@@ -14,385 +15,411 @@ html, body {
   overflow-x: hidden;
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
-  background-color: #09090b; /* zinc-950 - Tactical dark */
 }
 
-/* Hide horizontal scrollbar for cleaner mobile look */
 ::-webkit-scrollbar {
-  width: 6px;
+  width: 5px;
   height: 0px;
   background: transparent;
 }
-
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-
+::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 255, 102, 0.25);
-  border-radius: 3px;
+  background: rgba(255, 107, 53, 0.3);
+  border-radius: 4px;
 }
 
-.min-h-screen {
-  min-height: 100dvh !important;
-}
+.min-h-screen { min-height: 100dvh !important; }
+.h-screen     { height: 100dvh !important; }
 
-.h-screen {
-  height: 100dvh !important;
-}
-
-/* Remove 300ms tap delay and tap-highlight on all interactive elements */
 button, a, [role="button"], input, select, textarea {
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
 }
 
-/* Safe area insets for notched phones */
-.safe-area-inset-top {
-  padding-top: env(safe-area-inset-top);
-}
-
-.safe-area-inset-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
-}
-
+.safe-area-inset-top    { padding-top: env(safe-area-inset-top); }
+.safe-area-inset-bottom { padding-bottom: env(safe-area-inset-bottom); }
 .mobile-safe-container {
-  padding-top: max(env(safe-area-inset-top), 1.5rem);
+  padding-top:    max(env(safe-area-inset-top), 1.5rem);
   padding-bottom: max(env(safe-area-inset-bottom), 1.5rem);
-  padding-left: max(env(safe-area-inset-left), 1rem);
-  padding-right: max(env(safe-area-inset-right), 1rem);
+  padding-left:   max(env(safe-area-inset-left), 1rem);
+  padding-right:  max(env(safe-area-inset-right), 1rem);
 }
 
-/* Hide scrollbar utility */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+.scrollbar-hide::-webkit-scrollbar { display: none; }
 
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
+/* ─── Design Tokens ─────────────────────────────────────────────── */
 @layer base {
-  /* Cape Sunset Theme (Default - Dark Mode) */
+
+  /* ── FAMILYVERSE (default light-warm) ── */
   :root, [data-theme="family"] {
-    --background: 222 47% 11%; /* Slate */
-    --foreground: 210 40% 98%;
-    --card: 222 47% 11%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 11%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 24 95% 53%; /* Orange */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 346 77% 50%; /* Rose */
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217 32% 17%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 43 96% 58%; /* Gold */
-    --accent-foreground: 210 40% 98%;
-    --success: 142 76% 45%;
-    --success-foreground: 0 0% 100%;
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 217 32% 17%;
-    --input: 217 32% 17%;
-    --ring: 24 95% 53%;
-    --radius: 0.75rem;
-    --chart-1: 24 95% 53%;
-    --chart-2: 346 77% 50%;
-    --chart-3: 43 96% 58%;
-    --chart-4: 0 84% 60%;
-    --chart-5: 267 83% 60%;
-  }
-
-  /* KIDS THEME - Playful & Energetic */
-  [data-theme="kids"] {
-    --background: 50 100% 95%;
-    --foreground: 280 80% 30%;
+    /* Warm, sunlit palette inspired by family moments */
+    --background: 36 60% 97%;        /* warm cream */
+    --foreground: 24 40% 12%;        /* deep warm brown */
     --card: 0 0% 100%;
-    --card-foreground: 280 80% 30%;
+    --card-foreground: 24 40% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 280 80% 30%;
-    --primary: 330 85% 55%;
+    --popover-foreground: 24 40% 12%;
+    --primary: 18 95% 57%;           /* sunset orange #FF6B35 */
     --primary-foreground: 0 0% 100%;
-    --secondary: 280 90% 60%;
+    --secondary: 160 60% 42%;        /* sage/teal #29AB87 */
     --secondary-foreground: 0 0% 100%;
-    --muted: 50 100% 90%;
-    --muted-foreground: 280 50% 40%;
-    --accent: 170 80% 50%;
-    --accent-foreground: 0 0% 100%;
-    --success: 142 85% 50%;
+    --muted: 36 30% 94%;
+    --muted-foreground: 24 20% 50%;
+    --accent: 43 96% 56%;            /* golden amber #FFD166 */
+    --accent-foreground: 24 40% 12%;
+    --success: 145 65% 40%;
     --success-foreground: 0 0% 100%;
-    --destructive: 0 90% 65%;
+    --destructive: 0 78% 58%;
     --destructive-foreground: 0 0% 100%;
-    --border: 280 50% 85%;
-    --input: 280 40% 90%;
-    --ring: 330 85% 55%;
-    --radius: 1.5rem;
-    --chart-1: 330 85% 55%;
-    --chart-2: 280 90% 60%;
-    --chart-3: 45 100% 55%;
-    --chart-4: 170 80% 50%;
-    --chart-5: 210 95% 60%;
+    --border: 36 25% 88%;
+    --input: 36 30% 92%;
+    --ring: 18 95% 57%;
+    --radius: 1rem;
+    --chart-1: 18 95% 57%;
+    --chart-2: 160 60% 42%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 280 60% 65%;
+    --chart-5: 210 80% 55%;
   }
 
-  /* TEENS THEME - Cool & Dynamic */
-  [data-theme="teens"] {
-    --background: 260 30% 10%;
-    --foreground: 50 100% 95%;
-    --card: 260 25% 15%;
-    --card-foreground: 50 100% 95%;
-    --popover: 260 25% 15%;
-    --popover-foreground: 50 100% 95%;
-    --primary: 180 80% 55%;
-    --primary-foreground: 260 30% 10%;
-    --secondary: 290 85% 65%;
-    --secondary-foreground: 260 30% 10%;
-    --muted: 260 20% 20%;
-    --muted-foreground: 50 30% 70%;
-    --accent: 335 95% 60%;
-    --accent-foreground: 0 0% 100%;
-    --success: 142 80% 50%;
-    --success-foreground: 0 0% 100%;
-    --destructive: 0 85% 60%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 260 20% 25%;
-    --input: 260 20% 22%;
-    --ring: 180 80% 55%;
-    --radius: 0.75rem;
-    --chart-1: 180 80% 55%;
-    --chart-2: 290 85% 65%;
-    --chart-3: 335 95% 60%;
-    --chart-4: 50 100% 60%;
-    --chart-5: 210 90% 60%;
-  }
-
-  /* ADULTS THEME - Sophisticated & Elegant */
-  [data-theme="adults"] {
-    --background: 220 20% 96%;
-    --foreground: 220 30% 15%;
-    --card: 0 0% 100%;
-    --card-foreground: 220 30% 15%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 220 30% 15%;
-    --primary: 220 70% 50%;
+  /* ── NIGHT MODE (dark but warm, not cold military) ── */
+  [data-theme="night"] {
+    --background: 240 15% 9%;        /* deep warm navy, not cold black */
+    --foreground: 36 60% 95%;
+    --card: 240 12% 13%;
+    --card-foreground: 36 60% 95%;
+    --popover: 240 12% 13%;
+    --popover-foreground: 36 60% 95%;
+    --primary: 18 95% 57%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 200 25% 65%;
-    --secondary-foreground: 220 30% 15%;
-    --muted: 220 15% 92%;
-    --muted-foreground: 220 20% 45%;
-    --accent: 280 45% 55%;
+    --secondary: 160 55% 45%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 240 10% 18%;
+    --muted-foreground: 36 20% 60%;
+    --accent: 43 96% 56%;
+    --accent-foreground: 24 40% 12%;
+    --success: 145 60% 45%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 10% 20%;
+    --input: 240 10% 18%;
+    --ring: 18 95% 57%;
+    --radius: 1rem;
+    --chart-1: 18 95% 57%;
+    --chart-2: 160 55% 45%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 280 60% 65%;
+    --chart-5: 210 80% 55%;
+  }
+
+  /* ── KIDS THEME ── */
+  [data-theme="kids"] {
+    --background: 50 100% 96%;
+    --foreground: 280 70% 25%;
+    --card: 0 0% 100%;
+    --card-foreground: 280 70% 25%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 280 70% 25%;
+    --primary: 330 80% 58%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 170 70% 48%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 50 80% 90%;
+    --muted-foreground: 280 40% 40%;
+    --accent: 45 95% 58%;
     --accent-foreground: 0 0% 100%;
-    --success: 142 60% 45%;
+    --success: 142 75% 45%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 0 85% 62%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 280 40% 85%;
+    --input: 280 30% 92%;
+    --ring: 330 80% 58%;
+    --radius: 1.5rem;
+  }
+
+  /* ── OCEAN (cool, fresh) ── */
+  [data-theme="ocean"] {
+    --background: 210 30% 97%;
+    --foreground: 210 50% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 210 50% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 50% 12%;
+    --primary: 200 85% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 175 65% 42%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 210 20% 93%;
+    --muted-foreground: 210 25% 50%;
+    --accent: 43 95% 55%;
+    --accent-foreground: 210 50% 12%;
+    --success: 145 60% 42%;
+    --success-foreground: 0 0% 100%;
+    --destructive: 0 75% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 210 20% 88%;
+    --input: 210 20% 92%;
+    --ring: 200 85% 48%;
+    --radius: 0.875rem;
+  }
+
+  /* ── EARTH (warm neutrals) ── */
+  [data-theme="earth"] {
+    --background: 35 25% 95%;
+    --foreground: 24 50% 10%;
+    --card: 35 20% 98%;
+    --card-foreground: 24 50% 10%;
+    --popover: 35 20% 98%;
+    --popover-foreground: 24 50% 10%;
+    --primary: 24 80% 48%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 100 40% 42%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 35 20% 90%;
+    --muted-foreground: 24 25% 48%;
+    --accent: 38 80% 55%;
+    --accent-foreground: 0 0% 100%;
+    --success: 125 55% 40%;
     --success-foreground: 0 0% 100%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 220 20% 85%;
-    --input: 220 20% 88%;
-    --ring: 220 70% 50%;
-    --radius: 0.5rem;
-    --chart-1: 220 70% 50%;
-    --chart-2: 200 60% 55%;
-    --chart-3: 280 45% 55%;
-    --chart-4: 45 70% 60%;
-    --chart-5: 142 60% 45%;
+    --border: 35 20% 85%;
+    --input: 35 20% 90%;
+    --ring: 24 80% 48%;
+    --radius: 0.75rem;
   }
 }
 
 @layer base {
-  * {
-    border-color: hsl(var(--border));
-  }
+  * { border-color: hsl(var(--border)); }
 
-  /* Scope theme transitions to interactive elements only for better performance */
-  a, button, input, select, textarea,
-  [role="button"], [role="tab"], [role="menuitem"],
-  .transition-theme {
-    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-  }
-  
   body {
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 
-  /* Fun background patterns for each theme */
-  [data-theme="family"] body {
-    background: linear-gradient(135deg, #0f172a 0%, #4c0519 50%, #7c2d12 100%);
+  a, button, input, select, textarea,
+  [role="button"], [role="tab"], [role="menuitem"],
+  .transition-theme {
+    transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  /* Theme body gradients */
+  :root body, [data-theme="family"] body {
+    background:
+      radial-gradient(ellipse at 20% 0%, hsla(18, 95%, 80%, 0.25) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 100%, hsla(160, 60%, 80%, 0.2) 0%, transparent 60%),
+      hsl(36, 60%, 97%);
+  }
+
+  [data-theme="night"] body {
+    background:
+      radial-gradient(ellipse at 20% 0%, hsla(18, 95%, 20%, 0.3) 0%, transparent 55%),
+      radial-gradient(ellipse at 80% 100%, hsla(160, 55%, 15%, 0.25) 0%, transparent 55%),
+      hsl(240, 15%, 9%);
   }
 
   [data-theme="kids"] body {
-    background: 
-      radial-gradient(circle at 20% 30%, hsl(330 85% 90%) 0%, transparent 50%),
-      radial-gradient(circle at 80% 70%, hsl(280 90% 85%) 0%, transparent 50%),
-      radial-gradient(circle at 50% 50%, hsl(170 80% 85%) 0%, transparent 50%),
-      hsl(50 100% 95%);
+    background:
+      radial-gradient(circle at 15% 25%, hsl(330 80% 90%) 0%, transparent 45%),
+      radial-gradient(circle at 85% 75%, hsl(170 70% 85%) 0%, transparent 45%),
+      radial-gradient(circle at 50% 50%, hsl(45 95% 88%) 0%, transparent 45%),
+      hsl(50, 100%, 96%);
   }
 
-  [data-theme="teens"] body {
-    background: 
-      linear-gradient(135deg, hsl(260 30% 10%) 0%, hsl(280 30% 15%) 100%),
-      radial-gradient(circle at 20% 80%, hsl(180 80% 25%) 0%, transparent 50%),
-      radial-gradient(circle at 80% 20%, hsl(290 85% 25%) 0%, transparent 50%);
+  [data-theme="ocean"] body {
+    background:
+      radial-gradient(ellipse at 0% 0%, hsla(200, 85%, 80%, 0.3) 0%, transparent 55%),
+      radial-gradient(ellipse at 100% 100%, hsla(175, 65%, 80%, 0.2) 0%, transparent 55%),
+      hsl(210, 30%, 97%);
   }
 
-  [data-theme="adults"] body {
-    background: linear-gradient(135deg, hsl(220 20% 96%) 0%, hsl(200 25% 94%) 100%);
+  [data-theme="earth"] body {
+    background:
+      radial-gradient(ellipse at 30% 0%, hsla(24, 80%, 80%, 0.25) 0%, transparent 55%),
+      radial-gradient(ellipse at 70% 100%, hsla(100, 40%, 80%, 0.15) 0%, transparent 55%),
+      hsl(35, 25%, 95%);
   }
 }
 
+/* ─── Utility classes ──────────────────────────────────────────────── */
 @layer utilities {
-  /* Animated Gradients */
-  .animate-gradient {
-    background-size: 200% 200%;
-    animation: gradient 6s ease infinite;
+
+  /* Glassmorphism */
+  .glass {
+    background: rgba(255, 255, 255, 0.7);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+  .glass-dark {
+    background: rgba(0, 0, 0, 0.25);
+    backdrop-filter: blur(20px) saturate(1.5);
+    -webkit-backdrop-filter: blur(20px) saturate(1.5);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .glass-card {
+    background: rgba(255, 255, 255, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
   }
 
-  /* Bounce animations for kids theme */
-  .animate-bounce-slow {
-    animation: bounce 3s infinite;
+  /* Card hover lift */
+  .card-hover {
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .card-hover:hover {
+    transform: translateY(-6px) scale(1.015);
+    box-shadow: 0 24px 48px -12px hsl(var(--primary) / 0.18), 0 8px 16px -4px rgba(0,0,0,0.08);
   }
 
-  /* Pulse glow effect */
-  .animate-pulse-glow {
-    animation: pulse-glow 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse-glow {
-    0%, 100% { 
-      box-shadow: 0 0 5px hsl(var(--primary) / 0.5),
-                  0 0 10px hsl(var(--primary) / 0.3); 
-    }
-    50% { 
-      box-shadow: 0 0 20px hsl(var(--primary) / 0.8),
-                  0 0 30px hsl(var(--primary) / 0.6); 
-    }
-  }
-
-  /* Float animation */
-  .animate-float {
-    animation: float 6s ease-in-out infinite;
-  }
-
-  @keyframes float {
-    0%, 100% { transform: translateY(0px); }
-    50% { transform: translateY(-20px); }
-  }
-
-  /* Wiggle animation for kids */
-  .animate-wiggle {
-    animation: wiggle 1s ease-in-out infinite;
-  }
-
-  @keyframes wiggle {
-    0%, 100% { transform: rotate(-3deg); }
-    50% { transform: rotate(3deg); }
-  }
-
-  /* Rainbow text effect */
-  .text-rainbow {
-    background: linear-gradient(
-      to right,
-      hsl(330 85% 55%),
-      hsl(280 90% 60%),
-      hsl(210 95% 60%),
-      hsl(170 80% 50%),
-      hsl(45 100% 55%)
-    );
+  /* Warm gradient text */
+  .text-gradient {
+    background: linear-gradient(135deg, hsl(18, 95%, 57%), hsl(43, 96%, 56%), hsl(160, 60%, 42%));
     background-clip: text;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-size: 200% auto;
-    animation: gradient 3s linear infinite;
+    animation: gradient-shift 4s ease infinite;
+  }
+  .text-gradient-warm {
+    background: linear-gradient(135deg, hsl(18, 95%, 57%) 0%, hsl(43, 96%, 56%) 50%, hsl(18, 95%, 57%) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% auto;
+    animation: gradient-shift 3s ease infinite;
   }
 
-  /* Glassmorphism effects */
-  .glass-card {
-    background: rgba(255, 255, 255, 0.03);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+  /* Animate gradient */
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 6s ease infinite;
   }
 
-  /* Card hover effects */
-  .card-hover {
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* Soft glow */
+  .glow-primary {
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.35), 0 0 48px hsl(var(--primary) / 0.15);
+  }
+  .glow-primary:hover {
+    box-shadow: 0 0 32px hsl(var(--primary) / 0.5), 0 0 64px hsl(var(--primary) / 0.25);
+  }
+  .glow-accent {
+    box-shadow: 0 0 24px hsl(var(--accent) / 0.35);
   }
 
-  .card-hover:hover {
-    transform: translateY(-4px) scale(1.02);
-    box-shadow: 0 20px 40px -10px hsl(var(--primary) / 0.2);
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+  /* Shimmer loading effect */
+  .shimmer {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
   }
 
-  /* Button animations */
-  .btn-bounce:active {
-    animation: button-bounce 0.3s ease;
+  /* Floating animation */
+  .animate-float {
+    animation: float 5s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: float 8s ease-in-out infinite;
   }
 
-  @keyframes button-bounce {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(0.95); }
+  /* Bounce animations */
+  .animate-bounce-soft {
+    animation: bounce-soft 2.5s ease-in-out infinite;
+  }
+
+  /* Scale in */
+  .animate-scale-in {
+    animation: scale-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Fade up */
+  .animate-fade-up {
+    animation: fade-up 0.5s ease forwards;
+  }
+
+  /* Pulse dot (status indicator) */
+  .pulse-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: hsl(var(--success));
+    animation: pulse-ring 1.5s ease-out infinite;
+  }
+
+  /* Warm background blob */
+  .blob {
+    border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%;
+    animation: morph 8s ease-in-out infinite;
   }
 }
 
-/* ========================================
-   THERMAL PRINTER STYLES
-   ======================================== */
+/* ─── Keyframes ─────────────────────────────────────────────────── */
+@keyframes gradient-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
 
-/* Hide everything except printable content when printing */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-14px); }
+}
+
+@keyframes bounce-soft {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-8px); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.88); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-ring {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--success) / 0.5); }
+  70%  { box-shadow: 0 0 0 8px hsl(var(--success) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--success) / 0); }
+}
+
+@keyframes morph {
+  0%, 100% { border-radius: 40% 60% 70% 30% / 40% 50% 60% 50%; }
+  34%       { border-radius: 70% 30% 50% 50% / 30% 30% 70% 70%; }
+  67%       { border-radius: 100% 60% 60% 100% / 100% 100% 60% 60%; }
+}
+
+@keyframes accordion-down {
+  from { height: 0; }
+  to   { height: var(--radix-accordion-content-height); }
+}
+
+@keyframes accordion-up {
+  from { height: var(--radix-accordion-content-height); }
+  to   { height: 0; }
+}
+
+/* ─── Print styles (thermal printer) ───────────────────────────── */
 @media print {
-  body * {
-    visibility: hidden;
-  }
-
-  #printable-label,
-  #printable-label *,
-  #printable-batch,
-  #printable-batch * {
-    visibility: visible;
-  }
-
-  #printable-label {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: auto;
-  }
-
-  #printable-batch {
-    position: absolute;
-    left: 0;
-    top: 0;
-    width: 100%;
-  }
-
-  /* Critical for label printers - no margins! */
-  @page {
-    size: auto;
-    margin: 0mm;
-  }
-
-  /* Ensure high contrast for thermal printing */
-  * {
-    color: black !important;
-    background: white !important;
-    text-shadow: none !important;
-    box-shadow: none !important;
-  }
-
-  /* Remove borders and decorations */
-  .label {
-    border: none !important;
-    page-break-after: always;
-  }
-
-  .label:last-child {
-    page-break-after: auto;
-  }
+  body * { visibility: hidden; }
+  #printable-label, #printable-label *,
+  #printable-batch, #printable-batch * { visibility: visible; }
+  #printable-label { position: absolute; left: 0; top: 0; width: 100%; }
+  #printable-batch { position: absolute; left: 0; top: 0; width: 100%; }
+  @page { size: auto; margin: 0mm; }
+  * { color: black !important; background: white !important; text-shadow: none !important; box-shadow: none !important; }
+  .label { border: none !important; page-break-after: always; }
+  .label:last-child { page-break-after: auto; }
 }
-

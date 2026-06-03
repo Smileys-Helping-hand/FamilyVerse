@@ -4,127 +4,109 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { MapPin, ShoppingCart, DollarSign, Gamepad2, ChevronRight, Zap } from 'lucide-react';
 import { motion } from 'framer-motion';
+import {
+  Calendar, Users, MapPin, Sparkles, ArrowRight, CheckCircle2,
+  MessageCircle, Star, Heart, Zap, Clock, ClipboardList
+} from 'lucide-react';
 
-// ── Animated grid canvas (tactical background) ────────────────────────────
-function TacticalGrid() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    let raf: number;
-
-    const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-    };
-    resize();
-    window.addEventListener('resize', resize);
-
-    let offset = 0;
-    const GRID = 48;
-
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.strokeStyle = 'rgba(0,240,255,0.07)';
-      ctx.lineWidth = 1;
-
-      // Scrolling vertical lines
-      for (let x = (offset % GRID); x < canvas.width; x += GRID) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
-      }
-      // Static horizontal lines
-      for (let y = 0; y < canvas.height; y += GRID) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
-      }
-
-      // Glowing dots at intersections
-      ctx.fillStyle = 'rgba(0,255,102,0.18)';
-      for (let x = (offset % GRID); x < canvas.width; x += GRID) {
-        for (let y = 0; y < canvas.height; y += GRID) {
-          ctx.beginPath();
-          ctx.arc(x, y, 1.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-      }
-
-      offset += 0.4;
-      raf = requestAnimationFrame(draw);
-    };
-    draw();
-
-    return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener('resize', resize);
-    };
-  }, []);
-  return <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />;
-}
-
-// ── Feature cards ─────────────────────────────────────────────────────────
 const FEATURES = [
+  {
+    emoji: '🗓️',
+    icon: Calendar,
+    title: 'Plan in seconds',
+    desc: 'Tell us what you want to do in plain language. AI builds the full plan — date, venue, tasks, supplies.',
+    color: 'from-orange-400 to-rose-400',
+    bg: 'bg-orange-50',
+    border: 'border-orange-100',
+  },
+  {
+    emoji: '👥',
+    icon: Users,
+    title: 'Invite your people',
+    desc: 'Add family and friends. Send invites via WhatsApp, AwehChat, or email. Everyone stays in the loop.',
+    color: 'from-teal-400 to-emerald-400',
+    bg: 'bg-teal-50',
+    border: 'border-teal-100',
+  },
   {
     emoji: '📍',
     icon: MapPin,
-    title: 'Family Radar',
-    desc: 'Live GPS tracking for every convoy member — battery level, speed, and real-time location on one full-screen map.',
-    color: 'border-[#00F0FF] shadow-[0_0_16px_rgba(0,240,255,0.25)]',
-    accent: 'text-[#00F0FF]',
+    title: 'AI venue research',
+    desc: 'Pick a place and let AI research it — parking, what to bring, weather on the day, nearby options.',
+    color: 'from-amber-400 to-orange-400',
+    bg: 'bg-amber-50',
+    border: 'border-amber-100',
   },
   {
-    emoji: '🎒',
-    icon: ShoppingCart,
-    title: 'Quartermaster',
-    desc: 'Auto-delegates gear and supplies to the right people the moment an event is created. No arguments, no forgetting.',
-    color: 'border-[#00FF66] shadow-[0_0_16px_rgba(0,255,102,0.25)]',
-    accent: 'text-[#00FF66]',
+    emoji: '✅',
+    icon: ClipboardList,
+    title: 'Auto task delegation',
+    desc: 'Tasks get created and assigned automatically. Everyone knows their role. No more WhatsApp chaos.',
+    color: 'from-violet-400 to-purple-400',
+    bg: 'bg-violet-50',
+    border: 'border-violet-100',
   },
   {
-    emoji: '💸',
-    icon: DollarSign,
-    title: 'The Kitty',
-    desc: 'Track who paid what, split expenses fairly, and settle up in seconds. No more WhatsApp debates about the bill.',
-    color: 'border-yellow-400 shadow-[0_0_16px_rgba(250,204,21,0.25)]',
-    accent: 'text-yellow-400',
+    emoji: '💬',
+    icon: MessageCircle,
+    title: 'All-in-one chat',
+    desc: 'Built-in group chat powered by AwehChat/MosWords. Comment, plan, post notes — all in one place.',
+    color: 'from-sky-400 to-blue-400',
+    bg: 'bg-sky-50',
+    border: 'border-sky-100',
   },
   {
-    emoji: '🎮',
-    icon: Gamepad2,
-    title: 'Arcade & Betting',
-    desc: 'Live LAN party stats, Blackout, Spy Game, and an in-group betting board. Your lounge is now a proper arena.',
-    color: 'border-purple-400 shadow-[0_0_16px_rgba(192,132,252,0.25)]',
-    accent: 'text-purple-400',
+    emoji: '🏨',
+    icon: Zap,
+    title: 'One-tap booking',
+    desc: 'Like Gemini\'s booking widget — tell us where, how many people, and we\'ll pre-fill the booking. You just press confirm.',
+    color: 'from-pink-400 to-rose-400',
+    bg: 'bg-pink-50',
+    border: 'border-pink-100',
   },
 ];
 
-// ── Main page ─────────────────────────────────────────────────────────────
+const STEPS = [
+  { num: '1', title: 'Sign up & add your people', desc: 'Create your account and build your friends list. Import from AwehChat or Nexus — all your contacts in one place.' },
+  { num: '2', title: 'Create an event', desc: 'Type what you want to do. "Games day at The Ark for 12 people this Saturday." AI does the rest.' },
+  { num: '3', title: 'AI plans it for you', desc: 'Venue research, weather check, supply list, task delegation. Everything handled automatically.' },
+  { num: '4', title: 'Invite & enjoy', desc: 'Send invites via WhatsApp or AwehChat. Everyone RSVPs, tasks get delegated, you just show up.' },
+];
+
+const TESTIMONIALS = [
+  { name: 'Fatima R.', role: 'Mom of 3', text: 'Planned our whole family braai in 2 minutes. Normally takes a week of WhatsApp back and forth!', emoji: '🎉' },
+  { name: 'Abduraziq', role: 'Family organiser', text: 'Finally something that works for SA families. The AwehChat integration is perfect for our crew.', emoji: '🙌' },
+  { name: 'Yusuf K.', role: 'Uncle vibes', text: 'Games day sorted in minutes. Everyone knew what to bring. Zero chaos. First time ever.', emoji: '🎮' },
+];
+
+function FloatingBlob({ className }: { className?: string }) {
+  return (
+    <div className={`absolute rounded-full blur-3xl opacity-20 pointer-events-none ${className}`} />
+  );
+}
+
 export default function HomePage() {
   const { user, userProfile, loading } = useAuth();
   const router = useRouter();
 
-  // Once auth resolves, redirect authenticated users immediately
   useEffect(() => {
     if (!loading && user) {
       router.replace(userProfile?.familyId ? '/dashboard' : '/welcome');
     }
   }, [user, userProfile, loading, router]);
 
-  // Authenticated: show minimal loader while redirecting
   if (loading || user) {
     return (
-      <div className="flex h-screen w-full items-center justify-center bg-[#0d0d0d]">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="text-4xl font-extrabold text-[#00FF66] animate-pulse">Gang Gear</div>
-          <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <span className="text-3xl">🏡</span>
+            <span className="text-2xl font-extrabold text-gradient">FamilyVerse</span>
+          </div>
+          <div className="flex gap-1.5">
             {[0, 1, 2].map(i => (
-              <span
-                key={i}
-                className="w-2 h-2 rounded-full bg-[#00F0FF] animate-bounce"
-                style={{ animationDelay: `${i * 0.2}s` }}
-              />
+              <span key={i} className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: `${i * 0.15}s` }} />
             ))}
           </div>
         </div>
@@ -132,101 +114,288 @@ export default function HomePage() {
     );
   }
 
-  // Public landing page
   return (
-    <div className="relative min-h-screen bg-[#0d0d0d] text-white overflow-x-hidden">
-      <TacticalGrid />
+    <div className="min-h-screen overflow-x-hidden">
+
+      {/* ── Navbar ── */}
+      <nav className="sticky top-0 z-50 glass border-b border-border/50">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 flex h-16 items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 group">
+            <span className="text-2xl group-hover:animate-bounce transition-all">🏡</span>
+            <span className="text-xl font-extrabold text-gradient">FamilyVerse</span>
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-sm font-semibold text-foreground/70 hover:text-foreground transition-colors px-3 py-2">
+              Sign In
+            </Link>
+            <Link
+              href="/signup"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-bold bg-primary text-white shadow-md hover:shadow-lg hover:bg-primary/90 transition-all glow-primary"
+            >
+              Get Started <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+      </nav>
 
       {/* ── Hero ── */}
-      <section className="relative z-10 flex flex-col items-center justify-center min-h-screen px-6 text-center">
-        <p className="text-xs tracking-[0.4em] text-[#00F0FF] uppercase mb-4 font-mono">
-          Squad Command Center · v2.0
-        </p>
-        <h1 className="text-5xl sm:text-7xl font-extrabold leading-tight mb-6">
-          Welcome to{' '}
-          <span
-            className="bg-gradient-to-r from-[#00FF66] via-[#00F0FF] to-[#00FF66] bg-clip-text text-transparent
-                       bg-[length:200%_auto] animate-[gradient_3s_linear_infinite]"
-          >
-            Gang Gear.
-          </span>
-        </h1>
-        <p className="max-w-xl text-lg text-gray-400 mb-10 leading-relaxed">
-          The private command center for our outings, games, and logistics.
-          Built for the crew. Runs like a military op.
-        </p>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <Link
-            href="/login"
-            className="group flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-lg
-                       bg-[#00FF66] text-black hover:bg-[#00cc52] transition-all
-                       shadow-[0_0_32px_rgba(0,255,102,0.5)] hover:shadow-[0_0_48px_rgba(0,255,102,0.7)]"
-          >
-            <Zap className="w-5 h-5" />
-            Access Terminal (Login)
-            <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-          </Link>
-          <Link
-            href="/signup"
-            className="px-8 py-4 rounded-xl font-bold text-lg border border-[#00F0FF] text-[#00F0FF]
-                       hover:bg-[#00F0FF]/10 transition-all"
-          >
-            Create Account
-          </Link>
-        </div>
+      <section className="relative overflow-hidden py-20 sm:py-28 px-4">
+        <FloatingBlob className="w-96 h-96 bg-primary top-0 -left-20" />
+        <FloatingBlob className="w-80 h-80 bg-secondary bottom-0 -right-10" />
+        <FloatingBlob className="w-64 h-64 bg-accent top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
 
-        {/* Scroll hint */}
-        <div className="absolute bottom-8 flex flex-col items-center gap-1 animate-bounce opacity-50">
-          <span className="text-xs text-gray-500">Scroll to explore</span>
-          <ChevronRight className="w-4 h-4 text-gray-500 rotate-90" />
-        </div>
-      </section>
+        <div className="relative z-10 max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+          >
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 text-primary text-sm font-semibold mb-6">
+              <Sparkles className="w-4 h-4" />
+              The ultimate family event planner
+            </div>
 
-      {/* ── Feature Grid ── */}
-      <section className="relative z-10 px-6 pb-24 max-w-6xl mx-auto">
-        <h2 className="text-center text-3xl font-extrabold mb-3 text-white">
-          Everything your squad needs.{' '}
-          <span className="text-[#00FF66]">In one place.</span>
-        </h2>
-        <p className="text-center text-gray-500 mb-12">
-          Stop juggling five WhatsApp threads and a shared Google Sheet.
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {FEATURES.map((f, i) => (
-            <motion.div
-              key={f.title}
-              initial={{ opacity: 0, y: 32 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.2 }}
-              transition={{ duration: 0.45, delay: i * 0.1, ease: 'easeOut' }}
-              className={`relative flex flex-col gap-3 p-6 rounded-2xl bg-[#1A1A1A] border ${f.color} transition-all hover:-translate-y-1 hover:scale-[1.02]`}
-            >
-              <div className="text-3xl">{f.emoji}</div>
-              <h3 className={`text-lg font-bold ${f.accent}`}>{f.title}</h3>
-              <p className="text-sm text-gray-400 leading-relaxed">{f.desc}</p>
-            </motion.div>
-          ))}
+            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-extrabold leading-tight tracking-tight mb-6">
+              Plan events{' '}
+              <span className="text-gradient-warm">your family</span>
+              <br />
+              will remember 🎉
+            </h1>
+
+            <p className="text-lg sm:text-xl text-foreground/60 max-w-2xl mx-auto mb-10 leading-relaxed">
+              From a quick games day to a full family reunion — FamilyVerse handles the planning, coordination,
+              tasks, and communication so you just show up and have fun.
+            </p>
+
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link
+                href="/signup"
+                className="group flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg
+                           bg-primary text-white shadow-xl hover:shadow-2xl hover:bg-primary/90 transition-all
+                           glow-primary"
+              >
+                Start Planning Free
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/login"
+                className="flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg
+                           border-2 border-border bg-card/80 hover:bg-card transition-all"
+              >
+                Sign In
+              </Link>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-foreground/50">
+              {['No credit card needed', 'WhatsApp invites', 'AI-powered planning', 'Works on all devices'].map(item => (
+                <span key={item} className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-secondary" />
+                  {item}
+                </span>
+              ))}
+            </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ── CTA strip ── */}
-      <section className="relative z-10 py-16 px-6 bg-gradient-to-r from-[#00FF66]/10 via-[#00F0FF]/5 to-[#00FF66]/10 border-t border-b border-[#00FF66]/20 text-center">
-        <h2 className="text-3xl font-extrabold mb-4">Ready to run the operation?</h2>
-        <Link
-          href="/login"
-          className="inline-flex items-center gap-2 px-8 py-4 rounded-xl font-bold text-lg
-                     bg-[#00FF66] text-black hover:bg-[#00cc52] transition-all
-                     shadow-[0_0_32px_rgba(0,255,102,0.4)]"
+      {/* ── Event preview card ── */}
+      <section className="px-4 pb-16">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          className="max-w-2xl mx-auto"
         >
-          <Zap className="w-5 h-5" />
-          Log In → Gang Gear
-        </Link>
+          <div className="glass rounded-3xl p-6 sm:p-8 shadow-2xl border border-white/60">
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-3xl">🎮</span>
+              <div>
+                <div className="font-bold text-lg">Games Day at The Ark</div>
+                <div className="text-sm text-foreground/50">Saturday, 7 June 2026 · 12 people</div>
+              </div>
+              <span className="ml-auto px-3 py-1 rounded-full text-xs font-bold bg-secondary/15 text-secondary border border-secondary/20">
+                AI Planned ✨
+              </span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 mb-5">
+              {[
+                { emoji: '🌤️', label: 'Weather', value: '22°C Clear' },
+                { emoji: '🅿️', label: 'Parking', value: 'Free on-site' },
+                { emoji: '🎒', label: 'Supplies', value: '8 items delegated' },
+              ].map(item => (
+                <div key={item.label} className="rounded-xl bg-muted/60 p-3 text-center">
+                  <div className="text-xl mb-1">{item.emoji}</div>
+                  <div className="text-xs text-foreground/50">{item.label}</div>
+                  <div className="text-sm font-semibold">{item.value}</div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { who: 'Abduraziq', task: 'Bring the braai grid & charcoal', done: true },
+                { who: 'Fatima', task: 'Pick up drinks & snacks', done: true },
+                { who: 'Yusuf', task: 'Set up the games station', done: false },
+              ].map(item => (
+                <div key={item.task} className="flex items-center gap-3 p-3 rounded-xl bg-muted/40">
+                  <CheckCircle2 className={`w-4 h-4 shrink-0 ${item.done ? 'text-secondary' : 'text-foreground/25'}`} />
+                  <span className="text-sm flex-1">{item.task}</span>
+                  <span className="text-xs text-foreground/40 font-medium">{item.who}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 mt-5">
+              <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-[#25D366] text-white">
+                <MessageCircle className="w-4 h-4" /> WhatsApp Invite
+              </button>
+              <button className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold bg-primary/10 text-primary border border-primary/20">
+                <MessageCircle className="w-4 h-4" /> AwehChat
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* ── Features ── */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="max-w-6xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-3">
+              Everything you need,{' '}
+              <span className="text-gradient">nothing you don't</span>
+            </h2>
+            <p className="text-foreground/55 text-lg max-w-xl mx-auto">
+              Built for real South African families — big groups, last-minute plans, WhatsApp culture and all.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {FEATURES.map((f, i) => (
+              <motion.div
+                key={f.title}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{ duration: 0.45, delay: i * 0.08 }}
+                className={`relative rounded-2xl p-6 ${f.bg} border ${f.border} card-hover`}
+              >
+                <div className={`inline-flex p-3 rounded-xl bg-gradient-to-br ${f.color} text-white mb-4 shadow-md`}>
+                  <f.icon className="w-5 h-5" />
+                </div>
+                <h3 className="font-bold text-lg mb-2">{f.title}</h3>
+                <p className="text-sm text-foreground/60 leading-relaxed">{f.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── How it works ── */}
+      <section className="py-16 px-4">
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-3">How it works</h2>
+            <p className="text-foreground/55">Four steps from idea to epic family event.</p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {STEPS.map((step, i) => (
+              <motion.div
+                key={step.num}
+                initial={{ opacity: 0, x: i % 2 === 0 ? -20 : 20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: i * 0.1 }}
+                className="flex gap-4 p-6 rounded-2xl bg-card border border-border shadow-sm"
+              >
+                <div className="shrink-0 w-12 h-12 rounded-2xl bg-gradient-to-br from-primary to-accent flex items-center justify-center text-white font-extrabold text-xl shadow-md">
+                  {step.num}
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg mb-1">{step.title}</h3>
+                  <p className="text-sm text-foreground/60 leading-relaxed">{step.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Testimonials ── */}
+      <section className="py-16 px-4 bg-muted/30">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-10">
+            <h2 className="text-3xl font-extrabold mb-2">Loved by families 💛</h2>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+            {TESTIMONIALS.map((t, i) => (
+              <motion.div
+                key={t.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
+                className="bg-card rounded-2xl p-6 border border-border shadow-sm"
+              >
+                <div className="text-2xl mb-3">{t.emoji}</div>
+                <div className="flex gap-0.5 mb-3">
+                  {[...Array(5)].map((_, j) => (
+                    <Star key={j} className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  ))}
+                </div>
+                <p className="text-sm text-foreground/70 leading-relaxed mb-4">"{t.text}"</p>
+                <div>
+                  <div className="font-semibold text-sm">{t.name}</div>
+                  <div className="text-xs text-foreground/50">{t.role}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="py-20 px-4">
+        <div className="max-w-2xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="bg-gradient-to-br from-primary via-orange-500 to-accent rounded-3xl p-10 text-white shadow-2xl"
+          >
+            <Heart className="w-10 h-10 mx-auto mb-4 animate-float" />
+            <h2 className="text-3xl sm:text-4xl font-extrabold mb-3">
+              Your next family moment starts here
+            </h2>
+            <p className="text-white/80 mb-8 text-lg">
+              Free to start. Takes 30 seconds. Your cousins will thank you.
+            </p>
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg bg-white text-primary hover:bg-white/90 transition-all shadow-xl"
+            >
+              Create Your First Event <ArrowRight className="w-5 h-5" />
+            </Link>
+          </motion.div>
+        </div>
       </section>
 
       {/* ── Footer ── */}
-      <footer className="relative z-10 py-8 text-center text-xs text-gray-600 font-mono">
-        gang-gear.co.za · Built with 🔥 for the squad
+      <footer className="py-8 text-center text-sm text-foreground/40 border-t border-border">
+        <div className="flex items-center justify-center gap-2 mb-2">
+          <span>🏡</span>
+          <span className="font-bold text-foreground/60">FamilyVerse</span>
+        </div>
+        <p>Built with love for South African families · Powered by AwehChat & Nexus</p>
+        <div className="flex justify-center gap-6 mt-4 text-xs">
+          <Link href="/login" className="hover:text-foreground transition-colors">Sign In</Link>
+          <Link href="/signup" className="hover:text-foreground transition-colors">Sign Up</Link>
+        </div>
       </footer>
+
     </div>
   );
 }

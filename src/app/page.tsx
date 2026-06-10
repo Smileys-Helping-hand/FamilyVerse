@@ -171,16 +171,17 @@ export default function HomePage() {
               <Link
                 href="/signup"
                 className="group flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg
-                           bg-primary text-white shadow-xl hover:shadow-2xl hover:bg-primary/90 transition-all
+                           bg-gradient-to-r from-primary via-orange-500 to-accent text-white
+                           shadow-2xl hover:shadow-[0_20px_60px_rgba(255,107,53,0.4)] hover:scale-105 transition-all duration-200
                            glow-primary"
               >
                 Start Planning Free
-                <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                <ArrowRight className="w-5 h-5 group-hover:translate-x-2 transition-transform" />
               </Link>
               <Link
                 href="/login"
                 className="flex items-center justify-center gap-2 px-8 py-4 rounded-2xl font-bold text-lg
-                           border-2 border-border bg-card/80 hover:bg-card transition-all"
+                           border-2 border-primary/30 bg-card hover:border-primary/50 hover:bg-primary/5 transition-all"
               >
                 Sign In
               </Link>

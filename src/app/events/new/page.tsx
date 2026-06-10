@@ -10,6 +10,7 @@ import {
   Users, MessageCircle, Sparkles, ClipboardList, Sun, Cloud, CloudRain,
   Phone, Mail, BookOpen, Plus, Trash2, ChevronDown, Share2, ExternalLink
 } from 'lucide-react';
+import LocationPicker from '@/components/events/LocationPicker';
 import { useToast } from '@/hooks/use-toast';
 import { runQuartermaster, type AssignmentResult } from '@/actions/quartermaster';
 import { recordEventPreference } from '@/app/actions/suggestions';
@@ -25,14 +26,25 @@ const STEPS = [
 ];
 
 const EVENT_PURPOSES = [
+  { id: 'family-event', emoji: '👨‍👩‍👧‍👦', label: 'Family Event', desc: 'Gather your whole family' },
+  { id: 'friend-event', emoji: '👯', label: 'Friend Event', desc: 'Hangout with your crew' },
   { id: 'games-day', emoji: '🎮', label: 'Games Day', desc: 'Board games, sports, fun activities' },
   { id: 'braai', emoji: '🍖', label: 'Braai / BBQ', desc: 'Classic South African get-together' },
   { id: 'birthday', emoji: '🎂', label: 'Birthday', desc: 'Celebrate a special day' },
-  { id: 'family-reunion', emoji: '👨‍👩‍👧‍👦', label: 'Family Reunion', desc: 'Bring everyone together' },
+  { id: 'family-reunion', emoji: '🎉', label: 'Family Reunion', desc: 'Bring everyone together' },
   { id: 'outing', emoji: '🌳', label: 'Day Outing', desc: 'Trip, hike, beach, or adventure' },
   { id: 'dinner', emoji: '🍽️', label: 'Dinner / Lunch', desc: 'Restaurant or home gathering' },
   { id: 'work', emoji: '💼', label: 'Work Event', desc: 'Team building or office function' },
   { id: 'other', emoji: '✨', label: 'Other', desc: 'Something unique' },
+];
+
+const POPULAR_LOCATIONS = [
+  { id: 'home', emoji: '🏡', label: 'Home', desc: 'Your place' },
+  { id: 'park', emoji: '🌳', label: 'Public Park', desc: 'Local park or picnic area' },
+  { id: 'beach', emoji: '🏖️', label: 'Beach', desc: 'Coastal getaway' },
+  { id: 'restaurant', emoji: '🍽️', label: 'Restaurant', desc: 'Dine out' },
+  { id: 'venue', emoji: '🏢', label: 'Event Venue', desc: 'Function hall or venue space' },
+  { id: 'other', emoji: '📍', label: 'Other Location', desc: 'Somewhere else' },
 ];
 
 interface TaskItem { id: string; text: string; assignee: string; done: boolean; }
@@ -55,6 +67,7 @@ export default function NewEventPage() {
   // Step 2 — When & Where
   const [date, setDate] = useState(params.get('date') ?? '');
   const [time, setTime] = useState('12:00');
+  const [locationType, setLocationType] = useState('');
   const [location, setLocation] = useState(params.get('location') ?? '');
   const [venueSelection, setVenueSelection] = useState<VenueSelection | null>(null);
   const [venueResearch, setVenueResearch] = useState<any>(null);
@@ -234,7 +247,7 @@ export default function NewEventPage() {
 
   const canNext = (() => {
     if (step === 1) return !!title.trim() && !!purpose;
-    if (step === 2) return true;
+    if (step === 2) return !!date && !!locationType && !!location;
     if (step === 3) return true;
     if (step === 4) return true;
     return false;
@@ -371,16 +384,51 @@ export default function NewEventPage() {
               </div>
             </div>
 
-            <div className="space-y-2">
+            {/* Location Type Selection */}
+            <div className="space-y-3">
               <label className="text-sm font-semibold text-foreground/70 flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" /> Venue
+                <MapPin className="w-3.5 h-3.5" /> Where are you meeting?
               </label>
-              <VenueDossier
-                initialVenue={location}
-                eventType={purpose}
-                onVenueChange={handleVenueChange}
-              />
+              <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+                {POPULAR_LOCATIONS.map((loc) => (
+                  <motion.button
+                    key={loc.id}
+                    onClick={() => setLocationType(loc.id)}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className={cn(
+                      "flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl transition-all duration-200",
+                      locationType === loc.id
+                        ? "bg-primary/20 border-2 border-primary scale-105"
+                        : "bg-card border-2 border-border hover:border-primary/30"
+                    )}
+                  >
+                    <span className="text-2xl">{loc.emoji}</span>
+                    <span className="text-xs font-semibold text-center line-clamp-2">{loc.label}</span>
+                  </motion.button>
+                ))}
+              </div>
             </div>
+
+            {/* Venue / Location Input */}
+            {locationType && (
+              <div className="space-y-2">
+                <label className="text-sm font-semibold text-foreground/70 flex items-center gap-1.5">
+                  <MapPin className="w-3.5 h-3.5" />
+                  {locationType === 'home' && 'Your Address'}
+                  {locationType === 'park' && 'Park or Outdoor Area'}
+                  {locationType === 'beach' && 'Beach Location'}
+                  {locationType === 'restaurant' && 'Restaurant or Cafe'}
+                  {locationType === 'venue' && 'Event Venue'}
+                  {locationType === 'other' && 'Location Name'}
+                </label>
+                <LocationPicker
+                  value={location}
+                  onChange={setLocation}
+                  locationType={locationType}
+                />
+              </div>
+            )}
 
             {/* AI Research results */}
             {(location || venueSelection) && date && (

@@ -11,6 +11,7 @@ import {
   eventPolls,
   pollVotes,
   meetHerePins,
+  eventBudgets,
   type NewEvent,
   type NewEventAttendee,
   type NewEventWaypoint,
@@ -24,6 +25,7 @@ import {
 import { eq, and, desc, sql } from 'drizzle-orm';
 import { triggerPartyEvent } from '@/lib/pusher/server';
 import { revalidatePath } from 'next/cache';
+import { createEventBudget } from './event-budget';
 
 // ============================================
 // EVENTS
@@ -32,6 +34,18 @@ import { revalidatePath } from 'next/cache';
 export async function createEvent(data: NewEvent) {
   try {
     const [event] = await db.insert(events).values(data).returning();
+
+    // Initialize default budget (R100 per person, assuming 10 people)
+    const defaultBudget = 100 * 100; // R100 in cents
+    const perPersonAmount = 100 * 100; // R100 per person
+
+    await createEventBudget(
+      event.id,
+      defaultBudget,
+      perPersonAmount,
+      'Group event budget - R100 per person'
+    );
+
     revalidatePath('/events');
     return { success: true, event };
   } catch (error) {

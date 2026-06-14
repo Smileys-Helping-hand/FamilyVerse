@@ -1575,6 +1575,106 @@ export type GuestRsvp = typeof guestRsvps.$inferSelect;
 export type NewGuestRsvp = typeof guestRsvps.$inferInsert;
 
 // ============================================
+// MODULE 15: GROUP BUDGETING & SHOPPING (NEW)
+// ============================================
+
+// Event budgets - Track shared expenses
+export const eventBudgets = pgTable('event_budgets', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().unique().references(() => events.id, { onDelete: 'cascade' }),
+  totalBudget: integer('total_budget').notNull(), // In cents for precision (e.g., 50000 = R500)
+  perPersonAmount: integer('per_person_amount').notNull(), // Individual share in cents
+  currency: varchar('currency', { length: 3 }).notNull().default('ZAR'),
+  description: text('description'), // e.g., "R100 per person for food & drinks"
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Event contributions - Who paid what
+export const eventContributions = pgTable('event_contributions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull(),
+  userName: text('user_name').notNull(),
+  amount: integer('amount').notNull(), // In cents
+  paymentMethod: varchar('payment_method', { length: 20 }).notNull().default('OTHER'), // 'CASH', 'BANK_TRANSFER', 'OTHER', 'PENDING'
+  notes: text('notes'), // e.g., "Paid via Capitec"
+  paidAt: timestamp('paid_at').notNull().defaultNow(),
+  status: varchar('status', { length: 20 }).notNull().default('CONFIRMED'), // 'PENDING', 'CONFIRMED'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Shopping list items - What needs to be bought
+export const shoppingListItems = pgTable('shopping_list_items', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  itemName: text('item_name').notNull(), // e.g., "Coca-Cola 2L"
+  category: varchar('category', { length: 30 }).notNull().default('OTHER'), // 'DRINKS', 'SNACKS', 'FOOD', 'EQUIPMENT', 'DECORATION', 'OTHER'
+  quantity: text('quantity').notNull(), // e.g., "3", "2L", "1 case"
+  estimatedPrice: integer('estimated_price'), // In cents, optional
+  suggestedShop: text('suggested_shop'), // e.g., "Checkers Muizenberg"
+  shopCoordinates: jsonb('shop_coordinates').$type<{ lat: number; lng: number; placeId: string }>(),
+  assignedToUserId: text('assigned_to_user_id'), // Who's buying
+  assignedToUserName: text('assigned_to_user_name'),
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'), // 'PENDING', 'CLAIMED', 'BOUGHT', 'DELIVERED'
+  boughtAt: timestamp('bought_at'),
+  actualPrice: integer('actual_price'), // Actual price paid
+  notes: text('notes'), // e.g., "Prefer diet coke"
+  aiSuggested: boolean('ai_suggested').notNull().default(false), // Was this AI-generated?
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// Shop recommendations - Nearby stores with details
+export const shopRecommendations = pgTable('shop_recommendations', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  shopName: text('shop_name').notNull(), // e.g., "Checkers Muizenberg"
+  shopType: varchar('shop_type', { length: 30 }).notNull(), // 'SUPERMARKET', 'CONVENIENCE', 'SPECIALTY', 'WAREHOUSE'
+  address: text('address').notNull(),
+  latitude: text('latitude').notNull(),
+  longitude: text('longitude').notNull(),
+  distance: integer('distance'), // In meters from event location
+  openingHours: jsonb('opening_hours').$type<{ open: string; close: string; days: string[] }>(),
+  website: text('website'),
+  phone: text('phone'),
+  rating: integer('rating'), // 0-5 stars
+  imageUrl: text('image_url'),
+  placeId: text('place_id'), // Google Places ID or similar
+  notes: text('notes'), // Why we recommend it
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Event suggestions - AI-generated recommendations
+export const eventSuggestions = pgTable('event_suggestions', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  eventId: uuid('event_id').notNull().references(() => events.id, { onDelete: 'cascade' }),
+  suggestionType: varchar('suggestion_type', { length: 30 }).notNull(), // 'DRINK', 'SNACK', 'ITEM', 'SHOP', 'ACTIVITY'
+  title: text('title').notNull(), // e.g., "Coca-Cola 2L"
+  description: text('description'), // Why suggested
+  category: varchar('category', { length: 30 }), // For items/drinks/snacks
+  quantity: text('quantity'), // How much needed
+  estimatedPrice: integer('estimated_price'), // In cents
+  reason: text('reason'), // AI reasoning
+  confidence: integer('confidence').notNull().default(80), // 0-100, how confident the AI is
+  accepted: boolean('accepted').notNull().default(false),
+  addedToList: boolean('added_to_list').notNull().default(false),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
+// Module 15 types
+export type EventBudget = typeof eventBudgets.$inferSelect;
+export type NewEventBudget = typeof eventBudgets.$inferInsert;
+export type EventContribution = typeof eventContributions.$inferSelect;
+export type NewEventContribution = typeof eventContributions.$inferInsert;
+export type ShoppingListItem = typeof shoppingListItems.$inferSelect;
+export type NewShoppingListItem = typeof shoppingListItems.$inferInsert;
+export type ShopRecommendation = typeof shopRecommendations.$inferSelect;
+export type NewShopRecommendation = typeof shopRecommendations.$inferInsert;
+export type EventSuggestion = typeof eventSuggestions.$inferSelect;
+export type NewEventSuggestion = typeof eventSuggestions.$inferInsert;
+
+// ============================================
 // SYSTEM API KEYS (Imported from apiKeys.ts for Drizzle tracking)
 // ============================================
 export { apiKeys } from './apiKeys';

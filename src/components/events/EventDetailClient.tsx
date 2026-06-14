@@ -39,6 +39,7 @@ import GalleryTab from './GalleryTab';
 import EventChatTab from './EventChatTab';
 import BookingWidget from './BookingWidget';
 import MosWordsBoard from './MosWordsBoard';
+import EventPlanningDashboard from './EventPlanningDashboard';
 import { getPusherClient } from '@/lib/pusher/client';
 
 interface EventDetailClientProps {
@@ -354,8 +355,9 @@ export default function EventDetailClient({
         )}
 
         {/* Main Tabs */}
-        <Tabs defaultValue="itinerary" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-11">
+        <Tabs defaultValue="planning" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-12 gap-1">
+            <TabsTrigger value="planning">🎯 Planning</TabsTrigger>
             <TabsTrigger value="itinerary">📋 Plan</TabsTrigger>
             <TabsTrigger value="booking">⚡ Booking</TabsTrigger>
             <TabsTrigger value="moswords">🔥 Slang</TabsTrigger>
@@ -368,6 +370,22 @@ export default function EventDetailClient({
             <TabsTrigger value="polls">🗳️ Polls</TabsTrigger>
             <TabsTrigger value="chat">💬 Chat</TabsTrigger>
           </TabsList>
+
+          {/* Planning Dashboard Tab */}
+          <TabsContent value="planning">
+            <EventPlanningDashboard
+              eventId={event.id}
+              eventTitle={event.title}
+              eventLocation={event.coordinates ? {
+                lat: event.coordinates.lat,
+                lng: event.coordinates.lng,
+                address: event.locationName
+              } : undefined}
+              currentUserId={currentUser.uid}
+              currentUserName={currentUser.name}
+              attendeeCount={goingCount}
+            />
+          </TabsContent>
 
           {/* Itinerary Tab */}
           <TabsContent value="itinerary">

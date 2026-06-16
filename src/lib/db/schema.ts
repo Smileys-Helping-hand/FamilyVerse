@@ -93,6 +93,19 @@ export const activityLog = pgTable('activity_log', {
   timestamp: timestamp('timestamp').notNull().defaultNow(),
 });
 
+// Gang invitations table (for easy friend/gang invitations)
+export const gangInvitations = pgTable('gang_invitations', {
+  id: serial('id').primaryKey(),
+  familyId: text('family_id').notNull().references(() => families.id, { onDelete: 'cascade' }),
+  token: varchar('token', { length: 20 }).notNull().unique(), // Short invitation code
+  invitedBy: text('invited_by').notNull(),
+  invitedByName: text('invited_by_name').notNull(),
+  acceptedAt: timestamp('accepted_at'),
+  expiresAt: timestamp('expires_at').notNull(),
+  status: varchar('status', { length: 20 }).notNull().default('PENDING'), // 'PENDING', 'ACCEPTED', 'REVOKED'
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 
 // ============================================
 // OUTING ORGANIZER: USER INVENTORY & TEMPLATES

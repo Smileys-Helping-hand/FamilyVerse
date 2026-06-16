@@ -3,9 +3,11 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getFamilyMembersAction } from '@/app/actions/family';
-import { Users, UserCheck, Clock, Loader2, UserPlus } from 'lucide-react';
+import { createGangInvitationAction } from '@/app/actions/gang-invitations';
+import { Users, UserCheck, Clock, Loader2, UserPlus, Copy, Send, CheckCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { useToast } from '@/hooks/use-toast';
 
 interface Member {
   id: number;
@@ -44,8 +46,13 @@ function MemberCard({ member }: { member: Member }) {
 
 export default function TheGangPage() {
   const { userProfile, loading } = useAuth();
+  const { toast } = useToast();
   const [members, setMembers] = useState<Member[]>([]);
   const [membersLoading, setMembersLoading] = useState(true);
+  const [inviteLink, setInviteLink] = useState<string>('');
+  const [whatsappLink, setWhatsappLink] = useState<string>('');
+  const [creatingInvite, setCreatingInvite] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (!userProfile?.familyId) return;
@@ -53,6 +60,50 @@ export default function TheGangPage() {
       .then((rows) => setMembers(rows as Member[]))
       .finally(() => setMembersLoading(false));
   }, [userProfile?.familyId]);
+
+  const handleCreateInvite = async () => {
+    if (!userProfile?.familyId) {
+      toast({
+        title: 'Error',
+        description: 'No family found. Please set up your family first.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setCreatingInvite(true);
+    const result = await createGangInvitationAction(
+      userProfile.familyId,
+      userProfile.uid || 'unknown',
+      userProfile.name || 'Friend'
+    );
+
+    if (result.success) {
+      setInviteLink(result.inviteLink || '');
+      setWhatsappLink(result.whatsappLink || '');
+      toast({
+        title: 'Invitation Created! 🎉',
+        description: 'Share the link with your friends',
+      });
+    } else {
+      toast({
+        title: 'Error',
+        description: result.error,
+        variant: 'destructive',
+      });
+    }
+    setCreatingInvite(false);
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast({
+      title: 'Copied! 📋',
+      description: 'Invite link copied to clipboard',
+    });
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   if (loading) {
     return (
@@ -109,30 +160,89 @@ export default function TheGangPage() {
       </div>
 
       {/* Invite section */}
-      <div className="rounded-2xl border border-zinc-700/60 bg-zinc-900/60 backdrop-blur-xl p-5 space-y-3">
+      <div className="rounded-3xl border-2 border-primary bg-gradient-to-br from-primary/10 to-accent/5 backdrop-blur-xl p-8 space-y-4 shadow-xl">
         <div className="flex items-center gap-2">
-          <UserPlus className="h-5 w-5 text-[#00FF66]" />
-          <p className="text-sm font-semibold text-zinc-200">Grow the Gang</p>
+          <UserPlus className="h-6 w-6 text-primary" />
+          <p className="text-lg font-extrabold text-foreground">Grow the Gang 👯</p>
         </div>
-        <p className="text-xs text-zinc-500">
-          Share your join code or invite link so crew members can join your squad.
+        <p className="text-sm text-foreground/70">
+          Create a magical invite link and share it on WhatsApp, email, or anywhere else!
         </p>
-        {joinCode && (
-          <div className="flex items-center gap-3">
-            <div className="flex-1 rounded-lg bg-zinc-800 border border-zinc-700 px-4 py-2 font-mono text-[#00FF66] text-sm tracking-widest">
-              {joinCode}
+
+        {!inviteLink ? (
+          <button
+            onClick={handleCreateInvite}
+            disabled={creatingInvite}
+            className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-gradient-to-r from-primary to-accent text-white font-extrabold text-lg hover:shadow-xl transition-all shadow-lg disabled:opacity-50"
+          >
+            {creatingInvite ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Creating Invite...
+              </>
+            ) : (
+              <>
+                <UserPlus className="h-5 w-5" />
+                Create Invite Link
+              </>
+            )}
+          </button>
+        ) : (
+          <div className="space-y-3">
+            {/* Invite link display */}
+            <div className="rounded-xl bg-white/80 p-4 space-y-3">
+              <p className="text-xs font-semibold text-foreground/60 uppercase">Invite Link</p>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={inviteLink}
+                  readOnly
+                  className="flex-1 px-4 py-2 rounded-lg bg-slate-100 border-2 border-primary/30 font-mono text-sm text-foreground"
+                />
+                <button
+                  onClick={() => copyToClipboard(inviteLink)}
+                  className={cn(
+                    'p-2 rounded-lg transition-all',
+                    copied
+                      ? 'bg-green-500 text-white'
+                      : 'bg-primary text-white hover:bg-primary/90'
+                  )}
+                >
+                  {copied ? <CheckCircle className="h-5 w-5" /> : <Copy className="h-5 w-5" />}
+                </button>
+              </div>
             </div>
+
+            {/* WhatsApp button */}
+            {whatsappLink && (
+              <a
+                href={whatsappLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 px-6 py-4 rounded-2xl bg-green-500 hover:bg-green-600 text-white font-extrabold text-lg transition-all shadow-lg"
+              >
+                <Send className="h-5 w-5" />
+                Share on WhatsApp
+              </a>
+            )}
+
+            {/* Create new button */}
+            <button
+              onClick={() => {
+                setInviteLink('');
+                setWhatsappLink('');
+              }}
+              className="w-full px-4 py-2 rounded-xl bg-slate-200 text-foreground hover:bg-slate-300 font-semibold transition-all"
+            >
+              Create Another Invite
+            </button>
           </div>
         )}
-        <Link
-          href="/welcome"
-          className={cn(
-            'inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all',
-            'bg-[#00FF66] text-zinc-950 shadow-[0_0_16px_rgba(0,255,102,0.3)] hover:shadow-[0_0_24px_rgba(0,255,102,0.5)]',
-          )}
-        >
-          Invite to Gang
-        </Link>
+
+        {/* Info box */}
+        <div className="rounded-lg bg-blue-50/50 border border-blue-200 p-3 text-xs text-blue-900">
+          <p>💡 <strong>Pro tip:</strong> Each invite works for 30 days. Anyone clicking the link can join!</p>
+        </div>
       </div>
     </div>
   );

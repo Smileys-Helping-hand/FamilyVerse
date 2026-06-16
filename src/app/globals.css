@@ -53,34 +53,34 @@ button, a, [role="button"], input, select, textarea {
 
   /* ── FAMILYVERSE (default light-warm) ── */
   :root, [data-theme="family"] {
-    /* Warm, sunlit palette inspired by family moments */
-    --background: 36 60% 97%;        /* warm cream */
-    --foreground: 24 40% 12%;        /* deep warm brown */
+    /* VIBRANT warm, sunlit palette for maximum visibility */
+    --background: 36 50% 98%;        /* lighter cream for better contrast */
+    --foreground: 24 45% 10%;        /* darker brown for better readability */
     --card: 0 0% 100%;
-    --card-foreground: 24 40% 12%;
+    --card-foreground: 24 45% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 24 40% 12%;
-    --primary: 18 95% 57%;           /* sunset orange #FF6B35 */
+    --popover-foreground: 24 45% 10%;
+    --primary: 18 100% 52%;          /* BOLD sunset orange - more vibrant */
     --primary-foreground: 0 0% 100%;
-    --secondary: 160 60% 42%;        /* sage/teal #29AB87 */
+    --secondary: 160 70% 38%;        /* BOLD teal - more saturated */
     --secondary-foreground: 0 0% 100%;
-    --muted: 36 30% 94%;
-    --muted-foreground: 24 20% 50%;
-    --accent: 43 96% 56%;            /* golden amber #FFD166 */
-    --accent-foreground: 24 40% 12%;
-    --success: 145 65% 40%;
+    --muted: 36 25% 92%;             /* lighter muted */
+    --muted-foreground: 24 20% 40%;  /* darker muted text */
+    --accent: 43 100% 52%;           /* BOLD golden amber - more vibrant */
+    --accent-foreground: 24 45% 10%;
+    --success: 142 76% 36%;          /* BOLD green */
     --success-foreground: 0 0% 100%;
-    --destructive: 0 78% 58%;
+    --destructive: 0 84% 54%;        /* BOLD red */
     --destructive-foreground: 0 0% 100%;
-    --border: 36 25% 88%;
-    --input: 36 30% 92%;
-    --ring: 18 95% 57%;
+    --border: 36 20% 85%;            /* darker border for visibility */
+    --input: 36 25% 90%;             /* darker input for visibility */
+    --ring: 18 100% 52%;
     --radius: 1rem;
-    --chart-1: 18 95% 57%;
-    --chart-2: 160 60% 42%;
-    --chart-3: 43 96% 56%;
-    --chart-4: 280 60% 65%;
-    --chart-5: 210 80% 55%;
+    --chart-1: 18 100% 52%;
+    --chart-2: 160 70% 38%;
+    --chart-3: 43 100% 52%;
+    --chart-4: 280 75% 62%;
+    --chart-5: 210 85% 52%;
   }
 
   /* ── NIGHT MODE (dark but warm, not cold military) ── */

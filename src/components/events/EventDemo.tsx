@@ -49,22 +49,22 @@ export default function EventDemo() {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="rounded-3xl bg-gradient-to-br from-primary/10 via-accent/5 to-secondary/10 border-2 border-primary/20 p-8"
+        className="rounded-3xl bg-gradient-to-br from-white via-orange-50 to-amber-50 border-4 border-primary p-8 shadow-xl"
       >
-        <div className="flex items-center gap-3 mb-3">
-          <Sparkles className="w-6 h-6 text-primary" />
-          <p className="text-sm font-bold text-primary">EXAMPLE SCENARIO</p>
+        <div className="flex items-center gap-3 mb-4">
+          <Sparkles className="w-7 h-7 text-primary" />
+          <p className="text-sm font-extrabold text-primary uppercase tracking-wide">Live Example Scenario</p>
         </div>
-        <h1 className="text-3xl font-extrabold mb-2">Girls Evening 👯‍♀️</h1>
-        <p className="text-foreground/70 mb-4">
+        <h1 className="text-4xl font-extrabold mb-3 text-primary">Girls Evening 👯‍♀️</h1>
+        <p className="text-foreground/80 mb-6 font-medium text-lg">
           This is a live example of how FamilyVerse makes group event planning effortless.
           Start your own event or customize this one!
         </p>
-        <div className="flex gap-4">
-          <button className="px-6 py-2 rounded-xl bg-primary text-white font-bold hover:bg-primary/90 transition-all">
+        <div className="flex gap-4 flex-wrap">
+          <button className="px-8 py-3 rounded-2xl bg-primary text-white font-extrabold hover:bg-primary/90 transition-all shadow-lg transform hover:scale-105">
             Use This Template
           </button>
-          <button className="px-6 py-2 rounded-xl bg-primary/10 text-primary font-bold hover:bg-primary/20 transition-all border-2 border-primary/20">
+          <button className="px-8 py-3 rounded-2xl bg-accent text-primary font-extrabold hover:bg-accent/90 transition-all shadow-lg transform hover:scale-105">
             Create My Own
           </button>
         </div>
@@ -97,9 +97,9 @@ export default function EventDemo() {
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="rounded-2xl bg-card border-2 border-border p-6"
+        className="rounded-3xl bg-gradient-to-br from-white to-amber-50 border-3 border-primary/30 p-8 shadow-xl"
       >
-        <h3 className="font-bold text-lg mb-4">✨ What Makes This Magical</h3>
+        <h3 className="font-extrabold text-2xl mb-6 text-primary">✨ What Makes This Magical</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {[
             {
@@ -133,13 +133,13 @@ export default function EventDemo() {
               desc: 'Browse nearby Checkers, Pick n Pay, Makro with hours & ratings',
             },
           ].map((item, idx) => (
-            <div key={item.title} className="flex gap-3">
-              <span className="text-2xl">{item.emoji}</span>
+            <motion.div key={item.title} className="flex gap-4 p-3 rounded-xl bg-gradient-to-br from-white/80 to-primary/10 border border-primary/20 hover:border-primary/50 transition-colors" whileHover={{ x: 4 }}>
+              <span className="text-3xl flex-shrink-0">{item.emoji}</span>
               <div>
-                <p className="font-bold text-sm">{item.title}</p>
-                <p className="text-xs text-foreground/60">{item.desc}</p>
+                <p className="font-extrabold text-sm text-foreground">{item.title}</p>
+                <p className="text-xs text-foreground/70 leading-snug">{item.desc}</p>
               </div>
-            </div>
+            </motion.div>
           ))}
         </div>
       </motion.div>

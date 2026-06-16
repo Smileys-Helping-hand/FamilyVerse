@@ -8,9 +8,9 @@ import Link from 'next/link';
 
 export default function DemoPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-primary/5 to-accent/5">
+    <div className="min-h-screen bg-gradient-to-br from-background via-orange-50 to-amber-50">
       {/* Navigation */}
-      <nav className="sticky top-0 z-50 bg-background/80 backdrop-blur border-b border-border">
+      <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b-2 border-primary/30 shadow-md">
         <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2 font-bold text-lg">
             <span>🏡 FamilyVerse</span>
@@ -44,15 +44,15 @@ export default function DemoPage() {
           </p>
 
           <div className="flex gap-4 justify-center flex-wrap">
-            <button className="px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-accent text-white font-bold shadow-lg hover:shadow-xl transition-all flex items-center gap-2">
-              <Heart className="w-5 h-5" />
+            <button className="px-8 py-3 rounded-2xl bg-gradient-to-r from-primary via-orange-500 to-accent text-white font-extrabold shadow-2xl hover:shadow-3xl transition-all transform hover:scale-105 flex items-center gap-2 text-lg">
+              <Heart className="w-6 h-6" />
               Explore This Event
             </button>
             <Link
               href="/events"
-              className="px-8 py-3 rounded-xl bg-primary/10 text-primary font-bold border-2 border-primary/20 hover:bg-primary/20 transition-all flex items-center gap-2"
+              className="px-8 py-3 rounded-2xl bg-primary text-white font-extrabold border-3 border-primary shadow-lg hover:shadow-xl transition-all transform hover:scale-105 flex items-center gap-2 text-lg"
             >
-              <Users className="w-5 h-5" />
+              <Users className="w-6 h-6" />
               Create Your Own
             </Link>
           </div>
@@ -115,57 +115,25 @@ export default function DemoPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {[
-              {
-                emoji: '📱',
-                title: 'WhatsApp Native',
-                desc: 'Share event with one-tap WhatsApp. Cousins join instantly.',
-              },
-              {
-                emoji: '🤖',
-                title: 'AI Suggestions',
-                desc: 'Suggests vendors, quantities, and costs automatically.',
-              },
-              {
-                emoji: '💰',
-                title: 'Fair Splitting',
-                desc: 'Shows exactly who paid, who owes, cost per person.',
-              },
-              {
-                emoji: '🏪',
-                title: 'Shop Finder',
-                desc: 'Browse Checkers, Pick n Pay, Makro with hours & ratings.',
-              },
-              {
-                emoji: '🔄',
-                title: 'Real-Time Sync',
-                desc: 'Everyone sees updates instantly, no refresh needed.',
-              },
-              {
-                emoji: '✅',
-                title: 'Task Delegation',
-                desc: 'Clear who is bringing what, no confusion.',
-              },
-              {
-                emoji: '📊',
-                title: 'Budget Dashboard',
-                desc: 'Visual breakdown of meals, snacks, drinks, decorations.',
-              },
-              {
-                emoji: '📱',
-                title: 'Mobile Perfect',
-                desc: 'Beautiful on phones, works offline-first.',
-              },
+              { emoji: '📱', title: 'WhatsApp Native', desc: 'Share event with one-tap WhatsApp. Cousins join instantly.', bg: 'from-green-400 to-emerald-500' },
+              { emoji: '🤖', title: 'AI Suggestions', desc: 'Suggests vendors, quantities, and costs automatically.', bg: 'from-purple-400 to-indigo-500' },
+              { emoji: '💰', title: 'Fair Splitting', desc: 'Shows exactly who paid, who owes, cost per person.', bg: 'from-yellow-400 to-orange-500' },
+              { emoji: '🏪', title: 'Shop Finder', desc: 'Browse Checkers, Pick n Pay, Makro with hours & ratings.', bg: 'from-blue-400 to-cyan-500' },
+              { emoji: '🔄', title: 'Real-Time Sync', desc: 'Everyone sees updates instantly, no refresh needed.', bg: 'from-pink-400 to-rose-500' },
+              { emoji: '✅', title: 'Task Delegation', desc: 'Clear who is bringing what, no confusion.', bg: 'from-teal-400 to-green-500' },
+              { emoji: '📊', title: 'Budget Dashboard', desc: 'Visual breakdown of meals, snacks, drinks, decorations.', bg: 'from-orange-400 to-red-500' },
+              { emoji: '📱', title: 'Mobile Perfect', desc: 'Beautiful on phones, works offline-first.', bg: 'from-fuchsia-400 to-purple-500' },
             ].map((feature, idx) => (
               <motion.div
                 key={feature.title}
-                initial={{ opacity: 0, scale: 0.9 }}
+                initial={{ opacity: 0, scale: 0.85 }}
                 animate={{ opacity: 1, scale: 1 }}
                 transition={{ delay: 0.4 + idx * 0.05 }}
-                className="rounded-xl bg-background border-2 border-border p-4 text-center hover:border-primary/30 transition-colors"
+                className={`rounded-2xl bg-gradient-to-br ${feature.bg} text-white p-6 text-center shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all border-0`}
               >
-                <p className="text-3xl mb-2">{feature.emoji}</p>
-                <h3 className="font-bold text-sm mb-1">{feature.title}</h3>
-                <p className="text-xs text-foreground/60">{feature.desc}</p>
+                <p className="text-4xl mb-3">{feature.emoji}</p>
+                <h3 className="font-extrabold text-base mb-2">{feature.title}</h3>
+                <p className="text-sm opacity-95">{feature.desc}</p>
               </motion.div>
             ))}
           </div>
@@ -178,18 +146,18 @@ export default function DemoPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="rounded-3xl bg-gradient-to-br from-primary via-orange-500 to-accent text-white p-12 text-center shadow-2xl"
+          className="rounded-3xl bg-gradient-to-br from-primary via-orange-500 to-accent text-white p-16 text-center shadow-3xl border-4 border-white/30"
         >
-          <TrendingUp className="w-12 h-12 mx-auto mb-4 opacity-80" />
-          <h2 className="text-4xl font-extrabold mb-4">Ready to Plan Like This?</h2>
-          <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
+          <TrendingUp className="w-16 h-16 mx-auto mb-4" />
+          <h2 className="text-5xl font-extrabold mb-6">Ready to Plan Like This?</h2>
+          <p className="text-xl opacity-95 mb-10 max-w-xl mx-auto font-semibold">
             Create your own event and experience the magic of stress-free group coordination.
           </p>
           <Link
             href="/events/new"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl bg-white text-primary font-bold text-lg hover:bg-white/90 transition-all shadow-xl"
+            className="inline-flex items-center gap-3 px-10 py-5 rounded-2xl bg-white text-primary font-extrabold text-lg hover:bg-white/95 transition-all shadow-2xl transform hover:scale-110"
           >
-            <Sparkles className="w-5 h-5" />
+            <Sparkles className="w-6 h-6" />
             Create Your First Event
           </Link>
         </motion.div>

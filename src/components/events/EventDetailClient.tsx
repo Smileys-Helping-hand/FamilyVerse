@@ -40,6 +40,7 @@ import EventChatTab from './EventChatTab';
 import BookingWidget from './BookingWidget';
 import MosWordsBoard from './MosWordsBoard';
 import EventPlanningDashboard from './EventPlanningDashboard';
+import BirthdayExperiencePlanner from './BirthdayExperiencePlanner';
 import { getPusherClient } from '@/lib/pusher/client';
 
 interface EventDetailClientProps {
@@ -358,6 +359,7 @@ export default function EventDetailClient({
         <Tabs defaultValue="planning" className="space-y-6">
           <TabsList className="grid w-full grid-cols-3 md:grid-cols-4 lg:grid-cols-12 gap-1">
             <TabsTrigger value="planning">🎯 Planning</TabsTrigger>
+            <TabsTrigger value="birthday">🎂 Birthday</TabsTrigger>
             <TabsTrigger value="itinerary">📋 Plan</TabsTrigger>
             <TabsTrigger value="booking">⚡ Booking</TabsTrigger>
             <TabsTrigger value="moswords">🔥 Slang</TabsTrigger>
@@ -384,6 +386,24 @@ export default function EventDetailClient({
               currentUserId={currentUser.uid}
               currentUserName={currentUser.name}
               attendeeCount={goingCount}
+            />
+          </TabsContent>
+
+          {/* Birthday Experience Planner Tab */}
+          <TabsContent value="birthday">
+            <BirthdayExperiencePlanner
+              eventId={event.id}
+              eventDate={event.startTime}
+              eventTitle={event.title}
+              location={event.coordinates ? {
+                lat: event.coordinates.lat,
+                lng: event.coordinates.lng,
+                address: event.locationName
+              } : undefined}
+              budget={event.budget || 2500}
+              creatorOnly={true}
+              currentUserId={currentUser.uid}
+              creatorId={event.creatorId}
             />
           </TabsContent>
 
